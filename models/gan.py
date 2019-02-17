@@ -49,7 +49,7 @@ class Model(object):
                 shape=[None, None]
             )
             self.fake_images = generator(
-                inputs=self.latents,
+                inputs=self.fake_latents,
                 coloring_index=self.coloring_index,
                 training=self.training
             )
