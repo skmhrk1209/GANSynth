@@ -33,7 +33,7 @@ def parse_example(example, audio_length, pitches, index_table):
     return wave, label
 
 
-def preprocess(wave, label, spectrogram_shape, overlap, sample_rate, mel_downscale):
+def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
     # =========================================================================================
     time_steps, num_freq_bins = spectrogram_shape
     # power of two only has 1 nonzero in binary representation
@@ -48,7 +48,6 @@ def preprocess(wave, label, spectrogram_shape, overlap, sample_rate, mel_downsca
     # =========================================================================================
     # For Nsynth dataset, we are putting all padding in the front
     # This causes edge effects in the tail
-    audio_length = wave.shape.as_list()[0]
     num_samples = frame_step * (time_steps - 1) + frame_length
     if num_samples < audio_length:
         raise ValueError(
@@ -114,7 +113,8 @@ def preprocess(wave, label, spectrogram_shape, overlap, sample_rate, mel_downsca
 
 
 def input_fn(filenames, batch_size, num_epochs, shuffle,
-             audio_length, pitches):
+             audio_length, pitches, spectrogram_shape,
+             overlap, sample_rate, mel_downscale):
 
     dataset = tf.data.TFRecordDataset(
         filenames=filenames,
@@ -144,10 +144,11 @@ def input_fn(filenames, batch_size, num_epochs, shuffle,
     dataset = dataset.map(
         map_func=functools.partial(
             preprocess,
-            spectrogram_shape=[256, 256],
-            overlap=0.75,
-            sample_rate=16000,
-            mel_downscale=1
+            audio_length=audio_length,
+            spectrogram_shape=spectrogram_shape,
+            overlap=overlap,
+            sample_rate=sample_rate,
+            mel_downscale=mel_downscale
         ),
         num_parallel_calls=os.cpu_count()
     )

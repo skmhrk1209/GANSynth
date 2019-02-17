@@ -64,7 +64,11 @@ gan_model = gan.Model(
         num_epochs=None,
         shuffle=True,
         audio_length=64000,
-        pitches=pitch.counts.keys()
+        pitches=pitch.counts.keys(),
+        spectrogram_shape=[256, 256],
+        overlap=0.75,
+        sample_rate=16000,
+        mel_downscale=1
     ),
     fake_input_fn=lambda: (
         tf.one_hot(
