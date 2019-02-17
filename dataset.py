@@ -79,7 +79,6 @@ def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rat
             "Spectrogram returned the wrong shape {}, is not the same as the "
             "constructor spectrogram_shape {}.".format(stft_shape, spectrogram_shape)
         )
-    print("ssssssss", stft.shape)
     # =========================================================================================
     # converts stft to mel spectrogram
     # stft: complex64 tensor of stft
@@ -105,6 +104,11 @@ def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rat
         a=instantaneous_frequency,
         b=linear_to_mel_weight_matrix,
         axes=1
+    )
+    log_mel_spectrogram.set_shape(
+        magnitude_spectrogram.shape[:-1].concatenate(
+            linear_to_mel_weight_matrix.shape[-1:]
+        )
     )
     data = tf.concat([
         tf.expand_dims(log_mel_spectrogram, axis=-1),
