@@ -34,7 +34,7 @@ parser.add_argument('--test_filenames', type=str, nargs="+", default=["multi_syn
 parser.add_argument("--batch_size", type=int, default=100, help="batch size")
 parser.add_argument("--random_seed", type=int, default=1209, help="random seed")
 parser.add_argument("--data_format", type=str, default="channels_first", help="data format")
-parser.add_argument("--max_steps", type=int, default=1000000, help="maximum number of training steps")
+parser.add_argument("--max_steps", type=int, default=100000, help="maximum number of training steps")
 parser.add_argument("--steps", type=int, default=None, help="number of test steps")
 parser.add_argument('--train', action="store_true", help="with training")
 parser.add_argument('--eval', action="store_true", help="with evaluation")
