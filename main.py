@@ -34,7 +34,7 @@ parser.add_argument('--test_filenames', type=str, nargs="+", default=["multi_syn
 parser.add_argument("--batch_size", type=int, default=100, help="batch size")
 parser.add_argument("--random_seed", type=int, default=1209, help="random seed")
 parser.add_argument("--data_format", type=str, default="channels_first", help="data format")
-parser.add_argument("--max_steps", type=int, default=100000, help="maximum number of training steps")
+parser.add_argument("--max_steps", type=int, default=1000000, help="maximum number of training steps")
 parser.add_argument("--steps", type=int, default=None, help="number of test steps")
 parser.add_argument('--train', action="store_true", help="with training")
 parser.add_argument('--eval', action="store_true", help="with evaluation")
@@ -58,6 +58,33 @@ gan_model = gan.Model(
         min_filters=16,
         max_filters=1024,
         data_format=args.data_format
+    ),
+    real_input_fn=functools.partial(
+        dataset.input_fn,
+        filenames=args.filenames,
+        batch_size=args.batch_size,
+        num_epochs=None,
+        shuffle=True,
+        audio_length=64000,
+        pitches=pitch.counts.keys()
+    ),
+    fake_input_fn=lambda: (
+        tf.one_hot(
+            indices=tf.reshape(
+                tensor=tf.multinomial(
+                    logits=tf.log([tf.cast([
+                        count for pitch, count
+                        in sorted(pitch.counts.items())
+                    ], tf.float32)]),
+                    num_samples=self.batch_size
+                ),
+                shape=[args.batch_size]
+            ),
+            depth=len(pitch.counts.keys())
+        ),
+        tf.random_normal(
+            shape=[args.batch_size, 128]
+        )
     ),
     hyper_params=Param(
         generator_learning_rate=0.0002,
@@ -83,34 +110,4 @@ with tf.Session(config=config) as session:
     gan_model.initialize()
 
     if args.train:
-
-        gan_model.train(
-            real_input_fn=functools.partial(
-                dataset.input_fn,
-                filenames=args.filenames,
-                batch_size=args.batch_size,
-                num_epochs=None,
-                shuffle=True,
-                audio_length=64000,
-                pitches=pitch.counts.keys()
-            ),
-            fake_input_fn=lambda: (
-                tf.one_hot(
-                    indices=tf.reshape(
-                        tensor=tf.multinomial(
-                            logits=tf.log([tf.cast([
-                                count for pitch, count
-                                in sorted(pitch.counts.items())
-                            ], tf.float32)]),
-                            num_samples=self.batch_size
-                        ),
-                        shape=[args.batch_size]
-                    ),
-                    depth=len(pitch.counts.keys())
-                ),
-                tf.random_normal(
-                    shape=[args.batch_size, 128]
-                )
-            ),
-            max_steps=args.max_steps
-        )
+        gan_model.train(args.max_steps)

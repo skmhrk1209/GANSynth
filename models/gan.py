@@ -8,13 +8,12 @@ import pitch
 
 class Model(object):
 
-    def __init__(self, discriminator, generator, hyper_params, name="gan", reuse=None):
+    def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
+                 hyper_params, name="gan", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
             self.name = name
-            self.discriminator = discriminator
-            self.generator = generator
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
@@ -52,7 +51,7 @@ class Model(object):
                 dtype=tf.float32,
                 shape=self.next_fake_latents.shape
             )
-            self.fake_images = self.generator(
+            self.fake_images = generator(
                 inputs=self.fake_latents,
                 coloring_index=self.coloring_index,
                 training=self.training
@@ -63,7 +62,7 @@ class Model(object):
             )
             # =========================================================================================
             # logits for real data
-            self.real_logits = self.discriminator(
+            self.real_logits = discriminator(
                 inputs=self.real_images,
                 conditions=self.real_labels,
                 coloring_index=self.coloring_index,
@@ -72,7 +71,7 @@ class Model(object):
             )
             # =========================================================================================
             # logits for fake data
-            self.fake_logits = self.discriminator(
+            self.fake_logits = discriminator(
                 inputs=self.fake_images,
                 conditions=self.fake_labels,
                 coloring_index=self.coloring_index,
@@ -143,7 +142,7 @@ class Model(object):
             session.run(tf.tables_initializer())
             print("global variables in {} initialized".format(self.name))
 
-    def train(self, real_input_fn, fake_input_fn, max_steps):
+    def train(self, max_steps):
 
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
