@@ -33,8 +33,7 @@ def parse_example(example, audio_length, pitches, index_table):
     return wave, label
 
 
-def preprocess(wave, label, audio_length, spectrogram_shape,
-               overlap, sample_rate, mel_downscale):
+def preprocess(wave, label, spectrogram_shape, overlap, sample_rate, mel_downscale):
     # =========================================================================================
     time_steps, num_freq_bins = spectrogram_shape
     # power of two only has 1 nonzero in binary representation
@@ -49,6 +48,7 @@ def preprocess(wave, label, audio_length, spectrogram_shape,
     # =========================================================================================
     # For Nsynth dataset, we are putting all padding in the front
     # This causes edge effects in the tail
+    audio_length = wave.shape[0]
     num_samples = frame_step * (time_steps - 1) + frame_length
     if num_samples < audio_length:
         raise ValueError(
@@ -113,16 +113,17 @@ def preprocess(wave, label, audio_length, spectrogram_shape,
     return data, label
 
 
-def input_fn(filenames, batch_size, num_epochs, shuffle, audio_length, pitches):
+def input_fn(filenames, batch_size, num_epochs, shuffle,
+             audio_length, pitches):
 
     dataset = tf.data.TFRecordDataset(
         filenames=filenames,
-        #num_parallel_reads=os.cpu_count()
+        # num_parallel_reads=os.cpu_count()
     )
     if shuffle:
         dataset = dataset.shuffle(
             buffer_size=sum([
-                len(list(tf.python_io.tf_record_iterator(filename))) #kokomo
+                len(list(tf.python_io.tf_record_iterator(filename)))  # kokomo
                 for filename in filenames
             ]),
             reshuffle_each_iteration=True
@@ -143,8 +144,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, audio_length, pitches):
     dataset = dataset.map(
         map_func=functools.partial(
             preprocess,
-            audio_length=64000,
-            spectrogram_shape=[256, 512],
+            spectrogram_shape=[256, 256],
             overlap=0.75,
             sample_rate=16000,
             mel_downscale=1
