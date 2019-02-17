@@ -42,17 +42,20 @@ args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+pitches = np.load("pitches.npy")
+counts = np.load("counts.npy")
+
 gan_model = gan.Model(
     generator=dcgan.Generator(
-        min_resolution=4,
-        max_resolution=256,
+        min_resolution=[4, 8],
+        max_resolution=[256, 512],
         min_filters=16,
         max_filters=1024,
         data_format=args.data_format,
     ),
     discriminator=dcgan.Discriminator(
-        min_resolution=4,
-        max_resolution=256,
+        min_resolution=[4, 8],
+        max_resolution=[256, 512],
         min_filters=16,
         max_filters=1024,
         data_format=args.data_format
@@ -64,7 +67,7 @@ gan_model = gan.Model(
         num_epochs=None,
         shuffle=True,
         audio_length=64000,
-        pitches=pitch.counts.keys(),
+        pitches=pitches,
         spectrogram_shape=[256, 512],
         overlap=0.75,
         sample_rate=16000,
@@ -74,15 +77,12 @@ gan_model = gan.Model(
         tf.one_hot(
             indices=tf.reshape(
                 tensor=tf.multinomial(
-                    logits=tf.log([tf.cast([
-                        count for pitch, count
-                        in sorted(pitch.counts.items())
-                    ], tf.float32)]),
+                    logits=tf.log([tf.cast(counts, tf.float32)]),
                     num_samples=args.batch_size
                 ),
                 shape=[args.batch_size]
             ),
-            depth=len(pitch.counts.keys())
+            depth=len(pitches)
         ),
         tf.random_normal(
             shape=[args.batch_size, 128]
@@ -112,4 +112,5 @@ with tf.Session(config=config) as session:
     gan_model.initialize()
 
     if args.train:
+
         gan_model.train(args.max_steps)

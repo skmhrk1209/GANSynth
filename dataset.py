@@ -3,6 +3,7 @@ import numpy as np
 import spectral_ops
 import functools
 import os
+from algorithms import *
 
 
 def parse_example(example, audio_length, pitches, index_table):
@@ -141,26 +142,25 @@ def input_fn(filenames, batch_size, num_epochs, shuffle,
         )
     dataset = dataset.repeat(count=num_epochs)
     dataset = dataset.map(
-        map_func=functools.partial(
-            parse_example,
-            audio_length=audio_length,
-            pitches=pitches,
-            index_table=tf.contrib.lookup.index_table_from_tensor(
-                mapping=sorted(pitches),
-                dtype=tf.int64
+        map_func=compose([
+            functools.partial(
+                parse_example,
+                audio_length=audio_length,
+                pitches=pitches,
+                index_table=tf.contrib.lookup.index_table_from_tensor(
+                    mapping=sorted(pitches),
+                    dtype=tf.int64
+                )
+            ),
+            functools.partial(
+                preprocess,
+                audio_length=audio_length,
+                spectrogram_shape=spectrogram_shape,
+                overlap=overlap,
+                sample_rate=sample_rate,
+                mel_downscale=mel_downscale
             )
-        ),
-        num_parallel_calls=os.cpu_count()
-    )
-    dataset = dataset.map(
-        map_func=functools.partial(
-            preprocess,
-            audio_length=audio_length,
-            spectrogram_shape=spectrogram_shape,
-            overlap=overlap,
-            sample_rate=sample_rate,
-            mel_downscale=mel_downscale
-        ),
+        ]),
         num_parallel_calls=os.cpu_count()
     )
     dataset = dataset.batch(batch_size=batch_size)
