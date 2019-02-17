@@ -49,18 +49,17 @@ gan_model = gan.Model(
         min_resolution=4,
         max_resolution=256,
         min_filters=16,
-        max_filters=512,
+        max_filters=1024,
         data_format=args.data_format,
     ),
     discriminator=dcgan.Discriminator(
         min_resolution=4,
         max_resolution=256,
         min_filters=16,
-        max_filters=512,
+        max_filters=1024,
         data_format=args.data_format
     ),
     hyper_params=Param(
-        latent_size=128,
         generator_learning_rate=0.0002,
         generator_beta1=0.5,
         generator_beta2=0.999,
