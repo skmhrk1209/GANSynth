@@ -33,22 +33,26 @@ class Model(object):
                 global_step=tf.cast(self.global_step, tf.float32)
             )
             # =========================================================================================
+            # input_fn for real data and fake data
+            self.next_real_images, self.next_real_labels = real_input_fn()
+            self.next_fake_latents, self.next_fake_labels = fake_input_fn()
+            # =========================================================================================
             # placeholders for real data
             self.real_images = tf.placeholder(
                 dtype=tf.float32,
-                shape=[None, None, None, None]
+                shape=self.next_real_images.shape
             )
             self.real_labels = tf.placeholder(
                 dtype=tf.float32,
-                shape=[None, None, None, None]
+                shape=self.next_real_labels.shape
             )
             # =========================================================================================
             # placeholders for fake data
             self.fake_latents = tf.placeholder(
                 dtype=tf.float32,
-                shape=[None, None]
+                shape=self.next_fake_latents.shape
             )
-            self.fake_images = generator(
+            self.fake_images = self.generator(
                 inputs=self.fake_latents,
                 coloring_index=self.coloring_index,
                 training=self.training
@@ -59,7 +63,7 @@ class Model(object):
             )
             # =========================================================================================
             # logits for real data
-            self.real_logits = discriminator(
+            self.real_logits = self.discriminator(
                 inputs=self.real_images,
                 conditions=self.real_labels,
                 coloring_index=self.coloring_index,
@@ -68,7 +72,7 @@ class Model(object):
             )
             # =========================================================================================
             # logits for fake data
-            self.fake_logits = discriminator(
+            self.fake_logits = self.discriminator(
                 inputs=self.fake_images,
                 conditions=self.fake_labels,
                 coloring_index=self.coloring_index,
@@ -136,18 +140,13 @@ class Model(object):
         else:
             global_variables = tf.global_variables(scope=self.name)
             session.run(tf.variables_initializer(global_variables))
+            session.run(tf.tables_initializer())
             print("global variables in {} initialized".format(self.name))
 
     def train(self, real_input_fn, fake_input_fn, max_steps):
 
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
-
-        # =========================================================================================
-        # input_fn for real data and fake data
-        next_real_images, next_real_labels = real_input_fn()
-        next_fake_latents, next_fake_labels = fake_input_fn()
-        session.run(tf.tables_initializer())
 
         print("training started")
         start = time.time()
@@ -162,11 +161,11 @@ class Model(object):
                 break
 
             real_images, real_labels = session.run(
-                fetches=[next_real_images, next_real_labels],
+                fetches=[self.next_real_images, self.next_real_labels],
                 feed_dict=feed_dict
             )
             fake_latents, fake_labels = session.run(
-                fetches=[next_fake_latents, next_fake_labels],
+                fetches=[self.next_fake_latents, self.next_fake_labels],
                 feed_dict=feed_dict
             )
 
