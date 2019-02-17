@@ -46,7 +46,7 @@ class Model(object):
             # placeholders for fake data
             self.fake_latents = tf.placeholder(
                 dtype=tf.float32,
-                shape=[None, self.hyper_params.latent_size]
+                shape=[None, None]
             )
             self.fake_images = generator(
                 inputs=self.latents,
