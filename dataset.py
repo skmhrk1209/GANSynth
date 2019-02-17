@@ -122,7 +122,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, audio_length, pitches):
     if shuffle:
         dataset = dataset.shuffle(
             buffer_size=sum([
-                len(list(tf.io.tf_record_iterator(filename)))
+                len(list(tf.python_io.tf_record_iterator(filename))) #kokomo
                 for filename in filenames
             ]),
             reshuffle_each_iteration=True
