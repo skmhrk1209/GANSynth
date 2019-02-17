@@ -60,11 +60,6 @@ class Model(object):
                 dtype=tf.float32,
                 shape=self.next_fake_labels.shape
             )
-            print("real_images", self.real_images.shape)
-            print("real_labels", self.real_labels.shape)
-            print("fake_latents", self.fake_latents.shape)
-            print("fake_labels", self.fake_labels.shape)
-            print("fake_images", self.fake_images.shape)
             # =========================================================================================
             # logits for real data
             self.real_logits = discriminator(

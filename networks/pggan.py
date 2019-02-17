@@ -52,7 +52,7 @@ class Generator(object):
                             training=training
                         )
 
-                        return feature_maps
+                        outputs = feature_maps
 
                     elif index == 1:
 
@@ -70,7 +70,7 @@ class Generator(object):
                             training=training
                         )
 
-                        return feature_maps, images
+                        outputs = feature_maps, images
 
                     elif index == self.num_layers - 1:
 
@@ -102,7 +102,7 @@ class Generator(object):
                             exclusive=True
                         )
 
-                        return images
+                        outputs = images
 
                     else:
 
@@ -140,7 +140,9 @@ class Generator(object):
                             training=training
                         )
 
-                        return feature_maps, images
+                        outputs = feature_maps, images
+
+                return outputs
 
             return grow(inputs, self.num_layers - 1)
 
