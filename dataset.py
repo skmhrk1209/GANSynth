@@ -31,8 +31,6 @@ def parse_example(example, audio_length, pitches, index_table):
     label = index_table.lookup(label)
     label = tf.one_hot(label, len(pitches))
 
-    print("ssssssss", wave.shape)
-
     return wave, label
 
 
@@ -111,6 +109,8 @@ def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rat
         tf.expand_dims(log_mel_spectrogram, axis=-1),
         tf.expand_dims(mel_instantaneous_frequency, axis=-1)
     ], axis=-1)
+
+    print("ssssssss", data.shape)
 
     return data, label
 
