@@ -28,7 +28,7 @@ class Generator(pggan.Generator):
 
             inputs = ops.dense(
                 inputs=inputs,
-                units=resolution * resolution * filters,
+                units=resolution.prod() * filters,
                 use_bias=False,
                 name="dense_0"
             )
@@ -44,7 +44,7 @@ class Generator(pggan.Generator):
 
             inputs = tf.reshape(
                 tensor=inputs,
-                shape=[-1, resolution, resolution, filters]
+                shape=[-1, *resolution, filters]
             )
 
             return inputs
@@ -128,7 +128,7 @@ class Discriminator(pggan.Discriminator):
 
             logits += tf.reduce_sum(
                 input_tensor=inputs * embedded,
-                keep_dims=True #kokomo
+                keepdims=True
             )
 
             return logits

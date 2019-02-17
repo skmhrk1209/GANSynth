@@ -17,15 +17,14 @@ class Generator(object):
 
     def __init__(self, min_resolution, max_resolution, min_filters, max_filters, data_format):
 
-        if (max_resolution // min_resolution) != (max_filters // min_filters):
-            raise ValueError("Invalid number of filters")
-
-        self.min_resolution = min_resolution
-        self.max_resolution = max_resolution
+        self.min_resolution = np.asarray(min_resolution, np.int32)
+        self.max_resolution = np.asarray(max_resolution, np.int32)
         self.min_filters = min_filters
         self.max_filters = max_filters
         self.data_format = data_format
-        self.num_layers = int(np.log2(max_resolution // min_resolution)) + 2
+        self.num_layers = int(np.log2(max_filters // min_filters)) + 2
+        if ((max_resolution // min_resolution) != (max_filters // min_filters)).any():
+            raise ValueError("Invalid number of filters")
 
     def __call__(self, inputs, coloring_index, training, name="generator", reuse=None):
 
@@ -33,13 +32,6 @@ class Generator(object):
 
         with tf.variable_scope(name, reuse=reuse):
 
-            #========================================================================#
-            # very complicated but efficient architecture
-            # each layer has two output paths: feature_maps and images
-            # whether which path is evaluated at runtime
-            # depends on variable "coloring_index"
-            # but, all possible pathes must be constructed at compile time
-            #========================================================================#
             def grow(inputs, index):
 
                 with tf.variable_scope("layer_{}".format(index)):
@@ -163,15 +155,14 @@ class Discriminator(object):
 
     def __init__(self, min_resolution, max_resolution, min_filters, max_filters, data_format):
 
-        if (max_resolution // min_resolution) != (max_filters // min_filters):
-            raise ValueError("Invalid number of filters")
-
-        self.min_resolution = min_resolution
-        self.max_resolution = max_resolution
+        self.min_resolution = np.asarray(min_resolution, np.int32)
+        self.max_resolution = np.asarray(max_resolution, np.int32)
         self.min_filters = min_filters
         self.max_filters = max_filters
         self.data_format = data_format
-        self.num_layers = int(np.log2(max_resolution // min_resolution)) + 2
+        self.num_layers = int(np.log2(max_filters // min_filters)) + 2
+        if ((max_resolution // min_resolution) != (max_filters // min_filters)).any():
+            raise ValueError("Invalid number of filters")
 
     def __call__(self, inputs, conditions, coloring_index, training, name="discriminator", reuse=None):
 
@@ -179,13 +170,6 @@ class Discriminator(object):
 
         with tf.variable_scope(name, reuse=reuse):
 
-            #========================================================================#
-            # very complicated but efficient architecture
-            # each layer has two output paths: feature_maps and images
-            # whether which path is evaluated at runtime
-            # depends on variable "coloring_index"
-            # but, all possible pathes must be constructed at compile time
-            #========================================================================#
             def grow(feature_maps, images, index):
 
                 with tf.variable_scope("layer_{}".format(index)):

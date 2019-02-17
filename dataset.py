@@ -129,12 +129,12 @@ def input_fn(filenames, batch_size, num_epochs, shuffle,
 
     dataset = tf.data.TFRecordDataset(
         filenames=filenames,
-        # num_parallel_reads=os.cpu_count()
+        num_parallel_reads=os.cpu_count()
     )
     if shuffle:
         dataset = dataset.shuffle(
             buffer_size=sum([
-                len(list(tf.python_io.tf_record_iterator(filename)))  # kokomo
+                len(list(tf.io.tf_record_iterator(filename)))
                 for filename in filenames
             ]),
             reshuffle_each_iteration=True

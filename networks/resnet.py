@@ -28,14 +28,14 @@ class Generator(pggan.Generator):
 
             inputs = ops.dense(
                 inputs=inputs,
-                units=resolution * resolution * filters,
+                units=resolution.prod() * filters,
                 use_bias=False,
                 name="dense_0"
             )
 
             inputs = tf.reshape(
                 tensor=inputs,
-                shape=[-1, resolution, resolution, filters]
+                shape=[-1, *resolution, filters]
             )
 
             return inputs
