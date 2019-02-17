@@ -87,7 +87,7 @@ with tf.Session(config=config) as session:
 
         gan_model.train(
             real_input_fn=functools.partial(
-                dataset.input_fn
+                dataset.input_fn,
                 filenames=args.filenames,
                 batch_size=args.batch_size,
                 num_epochs=None,
