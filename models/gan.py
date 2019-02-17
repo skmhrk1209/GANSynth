@@ -34,7 +34,7 @@ class Model(object):
             # =========================================================================================
             # input_fn for real data and fake data
             self.next_real_images, self.next_real_labels = real_input_fn()
-            self.next_fake_latents, self.next_fake_labels = fake_input_fn()
+            self.next_fake_labels, self.next_fake_latents = fake_input_fn()
             # =========================================================================================
             # placeholders for real data
             self.real_images = tf.placeholder(
