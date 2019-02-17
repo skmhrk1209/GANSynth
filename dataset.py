@@ -5,13 +5,13 @@ import functools
 import os
 
 
-def parse_example(example, length, pitches, index_table):
+def parse_example(example, audio_length, pitches, index_table):
     # =========================================================================================
     # reference: https://magenta.tensorflow.org/datasets/nsynth
     features = tf.parse_single_example(
         serialized=example,
         features={
-            "audio": tf.FixedLenFeature([length], dtype=tf.float32),
+            "audio": tf.FixedLenFeature([audio_length], dtype=tf.float32),
             "pitch": tf.FixedLenFeature([], dtype=tf.int64),
         }
     )
@@ -19,11 +19,11 @@ def parse_example(example, length, pitches, index_table):
     # wave
     wave = features["audio"]
     # force audio length
-    padding = tf.maximum(0, length - tf.shape(wave)[0])
+    padding = tf.maximum(0, audio_length - tf.shape(wave)[0])
     padding_left = padding // 2
     padding_right = padding - padding_left
     wave = tf.pad(wave, [[padding_left, padding_right]])
-    wave = wave[:length]
+    wave = wave[:audio_length]
     # =========================================================================================
     # one-hot label
     label = features["pitch"]
@@ -33,8 +33,8 @@ def parse_example(example, length, pitches, index_table):
     return wave, label
 
 
-def preprocess(wave, label, audio_length,
-               spectrogram_shape, overlap, sample_rate, mel_downscale):
+def preprocess(wave, label, audio_length, spectrogram_shape,
+               overlap, sample_rate, mel_downscale):
     # =========================================================================================
     time_steps, num_freq_bins = spectrogram_shape
     # power of two only has 1 nonzero in binary representation
@@ -113,8 +113,7 @@ def preprocess(wave, label, audio_length,
     return data, label
 
 
-def input_fn(filenames, batch_size, num_epochs, shuffle,
-             length=64000, pitches=range(24, 85)):
+def input_fn(filenames, batch_size, num_epochs, shuffle, audio_length, pitches):
 
     dataset = tf.data.TFRecordDataset(
         filenames=filenames,
@@ -132,7 +131,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle,
     dataset = dataset.map(
         map_func=functools.partial(
             parse_example,
-            length=length,
+            audio_length=audio_length,
             pitches=pitches,
             index_table=tf.contrib.lookup.index_table_from_tensor(
                 mapping=sorted(pitches),
