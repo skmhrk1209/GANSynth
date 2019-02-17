@@ -110,6 +110,7 @@ def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rat
             linear_to_mel_weight_matrix.shape[-1:]
         )
     )
+    print(mel_instantaneous_frequency.shape)
     data = tf.concat([
         tf.expand_dims(log_mel_spectrogram, axis=-1),
         tf.expand_dims(mel_instantaneous_frequency, axis=-1)
