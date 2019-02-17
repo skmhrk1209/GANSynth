@@ -78,7 +78,7 @@ gan_model = gan.Model(
                         count for pitch, count
                         in sorted(pitch.counts.items())
                     ], tf.float32)]),
-                    num_samples=self.batch_size
+                    num_samples=args.batch_size
                 ),
                 shape=[args.batch_size]
             ),
