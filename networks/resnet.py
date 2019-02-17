@@ -38,10 +38,6 @@ class Generator(pggan.Generator):
                 shape=[-1, resolution, resolution, filters]
             )
 
-            if self.data_format == "channels_first":
-
-                inputs = tf.transpose(inputs, [0, 3, 1, 2])
-
             return inputs
 
     def deconv2d_block(self, inputs, index, training, name="deconv2d_block", reuse=None):
@@ -137,7 +133,7 @@ class Discriminator(pggan.Discriminator):
                 keepdims=True
             )
 
-            return adversarial_logits, auxiliary_logits
+            return logits
 
     def conv2d_block(self, inputs, index, training, name="conv2d_block", reuse=None):
 
