@@ -117,7 +117,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, audio_length, pitches):
 
     dataset = tf.data.TFRecordDataset(
         filenames=filenames,
-        num_parallel_reads=os.cpu_count()
+        #num_parallel_reads=os.cpu_count()
     )
     if shuffle:
         dataset = dataset.shuffle(
