@@ -10,8 +10,7 @@ import numpy as np
 from . import ops
 
 
-def lerp(a, b, t):
-    return a + (b - a) * t
+def lerp(a, b, t): return a + (b - a) * t
 
 
 class Generator(object):
@@ -172,7 +171,7 @@ class Discriminator(object):
         self.data_format = data_format
         self.num_layers = int(np.log2(max_resolution // min_resolution)) + 2
 
-    def __call__(self, inputs, coloring_index, training, name="discriminator", reuse=None):
+    def __call__(self, inputs, conditions, coloring_index, training, name="discriminator", reuse=None):
 
         floored_coloring_index = tf.cast(tf.floor(coloring_index), tf.int32)
 
@@ -193,6 +192,7 @@ class Discriminator(object):
 
                         logits = self.dense_block(
                             inputs=feature_maps,
+                            conditions=conditions,
                             index=index,
                             training=training
                         )
@@ -281,7 +281,7 @@ class Discriminator(object):
 
             return grow(None, inputs, self.num_layers - 1)
 
-    def dense_block(self, inputs, index, training, name="dense_block", reuse=None):
+    def dense_block(self, inputs, conditions, index, training, name="dense_block", reuse=None):
 
         raise NotImplementedError()
 

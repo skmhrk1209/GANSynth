@@ -15,6 +15,10 @@ from . import ops
 
 class Generator(pggan.Generator):
 
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
     def dense_block(self, inputs, index, training, name="dense_block", reuse=None):
 
         with tf.variable_scope(name, reuse=None):
@@ -25,6 +29,7 @@ class Generator(pggan.Generator):
             inputs = ops.dense(
                 inputs=inputs,
                 units=resolution * resolution * filters,
+                use_bias=False,
                 name="dense_0"
             )
 
@@ -56,6 +61,7 @@ class Generator(pggan.Generator):
                 inputs=inputs,
                 filters=filters,
                 strides=[1, 1],
+                use_bias=False,
                 normalization=ops.batch_normalization,
                 activation=tf.nn.relu,
                 data_format=self.data_format,
@@ -83,6 +89,7 @@ class Generator(pggan.Generator):
                 filters=3,
                 kernel_size=[3, 3],
                 strides=[1, 1],
+                use_bias=True,
                 data_format=self.data_format,
                 name="conv2d_0"
             )
@@ -94,7 +101,11 @@ class Generator(pggan.Generator):
 
 class Discriminator(pggan.Discriminator):
 
-    def dense_block(self, inputs, index, training, name="dense_block", reuse=None):
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+    def dense_block(self, inputs, conditions, index, training, name="dense_block", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
@@ -105,14 +116,28 @@ class Discriminator(pggan.Discriminator):
                 data_format=self.data_format
             )
 
-            inputs = ops.dense(
+            logits = ops.dense(
                 inputs=inputs,
                 units=1,
+                use_bias=True,
                 apply_spectral_normalization=True,
-                name="dense_0"
+                name="logits"
             )
 
-            return inputs
+            embedded = ops.dense(
+                inputs=conditions,
+                units=inputs.shape[-1],
+                use_bias=False,
+                apply_spectral_normalization=True,
+                name="embedded"
+            )
+
+            logits += tf.reduce_sum(
+                input_tensor=inputs * embedded,
+                keepdims=True
+            )
+
+            return adversarial_logits, auxiliary_logits
 
     def conv2d_block(self, inputs, index, training, name="conv2d_block", reuse=None):
 
@@ -125,6 +150,7 @@ class Discriminator(pggan.Discriminator):
                 filters=filters,
                 strides=[1, 1],
                 data_format=self.data_format,
+                use_bias=True,
                 apply_spectral_normalization=True,
                 normalization=None,
                 training=training,
@@ -151,6 +177,7 @@ class Discriminator(pggan.Discriminator):
                 filters=filters,
                 kernel_size=[3, 3],
                 strides=[1, 1],
+                use_bias=True,
                 data_format=self.data_format,
                 apply_spectral_normalization=True,
                 name="conv2d_0"

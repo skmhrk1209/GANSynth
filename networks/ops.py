@@ -86,7 +86,7 @@ def spectral_normalization(input, name="spectral_normalization", reuse=None):
         return w_tensor_normalized
 
 
-def dense(inputs, units, apply_spectral_normalization=False, name="dense", reuse=None):
+def dense(inputs, units, use_bias, apply_spectral_normalization=False, name="dense", reuse=None):
     ''' linear layer for spectral normalization
         for weight normalization, use variable instead of tf.layers.dense
     '''
@@ -111,20 +111,24 @@ def dense(inputs, units, apply_spectral_normalization=False, name="dense", reuse
 
             weight = spectral_normalization(weight)
 
-        bias = tf.get_variable(
-            name="bias",
-            shape=[units],
-            dtype=tf.float32,
-            initializer=tf.zeros_initializer(),
-            trainable=True
-        )
+        inputs = tf.matmul(inputs, weight)
 
-        inputs = tf.matmul(inputs, weight) + bias
+        if use_bias:
+
+            bias = tf.get_variable(
+                name="bias",
+                shape=[units],
+                dtype=tf.float32,
+                initializer=tf.zeros_initializer(),
+                trainable=True
+            )
+
+            inputs += bias
 
         return inputs
 
 
-def conv2d(inputs, filters, kernel_size, strides, data_format,
+def conv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
            apply_spectral_normalization=False, name="conv2d", reuse=None):
     ''' convolution layer for spectral normalization
         for weight normalization, use variable instead of tf.layers.conv2d
@@ -162,24 +166,26 @@ def conv2d(inputs, filters, kernel_size, strides, data_format,
             data_format=data_format_abbr(data_format)
         )
 
-        bias = tf.get_variable(
-            name="bias",
-            shape=[filters],
-            dtype=tf.float32,
-            initializer=tf.zeros_initializer(),
-            trainable=True
-        )
+        if use_bias:
 
-        inputs = tf.nn.bias_add(
-            value=inputs,
-            bias=bias,
-            data_format=data_format_abbr(data_format)
-        )
+            bias = tf.get_variable(
+                name="bias",
+                shape=[filters],
+                dtype=tf.float32,
+                initializer=tf.zeros_initializer(),
+                trainable=True
+            )
+
+            inputs = tf.nn.bias_add(
+                value=inputs,
+                bias=bias,
+                data_format=data_format_abbr(data_format)
+            )
 
         return inputs
 
 
-def deconv2d(inputs, filters, kernel_size, strides, data_format,
+def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
              apply_spectral_normalization=False, name="deconv2d", reuse=None):
     ''' deconvolution layer for spectral normalization
         for weight normalization, use variable instead of tf.layers.conv2d_transpose
@@ -222,24 +228,26 @@ def deconv2d(inputs, filters, kernel_size, strides, data_format,
             data_format=data_format_abbr(data_format)
         )
 
-        bias = tf.get_variable(
-            name="bias",
-            shape=[filters],
-            dtype=tf.float32,
-            initializer=tf.zeros_initializer(),
-            trainable=True
-        )
+        if use_bias:
 
-        inputs = tf.nn.bias_add(
-            value=inputs,
-            bias=bias,
-            data_format=data_format_abbr(data_format)
-        )
+            bias = tf.get_variable(
+                name="bias",
+                shape=[filters],
+                dtype=tf.float32,
+                initializer=tf.zeros_initializer(),
+                trainable=True
+            )
+
+            inputs = tf.nn.bias_add(
+                value=inputs,
+                bias=bias,
+                data_format=data_format_abbr(data_format)
+            )
 
         return inputs
 
 
-def residual_block(inputs, filters, strides, data_format, apply_spectral_normalization=False,
+def residual_block(inputs, filters, strides, use_bias, data_format, apply_spectral_normalization=False,
                    normalization=None, training=None, activation=None, name="residual_block", reuse=None):
     ''' preactivation building residual block for spectral normalization
 
@@ -268,6 +276,7 @@ def residual_block(inputs, filters, strides, data_format, apply_spectral_normali
             filters=filters,
             kernel_size=[1, 1],
             strides=strides,
+            use_bias=use_bias,
             data_format=data_format,
             apply_spectral_normalization=apply_spectral_normalization,
             name="projection"
@@ -278,6 +287,7 @@ def residual_block(inputs, filters, strides, data_format, apply_spectral_normali
             filters=filters,
             kernel_size=[3, 3],
             strides=strides,
+            use_bias=use_bias,
             data_format=data_format,
             apply_spectral_normalization=apply_spectral_normalization,
             name="conv2d_0"
@@ -301,6 +311,7 @@ def residual_block(inputs, filters, strides, data_format, apply_spectral_normali
             filters=filters,
             kernel_size=[3, 3],
             strides=[1, 1],
+            use_bias=use_bias,
             data_format=data_format,
             apply_spectral_normalization=apply_spectral_normalization,
             name="conv2d_1"
@@ -371,10 +382,6 @@ def upsampling2d(inputs, factors, data_format, dynamic=False):
 
 
 def downsampling2d(inputs, factors, data_format):
-    ''' downsampling operation
-
-        this is just for convenience
-    '''
 
     return tf.layers.average_pooling2d(
         inputs=inputs,
@@ -393,42 +400,12 @@ def global_average_pooling2d(inputs, data_format):
     )
 
 
-def batch_normalization(inputs, data_format, training, name="batch_normalization", reuse=None):
+def batch_normalization(inputs, data_format, training, name=None, reuse=None):
 
-    return tf.contrib.layers.batch_norm(
+    return tf.layers.batch_normalization(
         inputs=inputs,
-        center=True,
-        scale=True,
-        is_training=training,
-        trainable=True,
-        data_format=data_format_abbr(data_format),
-        scope=name,
-        reuse=reuse
-    )
-
-
-def layer_normalization(inputs, data_format, training, name="layer_normalization", reuse=None):
-
-    return tf.contrib.layers.layer_norm(
-        inputs=inputs,
-        center=True,
-        scale=True,
-        trainable=True,
-        begin_norm_axis=1,
-        begin_params_axis=channel_axis(data_format),
-        scope=name,
-        reuse=reuse
-    )
-
-
-def instance_normalization(inputs, data_format, training, name="instance_normalization", reuse=None):
-
-    return tf.contrib.layers.instance_norm(
-        inputs=inputs,
-        center=True,
-        scale=True,
-        trainable=True,
-        data_format=data_format_abbr(data_format),
-        scope=name,
+        axis=1 if data_format == "channels_first" else 3,
+        training=training,
+        name=name,
         reuse=reuse
     )
