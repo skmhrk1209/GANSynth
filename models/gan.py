@@ -8,7 +8,7 @@ import pitch
 
 class Model(object):
 
-    def __init__(self, discriminator, generator, input_fn, hyper_params, name="gan", reuse=None):
+    def __init__(self, discriminator, generator, hyper_params, name="gan", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
