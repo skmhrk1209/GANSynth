@@ -48,7 +48,7 @@ def preprocess(wave, label, spectrogram_shape, overlap, sample_rate, mel_downsca
     # =========================================================================================
     # For Nsynth dataset, we are putting all padding in the front
     # This causes edge effects in the tail
-    audio_length = wave.shape[0]
+    audio_length = wave.shape.as_list()[0]
     num_samples = frame_step * (time_steps - 1) + frame_length
     if num_samples < audio_length:
         raise ValueError(
