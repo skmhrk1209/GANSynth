@@ -45,6 +45,8 @@ class Model(object):
                 dtype=tf.float32,
                 shape=self.next_real_labels.shape
             )
+
+            print("aaaaaaaaaa", self.real_images.shape)
             # =========================================================================================
             # placeholders for fake data
             self.fake_latents = tf.placeholder(
