@@ -31,6 +31,8 @@ def parse_example(example, audio_length, pitches, index_table):
     label = index_table.lookup(label)
     label = tf.one_hot(label, len(pitches))
 
+    print("ssssssss", wave.shape)
+
     return wave, label
 
 
