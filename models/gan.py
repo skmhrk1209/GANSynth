@@ -36,11 +36,11 @@ class Model(object):
             # placeholders for real data
             self.real_images = tf.placeholder(
                 dtype=tf.float32,
-                shape=self.next_real_images.shape
+                shape=[None, None, None, None]
             )
             self.real_labels = tf.placeholder(
                 dtype=tf.float32,
-                shape=self.next_real_labels.shape
+                shape=[None, None, None, None]
             )
             # =========================================================================================
             # placeholders for fake data
