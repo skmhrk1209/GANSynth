@@ -24,7 +24,7 @@ def parse_example(example, audio_length, pitches, index_table):
     padding_right = padding - padding_left
     wave = tf.pad(wave, [[padding_left, padding_right]])
     wave = wave[:audio_length]
-    wave.set_shape([audio_length])
+    #wave.set_shape([audio_length])
     # =========================================================================================
     # one-hot label
     label = features["pitch"]
