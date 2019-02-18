@@ -171,4 +171,4 @@ class GAN(object):
                             global_step=global_step
                         )
 
-            print("training ended")
+        print("training ended")

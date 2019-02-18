@@ -3,15 +3,7 @@ import numpy as np
 
 
 def diff(inputs, axis=-1):
-    """Take the finite difference of a tensor along an axis.
-    Args:
-      x: Input tensor of any dimension.
-      axis: Axis on which to take the finite difference.
-    Returns:
-      d: Tensor with size less than x by 1 along the difference dimension.
-    Raises:
-      ValueError: Axis out of range for tensor.
-    """
+
     begin_back = [0] * inputs.shape.ndims
     begin_front = [0] * inputs.shape.ndims
     begin_front[axis] = 1
@@ -26,14 +18,7 @@ def diff(inputs, axis=-1):
 
 
 def unwrap(phases, discont=np.pi, axis=-1):
-    """Unwrap a cyclical phase tensor.
-    Args:
-      p: Phase tensor.
-      discont: Float, size of the cyclic discontinuity.
-      axis: Axis of which to unwrap.
-    Returns:
-      unwrapped: Unwrapped tensor of same size as input.
-    """
+
     diffs = diff(phases, axis=axis)
     diff_mods = tf.mod(diffs + np.pi, 2.0 * np.pi) - np.pi
     indices = tf.logical_and(tf.equal(diff_mods, -np.pi), tf.greater(diffs, 0))
@@ -51,15 +36,7 @@ def unwrap(phases, discont=np.pi, axis=-1):
 
 
 def instantaneous_frequency(phases, time_axis=-2):
-    """Transform a fft tensor from phase angle to instantaneous frequency.
-    Unwrap and take the finite difference of the phase. Pad with initial phase to
-    keep the tensor the same size.
-    Args:
-      phase_angle: Tensor of angles in radians. [Batch, Time, Freqs]
-      time_axis: Axis over which to unwrap and take finite difference.
-    Returns:
-      dphase: Instantaneous frequency (derivative of phase). Same size as input.
-    """
+
     unwrapped = unwrap(phases, axis=time_axis)
     diffs = diff(unwrapped, axis=time_axis)
 
