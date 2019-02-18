@@ -1,26 +1,28 @@
 #=================================================================================================#
-# Implementation of Progressive Growing GAN
-#
-# 2018/10/01 Hiroki Sakuma
-# (https://github.com/skmhrk1209/PGGAN)
+# TensorFlow implementation of GANSynth
 #
 # original paper
+# [GANSynth: Adversarial Neural Audio Synthesis]
+# (https://openreview.net/pdf?id=H1xQVn09FX)
+#
+# based on following papers
+#
 # [Progressive Growing of GANs for Improved Quality, Stability, and Variation]
 # (https://arxiv.org/pdf/1710.10196.pdf)
 #
-# tuned up as described by
-# [Are GANs Created Equal? A Large-Scale Study]
-# (https://arxiv.org/pdf/1711.10337.pdf)
-# [The GAN Landscape: Losses, Architectures, Regularization, and Normalization]
-# (https://arxiv.org/pdf/1807.04720.pdf)
+# [Spectral Normalization for Generative Adversarial Networks]
+# (https://arxiv.org/pdf/1802.05957.pdf)
+#
+# [cGANs with Projection Discriminator]
+# (https://arxiv.org/pdf/1802.05637.pdf)
 #=================================================================================================#
 
 import tensorflow as tf
+import numpy as np
 import argparse
 import dataset
 import functools
 import itertools
-import pitch
 from models import gan
 from networks import dcgan
 from attrdict import AttrDict as Param
@@ -71,7 +73,8 @@ gan_model = gan.Model(
         spectrogram_shape=[256, 512],
         overlap=0.75,
         sample_rate=16000,
-        mel_downscale=1
+        mel_downscale=1,
+        data_format=args.data_format
     ),
     fake_input_fn=lambda: (
         tf.one_hot(
@@ -95,7 +98,8 @@ gan_model = gan.Model(
         discriminator_learning_rate=0.0002,
         discriminator_beta1=0.5,
         discriminator_beta2=0.999,
-        coloring_index_fn=lambda global_step: global_step / 10000.0 + 1.0
+        coloring_index_fn=lambda global_step: global_step / 10000.0 + 1.0,
+        n_critic=5
     ),
     name=args.model_dir
 )

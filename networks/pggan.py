@@ -22,8 +22,9 @@ class Generator(object):
         self.min_filters = min_filters
         self.max_filters = max_filters
         self.data_format = data_format
-        self.num_layers = int(np.log2(max_filters // min_filters)) + 2
-        if ((max_resolution // min_resolution) != (max_filters // min_filters)).any():
+
+        self.num_layers = int(np.log2(self.max_filters // self.min_filters)) + 2
+        if ((self.max_resolution // self.min_resolution) != (self.max_filters // self.min_filters)).any():
             raise ValueError("Invalid number of filters")
 
     def __call__(self, inputs, coloring_index, training, name="generator", reuse=None):
@@ -160,8 +161,9 @@ class Discriminator(object):
         self.min_filters = min_filters
         self.max_filters = max_filters
         self.data_format = data_format
-        self.num_layers = int(np.log2(max_filters // min_filters)) + 2
-        if ((max_resolution // min_resolution) != (max_filters // min_filters)).any():
+
+        self.num_layers = int(np.log2(self.max_filters // self.min_filters)) + 2
+        if ((self.max_resolution // self.min_resolution) != (self.max_filters // self.min_filters)).any():
             raise ValueError("Invalid number of filters")
 
     def __call__(self, inputs, conditions, coloring_index, training, name="discriminator", reuse=None):

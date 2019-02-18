@@ -3,7 +3,6 @@ import numpy as np
 import os
 import itertools
 import time
-import pitch
 
 
 class Model(object):
@@ -185,13 +184,8 @@ class Model(object):
                     [self.generator_loss, self.discriminator_loss],
                     feed_dict=feed_dict
                 )
-                print("global_step: {}, generator_loss: {:.2f}".format(
-                    generator_global_step,
-                    generator_loss
-                ))
-                print("global_step: {}, discriminator_loss: {:.2f}".format(
-                    discriminator_global_step,
-                    discriminator_loss
+                print("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
+                    global_step, discriminator_loss, generator_loss
                 ))
 
                 coloring_index = session.run(self.coloring_index)

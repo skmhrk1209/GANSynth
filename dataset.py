@@ -3,7 +3,6 @@ import numpy as np
 import spectral_ops
 import functools
 import os
-from algorithms import *
 
 
 def parse_example(example, audio_length, pitches, index_table):
@@ -35,7 +34,7 @@ def parse_example(example, audio_length, pitches, index_table):
     return wave, label
 
 
-def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
+def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale, data_format):
     # =========================================================================================
     time_steps, num_freq_bins = spectrogram_shape
     # power of two only has 1 nonzero in binary representation
@@ -121,12 +120,15 @@ def preprocess(wave, label, audio_length, spectrogram_shape, overlap, sample_rat
         tf.expand_dims(mel_instantaneous_frequency, axis=-1)
     ], axis=-1)
 
+    if data_format == "channels_first":
+        data = tf.transpose(data, [2, 0, 1])
+
     return data, label
 
 
 def input_fn(filenames, batch_size, num_epochs, shuffle,
              audio_length, pitches, spectrogram_shape,
-             overlap, sample_rate, mel_downscale):
+             overlap, sample_rate, mel_downscale, data_format):
 
     dataset = tf.data.TFRecordDataset(
         filenames=filenames,
@@ -142,25 +144,27 @@ def input_fn(filenames, batch_size, num_epochs, shuffle,
         )
     dataset = dataset.repeat(count=num_epochs)
     dataset = dataset.map(
-        map_func=compose([
-            functools.partial(
-                parse_example,
-                audio_length=audio_length,
-                pitches=pitches,
-                index_table=tf.contrib.lookup.index_table_from_tensor(
-                    mapping=sorted(pitches),
-                    dtype=tf.int64
-                )
-            ),
-            functools.partial(
-                preprocess,
-                audio_length=audio_length,
-                spectrogram_shape=spectrogram_shape,
-                overlap=overlap,
-                sample_rate=sample_rate,
-                mel_downscale=mel_downscale
+        map_func=functools.partial(
+            parse_example,
+            audio_length=audio_length,
+            pitches=pitches,
+            index_table=tf.contrib.lookup.index_table_from_tensor(
+                mapping=sorted(pitches),
+                dtype=tf.int64
             )
-        ]),
+        ),
+        num_parallel_calls=os.cpu_count()
+    )
+    dataset = dataset.map(
+        map_func=functools.partial(
+            preprocess,
+            audio_length=audio_length,
+            spectrogram_shape=spectrogram_shape,
+            overlap=overlap,
+            sample_rate=sample_rate,
+            mel_downscale=mel_downscale,
+            data_format=data_format
+        ),
         num_parallel_calls=os.cpu_count()
     )
     dataset = dataset.batch(batch_size=batch_size)

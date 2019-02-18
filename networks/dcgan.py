@@ -82,7 +82,7 @@ class Generator(pggan.Generator):
 
             inputs = ops.deconv2d(
                 inputs=inputs,
-                filters=3,
+                filters=2,
                 kernel_size=[3, 3],
                 strides=[1, 1],
                 use_bias=True,
