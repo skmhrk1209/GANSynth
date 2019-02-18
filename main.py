@@ -51,15 +51,15 @@ gan_model = gan.Model(
     generator=dcgan.Generator(
         min_resolution=[4, 8],
         max_resolution=[256, 512],
-        min_filters=16,
-        max_filters=1024,
+        min_filters=8,
+        max_filters=512,
         data_format=args.data_format,
     ),
     discriminator=dcgan.Discriminator(
         min_resolution=[4, 8],
         max_resolution=[256, 512],
-        min_filters=16,
-        max_filters=1024,
+        min_filters=8,
+        max_filters=512,
         data_format=args.data_format
     ),
     real_input_fn=functools.partial(
