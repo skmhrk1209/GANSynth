@@ -124,6 +124,10 @@ class GAN(object):
             # self.fake_images.set_shape(self.real_images.shape)
             self.real_log_mel_magnitude_spectrograms, self.real_mel_instantaneous_frequencies = tf.unstack(self.real_images, axis=1)
             self.fake_log_mel_magnitude_spectrograms, self.fake_mel_instantaneous_frequencies = tf.unstack(self.fake_images, axis=1)
+            self.real_log_mel_magnitude_spectrograms = tf.expand_dims(self.real_log_mel_magnitude_spectrograms, axis=-1)
+            self.real_mel_instantaneous_frequencies = tf.expand_dims(self.real_mel_instantaneous_frequencies, axis=-1)
+            self.fake_log_mel_magnitude_spectrograms = tf.expand_dims(self.fake_log_mel_magnitude_spectrograms, axis=-1)
+            self.fake_mel_instantaneous_frequencies = tf.expand_dims(self.fake_mel_instantaneous_frequencies, axis=-1)
             self.summary = tf.summary.merge([
                 summary.image(self.real_log_mel_magnitude_spectrograms, "real_log_mel_magnitude_spectrograms", max_outputs=2),
                 summary.image(self.real_mel_instantaneous_frequencies, "real_mel_instantaneous_frequencies", max_outputs=2),
