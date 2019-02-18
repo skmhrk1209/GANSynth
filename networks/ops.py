@@ -190,7 +190,7 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
         strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
 
-        output_shape = np.asarray(inputs.shape.as_list())
+        output_shape = np.array(inputs.shape.as_list(), np.int32)
         output_shape *= strides
         output_shape[1 if data_format == "channels_first" else 3] = filters
 
