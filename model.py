@@ -138,15 +138,15 @@ class GAN(object):
     def initialize(self):
 
         session = tf.get_default_session()
-        checkpoint = tf.train.latest_checkpoint(self.name)
+        session.run(tf.tables_initializer())
 
+        checkpoint = tf.train.latest_checkpoint(self.name)
         if checkpoint:
             self.saver.restore(session, checkpoint)
             print(checkpoint, "loaded")
         else:
             global_variables = tf.global_variables(scope=self.name)
             session.run(tf.variables_initializer(global_variables))
-            session.run(tf.tables_initializer())
             print("global variables in {} initialized".format(self.name))
 
     def train(self, max_steps):
