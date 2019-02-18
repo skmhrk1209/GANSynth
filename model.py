@@ -1,8 +1,9 @@
 import tensorflow as tf
 import numpy as np
-import os
+import summary
 import itertools
 import time
+import os
 
 
 class GAN(object):
@@ -121,10 +122,10 @@ class GAN(object):
             # utilities
             self.saver = tf.train.Saver()
             self.summary = tf.summary.merge([
-                tf.summary.image("reals", self.real_images, max_outputs=2),
-                tf.summary.image("fakes", self.fake_images, max_outputs=2),
-                tf.summary.scalar("discriminator_loss", self.discriminator_loss),
-                tf.summary.scalar("generator_loss", self.generator_loss)
+                summary.image(self.real_images, "reals", max_outputs=2),
+                summary.image(self.fake_images, "fakes", max_outputs=2),
+                summary.scalar(self.discriminator_loss, "discriminator_loss"),
+                summary.scalar(self.generator_loss, "generator_loss")
             ])
 
     def initialize(self):
