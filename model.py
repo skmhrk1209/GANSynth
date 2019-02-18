@@ -121,6 +121,7 @@ class GAN(object):
             #========================================================================#
             # utilities
             self.saver = tf.train.Saver()
+            self.fake_images.set_shape(self.real_images.shape)
             self.summary = tf.summary.merge([
                 summary.image(self.real_images, "reals", max_outputs=2),
                 summary.image(self.fake_images, "fakes", max_outputs=2),
