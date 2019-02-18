@@ -304,7 +304,7 @@ def upsampling2d(inputs, factors, data_format):
 
     inputs = tf.image.resize_nearest_neighbor(
         images=inputs,
-        size=np.asarray(inputs.shape.as_list()[1:3]) * factors,
+        size=tf.shape(inputs)[1:3] * factors,
         align_corners=True
     )
 
