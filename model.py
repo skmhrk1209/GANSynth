@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import itertools
-import time
+import functools
 import os
 
 
@@ -32,35 +32,17 @@ class GAN(object):
             )
             # =========================================================================================
             # input_fn for real data and fake data
-            self.next_real_images, self.next_real_labels = real_input_fn()
-            self.next_fake_labels, self.next_fake_latents = fake_input_fn()
+            self.real_images, self.real_labels = real_input_fn()
+            self.fake_latents, self.fake_labels = fake_input_fn()
             # =========================================================================================
-            # placeholders for real data
-            self.real_images = tf.placeholder(
-                dtype=tf.float32,
-                shape=self.next_real_images.shape
-            )
-            self.real_labels = tf.placeholder(
-                dtype=tf.float32,
-                shape=self.next_real_labels.shape
-            )
-            # =========================================================================================
-            # placeholders for fake data
-            self.fake_latents = tf.placeholder(
-                dtype=tf.float32,
-                shape=self.next_fake_latents.shape
-            )
+            # generated fake data
             self.fake_images = generator(
                 inputs=self.fake_latents,
                 coloring_index=self.coloring_index,
                 training=self.training
             )
-            self.fake_labels = tf.placeholder(
-                dtype=tf.float32,
-                shape=self.next_fake_labels.shape
-            )
             # =========================================================================================
-            # logits for real data
+            # logits for real data and fake data
             self.real_logits = discriminator(
                 inputs=self.real_images,
                 conditions=self.real_labels,
@@ -68,8 +50,6 @@ class GAN(object):
                 training=self.training,
                 name="discriminator"
             )
-            # =========================================================================================
-            # logits for fake data
             self.fake_logits = discriminator(
                 inputs=self.fake_images,
                 conditions=self.fake_labels,
@@ -158,58 +138,36 @@ class GAN(object):
         start = time.time()
 
         feed_dict = {self.training: True}
+        session_run = functools.partial(session.run, feed_dict=feed_dict)
 
         while True:
 
             global_step = session.run(self.global_step)
-
             if global_step > max_steps:
                 break
 
-            real_images, real_labels = session.run(
-                fetches=[self.next_real_images, self.next_real_labels],
-                feed_dict=feed_dict
-            )
-            fake_latents, fake_labels = session.run(
-                fetches=[self.next_fake_latents, self.next_fake_labels],
-                feed_dict=feed_dict
-            )
-
-            feed_dict.update({
-                self.real_images: real_images,
-                self.real_labels: real_labels,
-                self.fake_latents: fake_latents,
-                self.fake_labels: fake_labels
-            })
-
             for _ in range(self.hyper_params.n_critic):
-                session.run(self.discriminator_train_op, feed_dict=feed_dict)
-            session.run(self.generator_train_op, feed_dict=feed_dict)
+                session_run(self.discriminator_train_op)
+            session_run(self.generator_train_op)
 
             if global_step % 100 == 0:
 
-                generator_loss, discriminator_loss = session.run(
-                    [self.generator_loss, self.discriminator_loss],
-                    feed_dict=feed_dict
-                )
+                generator_loss, discriminator_loss = session_run([
+                    self.generator_loss, self.discriminator_loss
+                ])
                 print("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
-                    global_step, discriminator_loss, generator_loss
+                    global_step, discriminator_loss, generator_loss,
                 ))
 
-                coloring_index = session.run(self.coloring_index)
-                print("coloring_index: {:2f}".format(coloring_index))
+                if global_step % 1000 == 0:
 
-                summary = session.run(self.summary, feed_dict=feed_dict)
-                writer.add_summary(summary, global_step=global_step)
+                    summary = session_run(self.summary)
+                    writer.add_summary(summary, global_step=global_step)
 
-                if global_step % 100000 == 0:
+                    if global_step % 10000 == 0:
 
-                    checkpoint = self.saver.save(
-                        sess=session,
-                        save_path=os.path.join(self.name, "model.ckpt"),
-                        global_step=global_step
-                    )
-
-                    stop = time.time()
-                    print("{} saved ({:.2f} sec)".format(checkpoint, stop - start))
-                    start = time.time()
+                        checkpoint = self.saver.save(
+                            sess=session,
+                            save_path=os.path.join(self.name, "model.ckpt"),
+                            global_step=global_step
+                        )

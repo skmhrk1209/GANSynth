@@ -316,8 +316,7 @@ def upsampling2d(inputs, factors, data_format):
 
     inputs = tf.image.resize_nearest_neighbor(
         images=inputs,
-        size=tf.shape(inputs)[1:3] * factors,
-        align_corners=True
+        size=tf.shape(inputs)[1:3] * factors
     )
 
     if data_format == "channels_first":
@@ -333,8 +332,7 @@ def downsampling2d(inputs, factors, data_format):
 
     inputs = tf.image.resize_nearest_neighbor(
         images=inputs,
-        size=tf.shape(inputs)[1:3] // factors,
-        align_corners=True
+        size=tf.shape(inputs)[1:3] // factors
     )
 
     if data_format == "channels_first":
