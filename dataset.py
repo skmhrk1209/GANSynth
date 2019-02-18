@@ -135,10 +135,7 @@ class NSynth(object):
 
     def input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
-        dataset = tf.data.TFRecordDataset(
-            filenames=filenames,
-            # num_parallel_reads=os.cpu_count()
-        )
+        dataset = tf.data.TFRecordDataset(filenames)
         if shuffle:
             dataset = dataset.shuffle(
                 buffer_size=sum([
