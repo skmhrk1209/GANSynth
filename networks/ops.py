@@ -188,6 +188,8 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
             kernel = spectral_normalization(kernel)
 
+        print(inputs.shape)
+
         strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
 
         output_shape = tf.shape(inputs) * strides
@@ -301,8 +303,6 @@ def upsampling2d(inputs, factors, data_format):
 
     if data_format == "channels_first":
         inputs = tf.transpose(inputs, [0, 2, 3, 1])
-
-    print(inputs.shape)
 
     inputs = tf.image.resize_nearest_neighbor(
         images=inputs,
