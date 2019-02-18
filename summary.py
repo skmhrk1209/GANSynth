@@ -12,6 +12,9 @@ def scalar(tensor, name=None, **kwargs):
 def image(tensor, name=None, **kwargs):
 
     name = name or re.sub(":.*", "", tensor.name)
-    if np.argmin(tensor.shape.as_list()[1:]) == 1:
-        tensor = tf.transpose(tensor, [0, 2, 3, 1])
+    tensor = tf.cond(
+        pred=tf.equal(tf.argmin(tf.shape(tensor)[1:]), 0),
+        true_fn=lambda: tf.transpose(tensor, [0, 2, 3, 1]),
+        false_fn=lambda: tensor
+    )
     tf.summary.image(name, tensor, **kwargs)
