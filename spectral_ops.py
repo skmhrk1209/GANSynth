@@ -42,7 +42,7 @@ def unwrap(phases, discont=np.pi, axis=-1):
     cumsums = tf.cumsum(corrects, axis=axis)
 
     shape = phases.shape
-    shape.dims[0] = tf.shape(phases)[0]
+    shape.dims[0] = 100#tf.shape(phases)[0]
     shape.dims[axis] = 1
 
     cumsums = tf.concat([tf.zeros(shape), cumsums], axis=axis)
