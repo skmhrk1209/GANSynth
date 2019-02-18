@@ -35,13 +35,6 @@ class NSynth(object):
         # =========================================================================================
         # wave
         wave = features["audio"]
-        # force audio length
-        padding = tf.maximum(0, self.audio_length - tf.shape(wave)[0])
-        padding_left = padding // 2
-        padding_right = padding - padding_left
-        wave = tf.pad(wave, [[padding_left, padding_right]])
-        wave = wave[:self.audio_length]
-        wave.set_shape([self.audio_length])
         # =========================================================================================
         # one-hot label
         label = features["pitch"]
