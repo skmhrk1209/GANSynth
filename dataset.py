@@ -164,7 +164,7 @@ class NSynth(object):
 
         return iterator.get_next()
 
-    def output_fn(self, data):
+    def output(self, data):
 
         log_mel_magnitude_spectrogram, mel_instantaneous_frequency = tf.unstack(data, axis=-1)
 

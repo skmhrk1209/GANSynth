@@ -73,7 +73,7 @@ gan = GAN(
         data_format=args.data_format
     ),
     real_input_fn=functools.partial(
-        nsynth.input,
+        nsynth.input_fn,
         filenames=args.filenames,
         batch_size=args.batch_size,
         num_epochs=None,
