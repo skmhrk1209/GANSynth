@@ -134,9 +134,9 @@ def conv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
             kernel = spectral_normalization(kernel)
 
         strides = np.pad(
-            array=strides, 
-            pad_width=[[2, 0] if data_format == "channels_first" else [1, 1]], 
-            mode="constant", 
+            array=strides,
+            pad_width=[[2, 0] if data_format == "channels_first" else [1, 1]],
+            mode="constant",
             constant_values=1
         )
         #strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
@@ -144,7 +144,7 @@ def conv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
         inputs = tf.nn.conv2d(
             input=inputs,
             filter=kernel,
-            strides=strides,
+            strides=strides.tolist(),
             padding="SAME",
             data_format="NCHW" if data_format == "channels_first" else "NHWC"
         )
@@ -195,20 +195,20 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
             kernel = spectral_normalization(kernel)
 
         strides = np.pad(
-            array=strides, 
-            pad_width=[[2, 0] if data_format == "channels_first" else [1, 1]], 
-            mode="constant", 
+            array=strides,
+            pad_width=[[2, 0] if data_format == "channels_first" else [1, 1]],
+            mode="constant",
             constant_values=1
         )
 
-        output_shape = np.array(inputs.shape.as_list(), dtype=np.int32) * strides
+        output_shape = np.array(inputs.shape.as_list()) * strides
         output_shape[1 if data_format == "channels_first" else 3] = filters
 
         inputs = tf.nn.conv2d_transpose(
             value=inputs,
             filter=kernel,
-            output_shape=output_shape,
-            strides=strides,
+            output_shape=output_shape.tolist(),
+            strides=strides.tolist(),
             padding="SAME",
             data_format="NCHW" if data_format == "channels_first" else "NHWC"
         )
