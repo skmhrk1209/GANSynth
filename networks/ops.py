@@ -139,7 +139,6 @@ def conv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
             mode="constant",
             constant_values=1
         )
-        #strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
 
         inputs = tf.nn.conv2d(
             input=inputs,

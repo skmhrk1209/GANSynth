@@ -11,6 +11,8 @@ def scalar(tensor, name=None, **kwargs):
 
 def image(tensor, name=None, **kwargs):
 
+    print(tensor)
+
     name = name or re.sub(":.*", "", tensor.name)
     if not np.argmin(tensor.shape.as_list()[1:]):
         tensor = tf.transpose(tensor, [0, 2, 3, 1])
