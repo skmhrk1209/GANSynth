@@ -196,6 +196,8 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
         output_shape *= strides
         output_shape[1 if data_format == "channels_first" else 3] = filters
 
+        print(output_shape)
+
         inputs = tf.nn.conv2d_transpose(
             value=inputs,
             filter=kernel,
