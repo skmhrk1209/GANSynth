@@ -50,7 +50,7 @@ class NSynth(object):
 
         return wave, label
 
-    def preprocess(self, wave, label):
+    def preprocess(self, waves, labels):
         # =========================================================================================
         time_steps, num_freq_bins = self.spectrogram_shape
         # power of two only has 1 nonzero in binary representation
@@ -76,20 +76,20 @@ class NSynth(object):
         padding_right = padding - padding_left
         # =========================================================================================
         # convert from waves to complex stfts
-        # wave: tensor of the waveform, shape [time]
-        # stft: complex64 tensor of stft, shape [time, freq]
-        wave = tf.pad(
-            tensor=wave,
-            paddings=[[padding_left, padding_right]]
+        # wave: tensor of the waveform, shape [batch, time]
+        # stft: complex64 tensor of stft, shape [batch, time, freq]
+        waves = tf.pad(
+            tensor=waves,
+            paddings=[[0, 0], [padding_left, padding_right]]
         )
-        stft = tf.contrib.signal.stft(
-            signals=wave,
+        stfts = tf.contrib.signal.stft(
+            signals=waves,
             frame_length=frame_length,
             frame_step=frame_step,
             fft_length=frame_length,
             pad_end=False
-        )[:, 1:]
-        stft_shape = stft.shape.as_list()
+        )[:, :, 1:]
+        stft_shape = stfts.shape.as_list()[1:]
         if stft_shape != self.spectrogram_shape:
             raise ValueError(
                 "Spectrogram returned the wrong shape {}, is not the same as the "
@@ -98,11 +98,11 @@ class NSynth(object):
         # =========================================================================================
         # converts stft to mel spectrogram
         # stft: complex64 tensor of stft
-        # shape [time, freq]
+        # shape [batch, time, freq]
         # mel spectrogram: tensor of log magnitudes and instantaneous frequencies
-        # shape [time, freq, 2], mel scaling of frequencies
-        magnitude_spectrogram = tf.abs(stft)
-        phase_angle = tf.angle(stft)
+        # shape [batch, time, freq, 2], mel scaling of frequencies
+        magnitude_spectrograms = tf.abs(stfts)
+        phase_angles = tf.angle(stfts)
 
         linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
             num_mel_bins=num_freq_bins // self.mel_downscale,
@@ -111,27 +111,41 @@ class NSynth(object):
             lower_edge_hertz=0.0,
             upper_edge_hertz=self.sample_rate / 2.0
         )
-        mel_magnitude_spectrogram = tf.matmul(
-            a=magnitude_spectrogram,
-            b=linear_to_mel_weight_matrix
+
+        mel_magnitude_spectrograms = tf.tensordot(
+            a=magnitude_spectrograms,
+            b=linear_to_mel_weight_matrix,
+            axes=1
         )
-        mel_phase_angle = tf.matmul(
-            a=phase_angle,
-            b=linear_to_mel_weight_matrix
+        mel_magnitude_spectrograms.set_shape(
+            magnitude_spectrograms.shape[:-1].concatenate(
+                linear_to_mel_weight_matrix.shape[-1:]
+            )
         )
 
-        log_mel_magnitude_spectrogram = tf.log(mel_magnitude_spectrogram + 1e-6)
-        mel_instantaneous_frequency = spectral_ops.instantaneous_frequency(mel_phase_angle)
+        mel_phase_angles = tf.tensordot(
+            a=phase_angles,
+            b=linear_to_mel_weight_matrix,
+            axes=1
+        )
+        mel_phase_angles.set_shape(
+            phase_angles.shape[:-1].concatenate(
+                linear_to_mel_weight_matrix.shape[-1:]
+            )
+        )
+
+        log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
+        mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_angles)
 
         data = tf.concat([
-            tf.expand_dims(log_mel_magnitude_spectrogram, axis=-1),
-            tf.expand_dims(mel_instantaneous_frequency, axis=-1)
+            tf.expand_dims(log_mel_magnitude_spectrograms, axis=-1),
+            tf.expand_dims(mel_instantaneous_frequencies, axis=-1)
         ], axis=-1)
 
         if self.data_format == "channels_first":
-            data = tf.transpose(data, [2, 0, 1])
+            data = tf.transpose(data, [0, 3, 1, 2])
 
-        return data, label
+        return data, labels
 
     def input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
@@ -149,11 +163,11 @@ class NSynth(object):
             map_func=self.parse_example,
             num_parallel_calls=os.cpu_count()
         )
+        dataset = dataset.batch(batch_size=batch_size)
         dataset = dataset.map(
             map_func=self.preprocess,
             num_parallel_calls=os.cpu_count()
         )
-        dataset = dataset.batch(batch_size=batch_size)
         dataset = dataset.prefetch(buffer_size=1)
 
         iterator = dataset.make_initializable_iterator()

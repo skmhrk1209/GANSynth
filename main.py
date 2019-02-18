@@ -80,6 +80,9 @@ gan = GAN(
         shuffle=True
     ),
     fake_input_fn=lambda: (
+        tf.random_normal(
+            shape=[args.batch_size, 128]
+        ),
         tf.one_hot(
             indices=tf.reshape(
                 tensor=tf.multinomial(
@@ -89,9 +92,6 @@ gan = GAN(
                 shape=[args.batch_size]
             ),
             depth=len(pitches)
-        ),
-        tf.random_normal(
-            shape=[args.batch_size, 128]
         )
     ),
     hyper_params=Param(
