@@ -102,7 +102,7 @@ gan = GAN(
         discriminator_beta1=0.5,
         discriminator_beta2=0.999,
         coloring_index_fn=lambda global_step: global_step / 10000.0 + 1.0,
-        n_critic=5
+        n_critic=1
     ),
     name=args.model_dir
 )
