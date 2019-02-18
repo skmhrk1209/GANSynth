@@ -8,7 +8,7 @@
 * [cGANs with Projection Discriminator](https://arxiv.org/pdf/1802.05637.pdf)
 
 ### Dataset
-* [NSynth](https://magenta.tensorflow.org/datasets/nsynth)
+* [The NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth)
 
 ### Architecture
 * Based on DCGAN with Spectral Normalization
