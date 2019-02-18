@@ -200,6 +200,7 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
         '''
 
         output_shape = np.array(inputs.shape.as_list())
+        print("b", output_shape)
         output_shape *= strides
         output_shape[1] = filters
 
