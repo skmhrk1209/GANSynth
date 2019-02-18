@@ -133,7 +133,13 @@ def conv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
             kernel = spectral_normalization(kernel)
 
-        strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
+        strides = np.pad(
+            array=strides, 
+            pad_width=[[2, 0] if data_format == "channels_first" else [1, 1]], 
+            mode="constant", 
+            constant_values=1
+        )
+        #strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
 
         inputs = tf.nn.conv2d(
             input=inputs,
@@ -188,13 +194,15 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
             kernel = spectral_normalization(kernel)
 
-        strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
+        strides = np.pad(
+            array=strides, 
+            pad_width=[[2, 0] if data_format == "channels_first" else [1, 1]], 
+            mode="constant", 
+            constant_values=1
+        )
 
-        output_shape = np.array(inputs.shape.as_list(), np.int32)
-        output_shape *= strides
+        output_shape = np.array(inputs.shape.as_list(), dtype=np.int32) * strides
         output_shape[1 if data_format == "channels_first" else 3] = filters
-
-        print(output_shape, filters)
 
         inputs = tf.nn.conv2d_transpose(
             value=inputs,
