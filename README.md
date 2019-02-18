@@ -1,4 +1,5 @@
-## TensorFlow implementation of ["GANSynth: Adversarial Neural Audio Synthesis"](https://openreview.net/pdf?id=H1xQVn09FX)
+## ["GANSynth: Adversarial Neural Audio Synthesis"](https://openreview.net/pdf?id=H1xQVn09FX)
+### TensorFlow implementation of the ICLR 2019 paper
 
 ### Original paper 
 * [GANSynth: Adversarial Neural Audio Synthesis](https://openreview.net/pdf?id=H1xQVn09FX)
