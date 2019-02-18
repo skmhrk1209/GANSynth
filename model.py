@@ -120,6 +120,7 @@ class GAN(object):
             #========================================================================#
             # utilities
             self.saver = tf.train.Saver()
+            '''
             self.real_log_mel_magnitude_spectrograms, self.real_mel_instantaneous_frequencies = tf.unstack(self.real_images, axis=1)
             self.fake_log_mel_magnitude_spectrograms, self.fake_mel_instantaneous_frequencies = tf.unstack(self.fake_images, axis=1)
             self.real_log_mel_magnitude_spectrograms = tf.expand_dims(self.real_log_mel_magnitude_spectrograms, axis=-1)
@@ -134,6 +135,7 @@ class GAN(object):
                 tf.summary.scalar("discriminator_loss", self.discriminator_loss),
                 tf.summary.scalar("generator_loss", self.generator_loss)
             ])
+            '''
 
     def initialize(self):
 
