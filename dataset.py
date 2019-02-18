@@ -137,7 +137,7 @@ class NSynth(object):
 
         dataset = tf.data.TFRecordDataset(
             filenames=filenames,
-            num_parallel_reads=os.cpu_count()
+            # num_parallel_reads=os.cpu_count()
         )
         if shuffle:
             dataset = dataset.shuffle(
