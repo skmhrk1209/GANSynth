@@ -121,10 +121,14 @@ class GAN(object):
             #========================================================================#
             # utilities
             self.saver = tf.train.Saver()
-            #self.fake_images.set_shape(self.real_images.shape)
+            # self.fake_images.set_shape(self.real_images.shape)
+            self.real_log_mel_magnitude_spectrograms, self.real_mel_instantaneous_frequencies = tf.unstack(self.real_images, axis=-1)
+            self.fake_log_mel_magnitude_spectrograms, self.fake_mel_instantaneous_frequencies = tf.unstack(self.fake_images, axis=-1)
             self.summary = tf.summary.merge([
-                summary.image(self.real_images, "reals", max_outputs=2),
-                summary.image(self.fake_images, "fakes", max_outputs=2),
+                summary.image(self.real_log_mel_magnitude_spectrograms, "real_log_mel_magnitude_spectrograms", max_outputs=2),
+                summary.image(self.real_mel_instantaneous_frequencies, "real_mel_instantaneous_frequencies", max_outputs=2),
+                summary.image(self.fake_log_mel_magnitude_spectrograms, "fake_log_mel_magnitude_spectrograms", max_outputs=2),
+                summary.image(self.fake_mel_instantaneous_frequencies, "fake_mel_instantaneous_frequencies", max_outputs=2),
                 summary.scalar(self.discriminator_loss, "discriminator_loss"),
                 summary.scalar(self.generator_loss, "generator_loss")
             ])
