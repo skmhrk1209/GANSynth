@@ -62,8 +62,7 @@ gan_model = gan.Model(
         max_filters=512,
         data_format=args.data_format
     ),
-    real_input_fn=functools.partial(
-        dataset.input_fn,
+    real_input_fn=dataset.NSynth(
         filenames=args.filenames,
         batch_size=args.batch_size,
         num_epochs=None,
@@ -75,7 +74,7 @@ gan_model = gan.Model(
         sample_rate=16000,
         mel_downscale=1,
         data_format=args.data_format
-    ),
+    ).input,
     fake_input_fn=lambda: (
         tf.one_hot(
             indices=tf.reshape(
