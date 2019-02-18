@@ -174,18 +174,3 @@ def input_fn(filenames, batch_size, num_epochs, shuffle,
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
     return iterator.get_next()
-
-
-if __name__ == "__main__":
-
-    with tf.Session() as session:
-
-        data, label = input_fn(
-            filenames=["nsynth_test.tfrecord"],
-            batch_size=100,
-            num_epochs=1,
-            shuffle=False
-        )
-
-        session.run(tf.tables_initializer())
-        print(session.run([data, label]))

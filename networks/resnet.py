@@ -49,8 +49,7 @@ class Generator(pggan.Generator):
             inputs = ops.upsampling2d(
                 inputs=inputs,
                 factors=[2, 2],
-                data_format=self.data_format,
-                dynamic=False
+                data_format=self.data_format
             )
 
             inputs = ops.residual_block(
