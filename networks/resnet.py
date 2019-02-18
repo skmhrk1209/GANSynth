@@ -129,7 +129,7 @@ class Discriminator(pggan.Discriminator):
 
             logits += tf.reduce_sum(
                 input_tensor=inputs * embedded,
-                keepdims=True
+                keep_dims=True
             )
 
             return logits
