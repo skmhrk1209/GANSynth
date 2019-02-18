@@ -1,5 +1,5 @@
 ## GANSynth: Adversarial Neural Audio Synthesis
-### TensorFlow implementation of the ICLR 2019 paper
+## TensorFlow implementation of the ICLR 2019 paper
 
 ### Original paper 
 * [GANSynth: Adversarial Neural Audio Synthesis](https://openreview.net/pdf?id=H1xQVn09FX)
