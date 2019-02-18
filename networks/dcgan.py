@@ -44,7 +44,7 @@ class Generator(pggan.Generator):
 
             inputs = tf.reshape(
                 tensor=inputs,
-                shape=[-1, *resolution, filters] if data_format == "channels_first" else [-1, filters, *resolution]
+                shape=[-1, *resolution, filters] if self.data_format == "channels_first" else [-1, filters, *resolution]
             )
 
             return inputs
