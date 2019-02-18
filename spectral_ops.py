@@ -21,11 +21,13 @@ def diff(x, axis=-1):
     begin_front = [0 for unused_s in range(len(shape))]
     begin_front[axis] = 1
 
-    size = shape.as_list()
-    size[axis] -= 1
+    size = [-1] * len(shape)
+    size[axis] = shape[axis].value - 1
+
     slice_front = tf.slice(x, begin_front, size)
     slice_back = tf.slice(x, begin_back, size)
     d = slice_front - slice_back
+
     return d
 
 
