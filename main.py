@@ -23,7 +23,7 @@ import argparse
 import functools
 import itertools
 from dataset import NSynth
-from models import gan
+from model import GAN
 from networks import dcgan
 from attrdict import AttrDict as Param
 
@@ -57,7 +57,7 @@ nsynth = NSynth(
     data_format=args.data_format
 )
 
-gan_model = gan.Model(
+gan = GAN(
     generator=dcgan.Generator(
         min_resolution=[4, 8],
         max_resolution=[256, 512],
@@ -116,8 +116,8 @@ config = tf.ConfigProto(
 
 with tf.Session(config=config) as session:
 
-    gan_model.initialize()
+    gan.initialize()
 
     if args.train:
 
-        gan_model.train(args.max_steps)
+        gan.train(args.max_steps)

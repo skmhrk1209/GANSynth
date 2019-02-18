@@ -128,7 +128,7 @@ class NSynth(object):
             tf.expand_dims(mel_instantaneous_frequency, axis=-1)
         ], axis=-1)
 
-        if data_format == "channels_first":
+        if self.data_format == "channels_first":
             data = tf.transpose(data, [2, 0, 1])
 
         return data, label

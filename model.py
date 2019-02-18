@@ -5,7 +5,7 @@ import itertools
 import time
 
 
-class Model(object):
+class GAN(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
                  hyper_params, name="gan", reuse=None):
