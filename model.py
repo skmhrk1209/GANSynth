@@ -135,7 +135,6 @@ class GAN(object):
         writer = tf.summary.FileWriter(self.name, session.graph)
 
         print("training started")
-        start = time.time()
 
         feed_dict = {self.training: True}
         session_run = functools.partial(session.run, feed_dict=feed_dict)
@@ -171,3 +170,5 @@ class GAN(object):
                             save_path=os.path.join(self.name, "model.ckpt"),
                             global_step=global_step
                         )
+
+            print("training ended")
