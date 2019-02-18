@@ -13,5 +13,5 @@
 
 ## Architecture
 * Based on DCGAN with Spectral Normalization
-* conditional information projection
-* progressive training
+* Conditional information projection
+* Progressive training
