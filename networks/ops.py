@@ -328,6 +328,14 @@ def upsampling2d(inputs, factors, data_format):
 
 def downsampling2d(inputs, factors, data_format):
 
+    return tf.nn.avg_pool(
+        value=inputs,
+        ksize=[1, 1, *factors] if data_format == "channels_first" else [1, *factors, 1],
+        strides=[1, 1, *factors] if data_format == "channels_first" else [1, *factors, 1],
+        padding="SAME",
+        data_format="NCHW" if data_format == "channels_first" else "NHWC"
+    )
+
     return tf.layers.average_pooling2d(
         inputs=inputs,
         pool_size=factors,
