@@ -33,6 +33,11 @@ class Generator(pggan.Generator):
                 name="dense_0"
             )
 
+            inputs = tf.reshape(
+                tensor=inputs,
+                shape=[-1, filters, *resolution] if self.data_format == "channels_first" else [-1, *resolution, filters]
+            )
+
             inputs = ops.batch_normalization(
                 inputs=inputs,
                 data_format=self.data_format,
@@ -41,11 +46,6 @@ class Generator(pggan.Generator):
             )
 
             inputs = tf.nn.relu(inputs)
-
-            inputs = tf.reshape(
-                tensor=inputs,
-                shape=[-1, filters, *resolution] if self.data_format == "channels_first" else [-1, *resolution, filters]
-            )
 
             return inputs
 
