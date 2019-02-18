@@ -20,9 +20,9 @@
 import tensorflow as tf
 import numpy as np
 import argparse
-import dataset
 import functools
 import itertools
+from dataset import NSynth
 from models import gan
 from networks import dcgan
 from attrdict import AttrDict as Param
@@ -47,6 +47,16 @@ tf.logging.set_verbosity(tf.logging.INFO)
 pitches = np.load("pitches.npy")
 counts = np.load("counts.npy")
 
+nsynth = NSynth(
+    audio_length=64000,
+    pitches=pitches,
+    spectrogram_shape=[256, 512],
+    overlap=0.75,
+    sample_rate=16000,
+    mel_downscale=1,
+    data_format=args.data_format
+)
+
 gan_model = gan.Model(
     generator=dcgan.Generator(
         min_resolution=[4, 8],
@@ -62,19 +72,13 @@ gan_model = gan.Model(
         max_filters=512,
         data_format=args.data_format
     ),
-    real_input_fn=dataset.NSynth(
+    real_input_fn=functools.partial(
+        nsynth.input,
         filenames=args.filenames,
         batch_size=args.batch_size,
         num_epochs=None,
-        shuffle=True,
-        audio_length=64000,
-        pitches=pitches,
-        spectrogram_shape=[256, 512],
-        overlap=0.75,
-        sample_rate=16000,
-        mel_downscale=1,
-        data_format=args.data_format
-    ).input,
+        shuffle=True
+    ),
     fake_input_fn=lambda: (
         tf.one_hot(
             indices=tf.reshape(
