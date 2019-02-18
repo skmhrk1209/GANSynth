@@ -133,7 +133,7 @@ class NSynth(object):
 
         return data, label
 
-    def input(self, filenames, batch_size, num_epochs, shuffle):
+    def input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
         dataset = tf.data.TFRecordDataset(
             filenames=filenames,
@@ -164,7 +164,7 @@ class NSynth(object):
 
         return iterator.get_next()
 
-    def output(self, data):
+    def output_fn(self, data):
 
         log_mel_magnitude_spectrogram, mel_instantaneous_frequency = tf.unstack(data, axis=-1)
 
