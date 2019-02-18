@@ -11,6 +11,8 @@ def scalar(tensor, name=None, **kwargs):
 
 def image(tensor, name=None, **kwargs):
 
+    print(tensor.shape)
+
     name = name or re.sub(":.*", "", tensor.name)
     tensor = tf.cond(
         pred=tf.equal(tf.argmin(tf.shape(tensor)[1:]), 0),
