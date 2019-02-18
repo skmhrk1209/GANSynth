@@ -200,9 +200,6 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
             constant_values=1
         )
 
-        # output_shape = np.array(inputs.shape.as_list()) * strides
-        # output_shape[1 if data_format == "channels_first" else 3] = filters
-
         output_shape = tf.shape(inputs) * strides
         output_shape = (
             tf.concat([output_shape[0:1], [filters], output_shape[2:4]], axis=0) if data_format == "channels_first" else
