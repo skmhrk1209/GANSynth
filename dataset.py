@@ -174,32 +174,3 @@ class NSynth(object):
         tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
         return iterator.get_next()
-
-    def output_fn(self, data):
-
-        log_mel_magnitude_spectrogram, mel_instantaneous_frequency = tf.unstack(data, axis=-1)
-
-        mel_magnitude_spectrogram = tf.exp(log_mel_magnitude_spectrogram)
-        mel_phase_angle = tf.cumsum(mel_instantaneous_frequency * np.pi, axis=-2)
-
-        mel_to_linear_weight_matrix = tf.linalg.inv(tf.contrib.signal.linear_to_mel_weight_matrix(
-            num_mel_bins=num_freq_bins // self.mel_downscale,
-            num_spectrogram_bins=num_freq_bins,
-            sample_rate=self.sample_rate,
-            lower_edge_hertz=0.0,
-            upper_edge_hertz=self.sample_rate / 2.0
-        ))
-
-        magnitude_spectrogram = tf.matmul(
-            a=mel_magnitude_spectrogram,
-            b=mel_to_linear_weight_matrix
-        )
-        phase_angle = tf.matmul(
-            a=mel_phase_angle,
-            b=mel_to_linear_weight_matrix
-        )
-
-        magnitude_spectrogram = tf.complex(magnitude_spectrogram, 0.0)
-        phase_angle = tf.complex(tf.cos(phase_angle), tf.sin(phase_angle))
-
-        stft = magnitude_spectrogram * phase_angle
