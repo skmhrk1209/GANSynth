@@ -365,6 +365,7 @@ def batch_normalization(inputs, data_format, training, name=None, reuse=None):
         inputs=inputs,
         axis=1 if data_format == "channels_first" else 3,
         training=training,
+        fused=False,
         name=name,
         reuse=reuse
     )
