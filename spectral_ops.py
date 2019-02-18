@@ -12,19 +12,17 @@ def diff(inputs, axis=-1):
     Raises:
       ValueError: Axis out of range for tensor.
     """
-
-    begin_back = [0] * len(inputs.shape)
-    begin_front = [0] * len(inputs.shape)
+    begin_back = [0] * inputs.shape.ndims
+    begin_front = [0] * inputs.shape.ndims
     begin_front[axis] = 1
 
-    size = [-1] * len(inputs.shape)
+    size = [-1] * inputs.shape.ndims
     size[axis] = inputs.shape[axis].value - 1
 
-    slice_front = tf.slice(inputs, begin_front, size)
-    slice_back = tf.slice(inputs, begin_back, size)
-    diff = slice_front - slice_back
+    front = tf.slice(inputs, begin_front, size)
+    back = tf.slice(inputs, begin_back, size)
 
-    return diff
+    return front - back
 
 
 def unwrap(phases, discont=np.pi, axis=-1):
@@ -40,16 +38,15 @@ def unwrap(phases, discont=np.pi, axis=-1):
     diff_mods = tf.mod(diffs + np.pi, 2.0 * np.pi) - np.pi
     indices = tf.logical_and(tf.equal(diff_mods, -np.pi), tf.greater(diffs, 0))
     diff_mods = tf.where(indices, tf.ones_like(diff_mods) * np.pi, diff_mods)
-    phase_corrects = diff_mods - diffs  
-    phase_cumsums = tf.cumsum(phase_corrects, axis=axis)
+    corrects = diff_mods - diffs
+    cumsums = tf.cumsum(corrects, axis=axis)
 
-    shape = phases.shape.as_list()
-    shape[axis] = 1
+    shape = phases.shape
+    shape.dims[axis] = 1
 
-    phase_cumsums = tf.concat([tf.zeros(shape), phase_cumsums], axis=axis)
-    unwrapped = phases + phase_cumsums
+    cumsums = tf.concat([tf.zeros(shape), cumsums], axis=axis)
 
-    return unwrapped
+    return phases + cumsums
 
 
 def instantaneous_frequency(phases, time_axis=-2):
@@ -65,13 +62,12 @@ def instantaneous_frequency(phases, time_axis=-2):
     unwrapped = unwrap(phases, axis=time_axis)
     diffs = diff(unwrapped, axis=time_axis)
 
-    # Add an initial phase to dphase
-    begin = [0] * len(unwrapped.shape)
+    begin = [0] * unwrapped.shape.ndims
 
-    size = [-1] * len(unwrapped.shape)
+    size = [-1] * unwrapped.shape.ndims
     size[time_axis] = 1
 
-    phase_slice = tf.slice(unwrapped, begin, size)
-    diffs = tf.concat([phase_slice, diffs], axis=time_axis) / np.pi
-    
+    unwrapped = tf.slice(unwrapped, begin, size)
+    diffs = tf.concat([unwrapped, diffs], axis=time_axis) / np.pi
+
     return diffs
