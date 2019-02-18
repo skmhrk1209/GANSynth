@@ -111,7 +111,6 @@ class NSynth(object):
             lower_edge_hertz=0.0,
             upper_edge_hertz=self.sample_rate / 2.0
         )
-
         mel_magnitude_spectrograms = tf.tensordot(
             a=magnitude_spectrograms,
             b=linear_to_mel_weight_matrix,
@@ -122,7 +121,6 @@ class NSynth(object):
                 linear_to_mel_weight_matrix.shape[-1:]
             )
         )
-
         mel_phase_angles = tf.tensordot(
             a=phase_angles,
             b=linear_to_mel_weight_matrix,
