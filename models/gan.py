@@ -192,14 +192,14 @@ class Model(object):
                 print("coloring_index: {:2f}".format(coloring_index))
 
                 summary = session.run(self.summary, feed_dict=feed_dict)
-                writer.add_summary(summary, global_step=generator_global_step)
+                writer.add_summary(summary, global_step=global_step)
 
-                if generator_global_step % 100000 == 0:
+                if global_step % 100000 == 0:
 
                     checkpoint = self.saver.save(
                         sess=session,
                         save_path=os.path.join(self.name, "model.ckpt"),
-                        global_step=generator_global_step
+                        global_step=global_step
                     )
 
                     stop = time.time()
