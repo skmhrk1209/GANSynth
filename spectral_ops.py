@@ -41,7 +41,7 @@ def unwrap(phases, discont=np.pi, axis=-1):
     corrects = diff_mods - diffs
     cumsums = tf.cumsum(corrects, axis=axis)
 
-    shape = phases.shape
+    shape = phases.shape.as_list()
     shape.dims[0] = 100#tf.shape(phases)[0]
     shape.dims[axis] = 1
 
