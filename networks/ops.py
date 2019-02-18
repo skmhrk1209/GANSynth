@@ -115,11 +115,11 @@ def conv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
     with tf.variable_scope(name, reuse=reuse):
 
-        in_filters = inputs.shape[1] if data_format == "channels_first" else inputs.shape[3]
+        input_filters = inputs.shape[1] if data_format == "channels_first" else inputs.shape[3]
 
         kernel = tf.get_variable(
             name="kernel",
-            shape=kernel_size + [in_filters, filters],
+            shape=kernel_size + [input_filters, filters],
             dtype=tf.float32,
             initializer=tf.variance_scaling_initializer(
                 scale=2.0,
@@ -170,11 +170,11 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
     with tf.variable_scope(name, reuse=reuse):
 
-        in_filters = inputs.shape[1] if data_format == "channels_first" else inputs.shape[3]
+        input_filters = inputs.shape[1] if data_format == "channels_first" else inputs.shape[3]
 
         kernel = tf.get_variable(
             name="kernel",
-            shape=kernel_size + [filters, in_filters],
+            shape=kernel_size + [filters, input_filters],
             dtype=tf.float32,
             initializer=tf.variance_scaling_initializer(
                 scale=2.0,
@@ -188,13 +188,12 @@ def deconv2d(inputs, filters, kernel_size, strides, use_bias, data_format,
 
             kernel = spectral_normalization(kernel)
 
-        print(inputs.shape)
-
         strides = [1] + [1] + strides if data_format == "channels_first" else [1] + strides + [1]
 
-        output_shape = tf.shape(inputs) * strides
-        output_shape = (tf.concat([output_shape[:1], [filters], output_shape[2:4]], axis=0) if data_format == "channels_first" else
-                        tf.concat([output_shape[:1], output_shape[1:3], [filters]], axis=0))
+        output_static_shape = np.asarray(inputs.shape.as_list()) * strides
+        output_dynamic_shape = tf.shape(inputs) * strides
+        output_shape = (tf.concat([output_dynamic_shape[:1], [filters], output_static_shape[2:4]], axis=0) if data_format == "channels_first" else
+                        tf.concat([output_dynamic_shape[:1], output_static_shape[1:3], [filters]], axis=0))
 
         inputs = tf.nn.conv2d_transpose(
             value=inputs,
