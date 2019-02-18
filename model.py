@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import summary
 import itertools
 import time
 import os
