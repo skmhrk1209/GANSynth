@@ -110,7 +110,8 @@ gan = GAN(
 config = tf.ConfigProto(
     gpu_options=tf.GPUOptions(
         visible_device_list=args.gpu,
-        allow_growth=True
+        allow_growth=True,
+        per_process_gpu_memory_fraction=0.9
     )
 )
 
