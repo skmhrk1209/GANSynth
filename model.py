@@ -39,7 +39,8 @@ class GAN(object):
             self.fake_images = generator(
                 inputs=self.fake_latents,
                 coloring_index=self.coloring_index,
-                training=self.training
+                training=self.training,
+                name="generator"
             )
             # =========================================================================================
             # logits for real data and fake data
