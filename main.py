@@ -24,16 +24,13 @@ import functools
 import itertools
 from dataset import NSynth
 from model import GAN
-from networks import dcgan
+from network import PGGAN
 from attrdict import AttrDict as Param
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model", help="model directory")
-parser.add_argument("--pretrained_model_dir", type=str, default="", help="pretrained model directory")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"], help="tfrecords")
 parser.add_argument("--batch_size", type=int, default=100, help="batch size")
-parser.add_argument("--random_seed", type=int, default=1209, help="random seed")
-parser.add_argument("--data_format", type=str, default="channels_first", help="data format")
 parser.add_argument("--max_steps", type=int, default=100000, help="maximum number of training steps")
 parser.add_argument("--steps", type=int, default=None, help="number of test steps")
 parser.add_argument('--train', action="store_true", help="with training")
@@ -53,25 +50,18 @@ nsynth = NSynth(
     spectrogram_shape=[256, 512],
     overlap=0.75,
     sample_rate=16000,
-    mel_downscale=1,
-    data_format=args.data_format
+    mel_downscale=1
+)
+
+pggan = PGGAN(
+    max_resolution=256,
+    channels=2,
+    num_classes=len(pitches)
 )
 
 gan = GAN(
-    generator=dcgan.Generator(
-        min_resolution=[4, 8],
-        max_resolution=[256, 512],
-        min_filters=8,
-        max_filters=512,
-        data_format=args.data_format,
-    ),
-    discriminator=dcgan.Discriminator(
-        min_resolution=[4, 8],
-        max_resolution=[256, 512],
-        min_filters=8,
-        max_filters=512,
-        data_format=args.data_format
-    ),
+    discriminator=pggan.discriminator,
+    generator=pggan.generator,
     real_input_fn=functools.partial(
         nsynth.input_fn,
         filenames=args.filenames,
