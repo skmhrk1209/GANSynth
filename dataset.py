@@ -7,13 +7,13 @@ import os
 
 class NSynth(object):
 
-    def __init__(self, pitch_counts, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
+    def __init__(self, pitch_counts, audio_length, sample_rate, spectrogram_shape, overlap, mel_downscale):
 
         self.pitch_counts = pitch_counts
         self.audio_length = audio_length
+        self.sample_rate = sample_rate
         self.spectrogram_shape = spectrogram_shape
         self.overlap = overlap
-        self.sample_rate = sample_rate
         self.mel_downscale = mel_downscale
         self.index_table = tf.contrib.lookup.index_table_from_tensor(
             mapping=sorted(pitch_counts),
