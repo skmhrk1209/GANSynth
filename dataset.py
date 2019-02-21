@@ -197,9 +197,11 @@ with tf.Session() as sess:
     y_min, y_max = None, None
     z_min, z_max = None, None
 
-    while True:
+    import tqdm
 
-        try:
+    for i in tqdm.trange(3000)
+
+       try:
             t = sess.run(x)[0]
         except:
             break
