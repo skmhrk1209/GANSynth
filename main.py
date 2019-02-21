@@ -22,7 +22,7 @@ import numpy as np
 import argparse
 import functools
 import itertools
-import json
+import pickle
 from dataset import NSynth
 from model import GAN
 from network import PGGAN
@@ -42,9 +42,8 @@ args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-with open("pitch_counts.json") as f:
-    pitch_counts = json.load(f)
-    print(type(sorted(pitch_counts)))
+with open("pitch_counts.pickle", "rb") as f:
+    pitch_counts = pickle.load(f)
 
 pggan = PGGAN(
     min_resolution=4,
