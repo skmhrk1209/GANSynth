@@ -199,7 +199,7 @@ with tf.Session() as sess:
 
     import tqdm
 
-    for i in tqdm.trange(3000)
+    for i in tqdm.trange(3000):
 
        try:
             t = sess.run(x)[0]
