@@ -44,6 +44,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 with open("pitch_counts.json") as f:
     pitch_counts = json.load(f)
+    print(sorted(pitch_counts))
 
 pggan = PGGAN(
     min_resolution=4,
