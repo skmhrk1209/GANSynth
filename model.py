@@ -5,10 +5,10 @@ import functools
 import os
 
 
-class GAN(object):
+class GANSynth(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
-                 resolution_fn, hyper_params, name="gan", reuse=None):
+                 resolution_fn, hyper_params, name="gan_synth", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 

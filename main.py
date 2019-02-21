@@ -24,7 +24,7 @@ import functools
 import itertools
 import pickle
 from dataset import NSynth
-from model import GAN
+from model import GANSynth
 from network import PGGAN
 from attrdict import AttrDict as Param
 
@@ -63,7 +63,7 @@ nsynth = NSynth(
     mel_downscale=1
 )
 
-gan = GAN(
+gan = GANSynth(
     discriminator=pggan.discriminator,
     generator=pggan.generator,
     real_input_fn=functools.partial(
