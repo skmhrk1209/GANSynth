@@ -170,3 +170,46 @@ class NSynth(object):
         ), [batch_size]), len(self.pitches))
 
         return latents, labels
+
+
+with tf.Session() as sess:
+
+    pitches = np.load("pitches.npy")
+    counts = np.load("counts.npy")
+
+    x = nsynth = NSynth(
+        audio_length=64000,
+        pitches=pitches,
+        counts=counts,
+        spectrogram_shape=[512, 512],
+        overlap=0.75,
+        sample_rate=16000,
+        mel_downscale=1
+    ).real_input_fn(
+        filenames=["nsynth_train.tfrecord"],
+        batch_size=100,
+        num_epochs=None,
+        shuffle=True
+    )
+
+    sess.run(tf.tables_initializer())
+
+    y_min, y_max = None, None
+    z_min, z_max = None, None
+
+    while True:
+
+        try:
+            t = sess.run(x)[0]
+        except:
+            break
+
+        y = t[:, 0, :, :]
+        z = t[:, 1, :, :]
+
+        y_min = min(y_min, y.min()) if y_min is not None else y.min()
+        y_max = max(y_max, y.max()) if y_max is not None else y.max()
+        z_min = min(z_min, z.min()) if z_min is not None else z.min()
+        z_max = max(z_max, z.max()) if z_max is not None else z.max()
+
+    print(y_min, y_max, z_min, z_max)
