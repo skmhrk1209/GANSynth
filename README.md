@@ -12,6 +12,6 @@
 * [The NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth)
 
 ## Architecture
-* Based on DCGAN with Spectral Normalization
+* Based on PGGAN
+* Spectral Normalization on discriminator
 * Conditional information projection
-* Progressive training
