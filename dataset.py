@@ -203,7 +203,7 @@ with tf.Session() as sess:
 
        try:
             t = sess.run(x)[0]
-        except:
+        except tf.errors.OutOfRangeError:
             break
 
         y = t[:, 0, :, :]
