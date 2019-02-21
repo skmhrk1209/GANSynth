@@ -189,7 +189,7 @@ with tf.Session() as sess:
         filenames=["nsynth_train.tfrecord"],
         batch_size=100,
         num_epochs=None,
-        shuffle=True
+        shuffle=False
     )
 
     sess.run(tf.tables_initializer())
