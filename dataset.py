@@ -201,7 +201,7 @@ with tf.Session() as sess:
 
     for i in tqdm.trange(3000):
 
-       try:
+        try:
             t = sess.run(x)[0]
         except tf.errors.OutOfRangeError:
             break
