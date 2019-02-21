@@ -5,10 +5,12 @@ from ops import *
 
 class PGGAN(object):
 
-    def __init__(self, min_resolution, max_resolution, min_filters, max_filters, num_channels):
+    def __init__(self, min_resolutions, max_resolutions, min_filters, max_filters, num_channels):
 
-        self.min_resolution = min_resolution
-        self.max_resolution = max_resolution
+        self.min_resolutions = min_resolution
+        self.max_resolutions = max_resolution
+        self.min_resolution = max(min_resolution)
+        self.max_resolution = max(max_resolution)
         self.min_filters = min_filters
         self.max_filters = max_filters
         self.num_channels = num_channels
@@ -20,8 +22,8 @@ class PGGAN(object):
                 if resolution == self.min_resolution:
                     inputs = pixel_normalization(inputs)
                     with tf.variable_scope("dense"):
-                        inputs = dense(inputs, units=self.max_filters * self.min_resolution * self.min_resolution)
-                        inputs = tf.reshape(inputs, [-1, self.max_filters, self.min_resolution, self.min_resolution])
+                        inputs = dense(inputs, units=self.max_filters * np.prod(self.min_resolutions))
+                        inputs = tf.reshape(inputs, [-1, self.max_filters, *self.min_resolutions])
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_normalization(inputs)
                     with tf.variable_scope("conv"):
