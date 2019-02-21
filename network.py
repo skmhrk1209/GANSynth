@@ -7,10 +7,10 @@ class PGGAN(object):
 
     def __init__(self, min_resolutions, max_resolutions, min_filters, max_filters, num_channels):
 
-        self.min_resolutions = min_resolution
-        self.max_resolutions = max_resolution
-        self.min_resolution = max(min_resolution)
-        self.max_resolution = max(max_resolution)
+        self.min_resolutions = min_resolutions
+        self.max_resolutions = max_resolutions
+        self.min_resolution = max(min_resolutions)
+        self.max_resolution = max(max_resolutions)
         self.min_filters = min_filters
         self.max_filters = max_filters
         self.num_channels = num_channels
