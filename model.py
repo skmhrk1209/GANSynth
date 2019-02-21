@@ -21,8 +21,9 @@ class GAN(object):
             self.resolution = resolution_fn(self.global_step)
             # =========================================================================================
             # input_fn for real data and fake data
-            self.real_images, self.real_labels = real_input_fn()
-            self.fake_latents, self.fake_labels = fake_input_fn()
+            with tf.device("/cpu:0"):
+                self.real_images, self.real_labels = real_input_fn()
+                self.fake_latents, self.fake_labels = fake_input_fn()
             # =========================================================================================
             # generated fake data
             self.fake_images = generator(self.fake_latents, self.fake_labels, self.resolution, "generator")
