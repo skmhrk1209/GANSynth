@@ -46,9 +46,9 @@ with open("pitch_counts.pickle", "rb") as f:
     pitch_counts = pickle.load(f)
 
 pggan = PGGAN(
-    min_resolutions=[2, 4],
+    min_resolutions=[4, 8],
     max_resolutions=[256, 512],
-    min_filters=4,
+    min_filters=8,
     max_filters=512,
     num_channels=2
 )
