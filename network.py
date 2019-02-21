@@ -42,6 +42,7 @@ class PGGAN(object):
         def color_block(inputs, resolution, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("color_block_{0}x{0}".format(resolution), reuse=reuse):
                 inputs = conv2d(inputs, filters=self.num_channels, kernel_size=[1, 1], variance_scale=1)
+                inputs = tf.nn.tanh(inputs)
                 return inputs
 
         def lerp(a, b, t): return (1 - t) * a + t * b
