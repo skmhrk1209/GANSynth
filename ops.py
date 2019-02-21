@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-def spectral_normalization(input, name="spectral_normalization", reuse=None):
+def spectral_normalization(input):
     ''' spectral normalization
         [Spectral Normalization for Generative Adversarial Networks]
         (https://arxiv.org/pdf/1802.05957.pdf)
@@ -26,7 +26,6 @@ def spectral_normalization(input, name="spectral_normalization", reuse=None):
     u_var = tf.get_variable(
         name="u_var",
         shape=[w.shape[0], 1],
-        dtype=w.dtype,
         initializer=tf.random_normal_initializer(),
         trainable=False
     )
@@ -144,7 +143,8 @@ def global_average_pooling2d(inputs):
     return inputs
 
 
-def projection(inputs, conditions):
-    conditions = dense(conditions, inputs.shape[1].value, use_bias=False)
-    inputs = tf.reduce_mean(inputs * conditions, axis=1)
+def projection(inputs, labels):
+    weight = get_weight([labels.shape[1].value, inputs.shape[1].value])
+    labels = tf.nn.embedding_lookup(weight, tf.argmax(labels, axis=1))
+    inputs = tf.reduce_mean(inputs * labels, axis=1, keepdims=True)
     return inputs
