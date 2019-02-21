@@ -50,7 +50,8 @@ pggan = PGGAN(
     max_resolutions=[256, 512],
     min_filters=8,
     max_filters=512,
-    num_channels=2
+    num_channels=2,
+    apply_spectral_norm=True
 )
 
 nsynth = NSynth(

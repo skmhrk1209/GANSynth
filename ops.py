@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-def spectral_normalization(input):
+def spectral_norm(input):
     ''' spectral normalization
         [Spectral Normalization for Generative Adversarial Networks]
         (https://arxiv.org/pdf/1802.05957.pdf)
@@ -64,12 +64,14 @@ def spectral_normalization(input):
     return w_tensor_normalized
 
 
-def get_weight(shape, variance_scale=2, scale_weight=True):
+def get_weight(shape, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
         weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal()) * stddev
     else:
         weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal(0, stddev))
+    if apply_spectral_norm:
+        weight = spectral_norm(weight)
     return weight
 
 
@@ -78,8 +80,13 @@ def get_bias(shape):
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True):
-    weight = get_weight([inputs.shape[1].value, units], variance_scale=variance_scale, scale_weight=scale_weight)
+def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+    weight = get_weight(
+        shape=[inputs.shape[1].value, units],
+        variance_scale=variance_scale,
+        scale_weight=scale_weight,
+        apply_spectral_norm=apply_spectral_norm
+    )
     inputs = tf.matmul(inputs, weight)
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
@@ -87,20 +94,43 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True):
     return inputs
 
 
-def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance_scale=2, scale_weight=True):
-    weight = get_weight([*kernel_size, inputs.shape[1].value, filters], variance_scale=variance_scale, scale_weight=scale_weight)
-    inputs = tf.nn.conv2d(inputs, weight, strides=[1, 1] + strides, padding="SAME", data_format="NCHW")
+def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+    weight = get_weight(
+        shape=[*kernel_size, inputs.shape[1].value, filters],
+        variance_scale=variance_scale,
+        scale_weight=scale_weight,
+        apply_spectral_norm=apply_spectral_norm
+    )
+    inputs = tf.nn.conv2d(
+        input=inputs,
+        filter=weight,
+        strides=[1, 1] + strides,
+        padding="SAME",
+        data_format="NCHW"
+    )
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
         inputs = tf.nn.bias_add(inputs, bias, data_format="NCHW")
     return inputs
 
 
-def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance_scale=2, scale_weight=True):
-    weight = get_weight([*kernel_size, inputs.shape[1].value, filters], variance_scale=variance_scale, scale_weight=scale_weight)
+def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+    weight = get_weight(
+        shape=[*kernel_size, inputs.shape[1].value, filters],
+        variance_scale=variance_scale,
+        scale_weight=scale_weight,
+        apply_spectral_norm=apply_spectral_norm
+    )
     weight = tf.transpose(weight, [0, 1, 3, 2])
     output_shape = [tf.shape(inputs)[0], filters, *np.array(inputs.shape.as_list()[2:]) * strides]
-    inputs = tf.nn.conv2d_transpose(inputs, weight, output_shape, strides=[1, 1] + strides, padding="SAME", data_format="NCHW")
+    inputs = tf.nn.conv2d_transpose(
+        value=inputs,
+        filter=weight,
+        output_shape=output_shape,
+        strides=[1, 1] + strides,
+        padding="SAME",
+        data_format="NCHW"
+    )
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
         inputs = tf.nn.bias_add(inputs, bias, data_format="NCHW")
@@ -122,7 +152,13 @@ def upscale2d(inputs, factors=[2, 2]):
 
 def downscale2d(inputs, factors=[2, 2]):
     # NOTE: requires tf_config['graph_options.place_pruned_graph'] = True
-    inputs = tf.nn.avg_pool(inputs, ksize=[1, 1, *factors], strides=[1, 1, *factors], padding="SAME", data_format='NCHW')
+    inputs = tf.nn.avg_pool(
+        value=inputs,
+        ksize=[1, 1, *factors],
+        strides=[1, 1, *factors],
+        padding="SAME",
+        data_format="NCHW"
+    )
     return inputs
 
 
@@ -143,8 +179,13 @@ def global_average_pooling2d(inputs):
     return inputs
 
 
-def projection(inputs, labels):
-    weight = get_weight([labels.shape[1].value, inputs.shape[1].value])
+def projection(inputs, labels, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+    weight = get_weight(
+        shape=[labels.shape[1].value, inputs.shape[1].value],
+        variance_scale=variance_scale,
+        scale_weight=scale_weight,
+        apply_spectral_norm=apply_spectral_norm
+    )
     labels = tf.nn.embedding_lookup(weight, tf.argmax(labels, axis=1))
     inputs = tf.reduce_mean(inputs * labels, axis=1, keepdims=True)
     return inputs
