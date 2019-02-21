@@ -8,7 +8,7 @@ import os
 class GAN(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
-                 hyper_params, name="gan", reuse=None):
+                 resolution_fn, hyper_params, name="gan", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
@@ -16,49 +16,20 @@ class GAN(object):
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
-            self.training = tf.placeholder(
-                dtype=tf.bool,
-                shape=[]
-            )
-            self.global_step = tf.get_variable(
-                name="global_step",
-                shape=[],
-                dtype=tf.int32,
-                initializer=tf.zeros_initializer(),
-                trainable=False
-            )
-            self.coloring_index = self.hyper_params.coloring_index_fn(
-                global_step=tf.cast(self.global_step, tf.float32)
-            )
+            self.training = tf.placeholder(tf.bool)
+            self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
+            self.resolution = resolution_fn(self.global_step)
             # =========================================================================================
             # input_fn for real data and fake data
             self.real_images, self.real_labels = real_input_fn()
             self.fake_latents, self.fake_labels = fake_input_fn()
             # =========================================================================================
             # generated fake data
-            self.fake_images = generator(
-                inputs=self.fake_latents,
-                coloring_index=self.coloring_index,
-                training=self.training,
-                name="generator"
-            )
+            self.fake_images = generator(self.fake_latents, self.fake_labels, self.resolution, "generator")
             # =========================================================================================
             # logits for real data and fake data
-            self.real_logits = discriminator(
-                inputs=self.real_images,
-                conditions=self.real_labels,
-                coloring_index=self.coloring_index,
-                training=self.training,
-                name="discriminator"
-            )
-            self.fake_logits = discriminator(
-                inputs=self.fake_images,
-                conditions=self.fake_labels,
-                coloring_index=self.coloring_index,
-                training=self.training,
-                name="discriminator",
-                reuse=True
-            )
+            self.real_logits = discriminator(self.real_images, self.real_labels, self.resolution, "discriminator")
+            self.fake_logits = discriminator(self.fake_images, self.fake_labels, self.resolution, "discriminator", reuse=True)
             #========================================================================#
             # hinge loss for discriminator and generator
             self.discriminator_loss = tf.reduce_mean(tf.nn.relu(1 - self.real_logits))
@@ -146,8 +117,7 @@ class GAN(object):
             if global_step > max_steps:
                 break
 
-            for _ in range(self.hyper_params.n_critic):
-                session_run(self.discriminator_train_op)
+            session_run(self.discriminator_train_op)
             session_run(self.generator_train_op)
 
             if global_step % 100 == 0:

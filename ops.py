@@ -3,11 +3,11 @@ import numpy as np
 
 
 def get_weight(shape, variance_scale=2, scale_weight=True):
-    std = np.sqrt(variance_scale / np.prod(shape[:-1]))
+    stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
-        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal()) * std
+        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal()) * stddev
     else:
-        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal(0, std))
+        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal(0, stddev))
     return weight
 
 
@@ -73,4 +73,15 @@ def batch_stddev(inputs, group_size=4):
     stddev = tf.reduce_mean(stddev, axis=[1, 2, 3], keepdims=True)
     stddev = tf.tile(stddev, [group_size, 1, *shape[2:]])
     inputs = tf.concat([inputs, stddev], axis=1)
+    return inputs
+
+
+def global_average_pooling2d(inputs):
+    inputs = tf.reduce_mean(inputs, axis=[2, 3])
+    return inputs
+
+
+def projection(inputs, conditions):
+    conditions = dense(conditions, inputs.shape[1].value, use_bias=False)
+    inputs = tf.reduce_mean(inputs * conditions, axis=1)
     return inputs

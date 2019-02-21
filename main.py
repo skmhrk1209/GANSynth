@@ -29,7 +29,7 @@ from attrdict import AttrDict as Param
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model", help="model directory")
-parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"], help="tfrecords")
+parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_test.tfrecord"], help="tfrecords")
 parser.add_argument("--batch_size", type=int, default=100, help="batch size")
 parser.add_argument("--max_steps", type=int, default=100000, help="maximum number of training steps")
 parser.add_argument("--steps", type=int, default=None, help="number of test steps")
@@ -44,55 +44,47 @@ tf.logging.set_verbosity(tf.logging.INFO)
 pitches = np.load("pitches.npy")
 counts = np.load("counts.npy")
 
+
+pggan = PGGAN(
+    min_resolution=4,
+    max_resolution=512,
+    min_filters=4,
+    max_filters=512,
+    num_channels=2
+)
+
 nsynth = NSynth(
     audio_length=64000,
     pitches=pitches,
-    spectrogram_shape=[256, 512],
+    counts=counts,
+    spectrogram_shape=[512, 512],
     overlap=0.75,
     sample_rate=16000,
     mel_downscale=1
-)
-
-pggan = PGGAN(
-    max_resolution=256,
-    channels=2,
-    num_classes=len(pitches)
 )
 
 gan = GAN(
     discriminator=pggan.discriminator,
     generator=pggan.generator,
     real_input_fn=functools.partial(
-        nsynth.input_fn,
+        nsynth.real_input_fn,
         filenames=args.filenames,
         batch_size=args.batch_size,
         num_epochs=None,
         shuffle=True
     ),
-    fake_input_fn=lambda: (
-        tf.random_normal(
-            shape=[args.batch_size, 128]
-        ),
-        tf.one_hot(
-            indices=tf.reshape(
-                tensor=tf.multinomial(
-                    logits=tf.log([tf.cast(counts, tf.float32)]),
-                    num_samples=args.batch_size
-                ),
-                shape=[args.batch_size]
-            ),
-            depth=len(pitches)
-        )
+    fake_input_fn=functools.partial(
+        nsynth.fake_input_fn,
+        batch_size=args.batch_size
     ),
+    resolution_fn=lambda t: (512 * t) // 100000 + 4,
     hyper_params=Param(
-        generator_learning_rate=0.0002,
-        generator_beta1=0.5,
-        generator_beta2=0.999,
-        discriminator_learning_rate=0.0002,
-        discriminator_beta1=0.5,
-        discriminator_beta2=0.999,
-        coloring_index_fn=lambda global_step: global_step / 10000.0 + 1.0,
-        n_critic=1
+        generator_learning_rate=8e-4,
+        generator_beta1=0.0,
+        generator_beta2=0.99,
+        discriminator_learning_rate=8e-4,
+        discriminator_beta1=0.0,
+        discriminator_beta2=0.99
     ),
     name=args.model_dir
 )

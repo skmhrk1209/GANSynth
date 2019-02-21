@@ -7,18 +7,17 @@ import os
 
 class NSynth(object):
 
-    def __init__(self, audio_length, pitches, spectrogram_shape,
-                 overlap, sample_rate, mel_downscale, data_format):
+    def __init__(self, pitches, counts, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
 
-        self.audio_length = audio_length
         self.pitches = pitches
+        self.counts = counts
+        self.audio_length = audio_length
         self.spectrogram_shape = spectrogram_shape
         self.overlap = overlap
         self.sample_rate = sample_rate
         self.mel_downscale = mel_downscale
-        self.data_format = data_format
         self.index_table = tf.contrib.lookup.index_table_from_tensor(
-            mapping=sorted(pitches),
+            mapping=pitches,
             dtype=tf.int32
         )
 
@@ -78,9 +77,7 @@ class NSynth(object):
         stfts = tf.contrib.signal.stft(
             signals=waves,
             frame_length=frame_length,
-            frame_step=frame_step,
-            fft_length=frame_length,
-            pad_end=False
+            frame_step=frame_step
         )[:, :, 1:]
         stft_shape = stfts.shape.as_list()[1:]
         if stft_shape != self.spectrogram_shape:
@@ -128,17 +125,14 @@ class NSynth(object):
         log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
         mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_angles)
 
-        data = tf.concat([
-            tf.expand_dims(log_mel_magnitude_spectrograms, axis=-1),
-            tf.expand_dims(mel_instantaneous_frequencies, axis=-1)
-        ], axis=-1)
-
-        if self.data_format == "channels_first":
-            data = tf.transpose(data, [0, 3, 1, 2])
+        data = tf.stack([
+            log_mel_magnitude_spectrograms,
+            mel_instantaneous_frequencies
+        ], axis=1)
 
         return data, labels
 
-    def input_fn(self, filenames, batch_size, num_epochs, shuffle):
+    def real_input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
         dataset = tf.data.TFRecordDataset(filenames)
         if shuffle:
@@ -165,3 +159,14 @@ class NSynth(object):
         tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
         return iterator.get_next()
+
+    def fake_input_fn(self, batch_size):
+
+        latents = tf.random_normal([batch_size, 256])
+
+        labels = tf.one_hot(tf.reshape(tf.multinomial(
+            logits=tf.log([tf.cast(self.counts, tf.float32)]),
+            num_samples=batch_size
+        ), [batch_size]), len(self.pitches))
+
+        return latents, labels
