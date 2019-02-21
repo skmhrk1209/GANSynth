@@ -7,17 +7,16 @@ import os
 
 class NSynth(object):
 
-    def __init__(self, pitches, counts, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
+    def __init__(self, pitch_counts, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
 
-        self.pitches = pitches
-        self.counts = counts
+        self.pitch_counts = pitch_counts
         self.audio_length = audio_length
         self.spectrogram_shape = spectrogram_shape
         self.overlap = overlap
         self.sample_rate = sample_rate
         self.mel_downscale = mel_downscale
         self.index_table = tf.contrib.lookup.index_table_from_tensor(
-            mapping=pitches,
+            mapping=sorted(pitch_counts),
             dtype=tf.int32
         )
 
@@ -38,7 +37,7 @@ class NSynth(object):
         # one-hot label
         label = features["pitch"]
         label = self.index_table.lookup(label)
-        label = tf.one_hot(label, len(self.pitches))
+        label = tf.one_hot(label, len(self.pitch_counts))
 
         return wave, label
 
@@ -125,6 +124,11 @@ class NSynth(object):
         log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
         mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_angles)
 
+        def scale(input, input_min, input_max, output_min, output_max):
+            return output_min + (input - input_min) / (input_max - input_min) * (output_max - output_min)
+
+        log_mel_magnitude_spectrograms = scale(log_mel_magnitude_spectrograms, -14.0, 6.0, -1.0, 1.0)
+
         data = tf.stack([
             log_mel_magnitude_spectrograms,
             mel_instantaneous_frequencies
@@ -165,52 +169,8 @@ class NSynth(object):
         latents = tf.random_normal([batch_size, 256])
 
         labels = tf.one_hot(tf.reshape(tf.multinomial(
-            logits=tf.log([tf.cast(self.counts, tf.float32)]),
+            logits=tf.log([tf.cast(list(zip(*sorted(self.pitch_counts.items())))[1], tf.float32)]),
             num_samples=batch_size
-        ), [batch_size]), len(self.pitches))
+        ), [batch_size]), len(self.pitch_counts))
 
         return latents, labels
-
-
-with tf.Session() as sess:
-
-    pitches = np.load("pitches.npy")
-    counts = np.load("counts.npy")
-
-    x = nsynth = NSynth(
-        audio_length=64000,
-        pitches=pitches,
-        counts=counts,
-        spectrogram_shape=[512, 512],
-        overlap=0.75,
-        sample_rate=16000,
-        mel_downscale=1
-    ).real_input_fn(
-        filenames=["nsynth_train.tfrecord"],
-        batch_size=100,
-        num_epochs=1,
-        shuffle=False
-    )
-
-    sess.run(tf.tables_initializer())
-
-    y1 = []
-    y2 = []
-
-    import tqdm
-
-    for i in tqdm.trange(3000):
-
-        try:
-            t = sess.run(x)[0]
-        except tf.errors.OutOfRangeError:
-            break
-
-        y = t[:, 0, :, :]
-
-        y1.append(y.min())
-        y2.append(y.max())
-
-    print(sorted(y1)[:10])
-    print(sorted(y2)[-10:])
-    

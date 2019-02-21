@@ -22,6 +22,7 @@ import numpy as np
 import argparse
 import functools
 import itertools
+import json
 from dataset import NSynth
 from model import GAN
 from network import PGGAN
@@ -41,9 +42,8 @@ args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-pitches = np.load("pitches.npy")
-counts = np.load("counts.npy")
-
+with open("pitch_counts.json") as f:
+    pitch_counts = json.load(f)
 
 pggan = PGGAN(
     min_resolution=4,
@@ -54,9 +54,8 @@ pggan = PGGAN(
 )
 
 nsynth = NSynth(
+    pitch_counts=pitch_counts,
     audio_length=64000,
-    pitches=pitches,
-    counts=counts,
     spectrogram_shape=[512, 512],
     overlap=0.75,
     sample_rate=16000,
