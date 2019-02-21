@@ -188,14 +188,14 @@ with tf.Session() as sess:
     ).real_input_fn(
         filenames=["nsynth_train.tfrecord"],
         batch_size=100,
-        num_epochs=None,
+        num_epochs=1,
         shuffle=False
     )
 
     sess.run(tf.tables_initializer())
 
-    y_min, y_max = None, None
-    z_min, z_max = None, None
+    y1 = []
+    y2 = []
 
     import tqdm
 
@@ -207,11 +207,10 @@ with tf.Session() as sess:
             break
 
         y = t[:, 0, :, :]
-        z = t[:, 1, :, :]
 
-        y_min = min(y_min, y.min()) if y_min is not None else y.min()
-        y_max = max(y_max, y.max()) if y_max is not None else y.max()
-        z_min = min(z_min, z.min()) if z_min is not None else z.min()
-        z_max = max(z_max, z.max()) if z_max is not None else z.max()
+        y1.append(y.min())
+        y2.append(y.max())
 
-    print(y_min, y_max, z_min, z_max)
+    print(sorted(y1)[:10])
+    print(sorted(y2)[-10:])
+    
