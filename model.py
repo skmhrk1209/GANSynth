@@ -16,7 +16,6 @@ class GAN(object):
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
-            self.training = tf.placeholder(tf.bool)
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
             self.resolution = resolution_fn(self.global_step)
             # =========================================================================================
@@ -109,21 +108,18 @@ class GAN(object):
 
         print("training started")
 
-        feed_dict = {self.training: True}
-        session_run = functools.partial(session.run, feed_dict=feed_dict)
-
         while True:
 
             global_step = session.run(self.global_step)
             if global_step > max_steps:
                 break
 
-            session_run(self.discriminator_train_op)
-            session_run(self.generator_train_op)
+            session.run(self.discriminator_train_op)
+            session.run(self.generator_train_op)
 
             if global_step % 100 == 0:
 
-                generator_loss, discriminator_loss = session_run([
+                generator_loss, discriminator_loss = session.run([
                     self.generator_loss, self.discriminator_loss
                 ])
                 print("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
@@ -132,7 +128,7 @@ class GAN(object):
 
                 if global_step % 1000 == 0:
 
-                    summary = session_run(self.summary)
+                    summary = session.run(self.summary)
                     writer.add_summary(summary, global_step=global_step)
 
                     if global_step % 10000 == 0:
