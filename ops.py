@@ -137,7 +137,7 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
     return inputs
 
 
-def pixel_normalization(inputs, epsilon=1e-8):
+def pixel_norm(inputs, epsilon=1e-8):
     inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     return inputs
 
@@ -166,7 +166,8 @@ def batch_stddev(inputs, group_size=4):
     shape = inputs.shape.as_list()
     stddev = tf.reshape(inputs, [group_size, -1, *shape[1:]])
     stddev -= tf.reduce_mean(stddev, axis=0, keepdims=True)
-    stddev = tf.reduce_mean(tf.square(stddev), axis=0)
+    stddev = tf.square(stddev)
+    stddev = tf.reduce_mean(stddev, axis=0)
     stddev = tf.sqrt(stddev + 1e-8)
     stddev = tf.reduce_mean(stddev, axis=[1, 2, 3], keepdims=True)
     stddev = tf.tile(stddev, [group_size, 1, *shape[2:]])

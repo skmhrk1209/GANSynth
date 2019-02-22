@@ -1,5 +1,5 @@
-import numpy as np
 import tensorflow as tf
+import numpy as np
 from ops import *
 
 
@@ -21,7 +21,7 @@ class PGGAN(object):
         def conv_block(inputs, resolution, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("conv_block_{0}x{0}".format(resolution), reuse=reuse):
                 if resolution == self.min_resolution:
-                    inputs = pixel_normalization(inputs)
+                    inputs = pixel_norm(inputs)
                     with tf.variable_scope("dense"):
                         inputs = dense(
                             inputs=inputs,
@@ -29,7 +29,7 @@ class PGGAN(object):
                         )
                         inputs = tf.reshape(inputs, [-1, self.max_filters, *self.min_resolutions])
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_normalization(inputs)
+                        inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -37,7 +37,7 @@ class PGGAN(object):
                             kernel_size=[3, 3]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_normalization(inputs)
+                        inputs = pixel_norm(inputs)
                 else:
                     with tf.variable_scope("conv_upscale"):
                         inputs = conv2d_transpose(
@@ -47,7 +47,7 @@ class PGGAN(object):
                             strides=[2, 2]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_normalization(inputs)
+                        inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -55,7 +55,7 @@ class PGGAN(object):
                             kernel_size=[3, 3]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_normalization(inputs)
+                        inputs = pixel_norm(inputs)
                 return inputs
 
         def color_block(inputs, resolution, reuse=tf.AUTO_REUSE):
