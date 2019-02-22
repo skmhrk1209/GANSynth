@@ -72,40 +72,50 @@ class PGGAN(object):
 
         def lerp(a, b, t): return (1 - t) * a + t * b
 
-        def grow(inputs, resolution):
+        def grow(feature_maps, resolution):
+
+            def high_resolution_images():
+                return grow(conv_block(feature_maps, resolution), resolution << 1)
+
+            def middle_resolution_images():
+                return upscale2d(color_block(conv_block(feature_maps, resolution), resolution), [self.max_resolution // resolution] * 2)
+
+            def low_resolution_images():
+                return upscale2d(color_block(feature_maps, resolution >> 1), [self.max_resolution // (resolution >> 1)] * 2)
+
+            predicate = tf.greater(target_resolution, resolution)
+            lerp_coefficient = tf.cast((target_resolution - (resolution >> 1)) / (resolution - (resolution >> 1)), tf.float32)
 
             if resolution == self.min_resolution:
 
-                feature_maps = conv_block(inputs, resolution)
-
                 images = tf.cond(
-                    pred=tf.greater(target_resolution, resolution),
-                    true_fn=lambda: grow(feature_maps, resolution << 1),
-                    false_fn=lambda: upscale2d(color_block(feature_maps, resolution), [self.max_resolution // resolution] * 2)
+                    pred=predicate,
+                    true_fn=high_resolution_images,
+                    false_fn=middle_resolution_images
                 )
 
             elif resolution == self.max_resolution:
 
-                feature_maps = conv_block(inputs, resolution)
-
-                images = lerp(
-                    a=upscale2d(color_block(inputs, resolution >> 1)),
-                    b=color_block(feature_maps, resolution),
-                    t=tf.cast((target_resolution - (resolution >> 1)) / (resolution - (resolution >> 1)), tf.float32)
+                images = tf.cond(
+                    pred=predicate,
+                    true_fn=lambda: color_block(conv_block(feature_maps, resolution), resolution),
+                    false_fn=lambda: lerp(
+                        a=upscale2d(color_block(feature_maps, resolution >> 1)),
+                        b=color_block(conv_block(feature_maps, resolution), resolution),
+                        t=lerp_coefficient
+                    )
                 )
 
             else:
 
-                feature_maps = conv_block(inputs, resolution)
-
                 images = tf.cond(
-                    pred=tf.greater(target_resolution, resolution),
-                    true_fn=lambda: grow(feature_maps, resolution << 1),
-                    false_fn=lambda: upscale2d(lerp(
-                        a=upscale2d(color_block(inputs, resolution >> 1)),
-                        b=color_block(feature_maps, resolution),
-                        t=tf.cast((target_resolution - (resolution >> 1)) / (resolution - (resolution >> 1)), tf.float32)
-                    ), [self.max_resolution // resolution] * 2)
+                    pred=predicate,
+                    true_fn=high_resolution_images,
+                    false_fn=lambda: lerp(
+                        a=low_resolution_images(),
+                        b=middle_resolution_images(),
+                        t=lerp_coefficient
+                    )
                 )
 
             return images
@@ -175,49 +185,49 @@ class PGGAN(object):
 
         def lerp(a, b, t): return (1 - t) * a + t * b
 
-        def grow(inputs, resolution):
+        def grow(images, resolution):
+
+            def high_resolution_feature_maps():
+                return conv_block(grow(images, resolution << 1), resolution)
+
+            def middle_resolution_feature_maps():
+                return conv_block(color_block(downscale2d(images, [self.max_resolution // resolution] * 2), resolution), resolution)
+
+            def low_resolution_feature_maps():
+                return color_block(downscale2d(images, [self.max_resolution // (resolution >> 1)] * 2), resolution >> 1)
+
+            predicate = tf.greater(target_resolution, resolution)
+            lerp_coefficient = tf.cast((target_resolution - (resolution >> 1)) / (resolution - (resolution >> 1)), tf.float32)
 
             if resolution == self.min_resolution:
 
                 feature_maps = tf.cond(
-                    pred=tf.greater(target_resolution, resolution),
-                    true_fn=lambda: grow(inputs, resolution << 1),
-                    false_fn=lambda: color_block(downscale2d(inputs, [self.max_resolution // resolution] * 2), resolution)
+                    pred=predicate,
+                    true_fn=high_resolution_feature_maps,
+                    false_fn=middle_resolution_feature_maps
                 )
-
-                feature_maps = conv_block(feature_maps, resolution)
 
             elif resolution == self.max_resolution:
 
-                feature_maps = conv_block(color_block(inputs, resolution), resolution)
-
                 feature_maps = tf.cond(
-                    pred=tf.greater(target_resolution, resolution),
-                    true_fn=lambda: feature_maps,
+                    pred=predicate,
+                    true_fn=lambda: conv_block(color_block(images, resolution), resolution),
                     false_fn=lambda: lerp(
-                        a=color_block(downscale2d(inputs, [self.max_resolution // (resolution >> 1)] * 2), resolution >> 1),
-                        b=feature_maps,
-                        t=tf.cast((target_resolution - (resolution >> 1)) / (resolution - (resolution >> 1)), tf.float32)
+                        a=color_block(downscale2d(images), resolution >> 1),
+                        b=conv_block(color_block(images, resolution), resolution),
+                        t=lerp_coefficient
                     )
                 )
 
             else:
 
                 feature_maps = tf.cond(
-                    pred=tf.greater(target_resolution, resolution),
-                    true_fn=lambda: grow(inputs, resolution << 1),
-                    false_fn=lambda: color_block(downscale2d(inputs, [self.max_resolution // resolution] * 2), resolution)
-                )
-
-                feature_maps = conv_block(feature_maps, resolution)
-
-                feature_maps = tf.cond(
-                    pred=tf.greater(target_resolution, resolution),
-                    true_fn=lambda: feature_maps,
+                    pred=predicate,
+                    true_fn=high_resolution_feature_maps,
                     false_fn=lambda: lerp(
-                        a=color_block(downscale2d(inputs, [self.max_resolution // (resolution >> 1)] * 2), resolution >> 1),
-                        b=feature_maps,
-                        t=tf.cast((target_resolution - (resolution >> 1)) / (resolution - (resolution >> 1)), tf.float32)
+                        a=low_resolution_feature_maps(),
+                        b=middle_resolution_feature_maps(),
+                        t=lerp_coefficient
                     )
                 )
 
