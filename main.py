@@ -46,19 +46,19 @@ with open("pitch_counts.pickle", "rb") as f:
     pitch_counts = pickle.load(f)
 
 pggan = PGGAN(
-    min_resolutions=[4, 8],
-    max_resolutions=[256, 512],
-    min_filters=8,
-    max_filters=512,
+    min_resolutions=[2, 16],
+    max_resolutions=[128, 1024],
+    min_filters=32,
+    max_filters=256,
     num_channels=2,
-    apply_spectral_norm=False
+    apply_spectral_norm=True
 )
 
 nsynth = NSynth(
     pitch_counts=pitch_counts,
     audio_length=64000,
     sample_rate=16000,
-    spectrogram_shape=[256, 512],
+    spectrogram_shape=[128, 1024],
     overlap=0.75,
     mel_downscale=1
 )
@@ -78,7 +78,7 @@ gan = GANSynth(
         latent_size=256,
         batch_size=args.batch_size
     ),
-    resolution_fn=lambda t: (512 * t) // 1000000 + 8,
+    resolution_fn=lambda t: (1008 * t) / 1000000 + 16,
     hyper_params=Param(
         generator_learning_rate=8e-4,
         generator_beta1=0.0,

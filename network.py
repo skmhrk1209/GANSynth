@@ -18,6 +18,9 @@ class PGGAN(object):
 
     def generator(self, latents, labels, target_resolution, name="ganerator", reuse=None):
 
+        def num_filters(resolution):
+            return min(self.max_filters, self.min_filters * (self.max_resolution // resolution))
+
         def conv_block(inputs, resolution, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("conv_block_{0}x{0}".format(resolution), reuse=reuse):
                 if resolution == self.min_resolution:
@@ -25,15 +28,15 @@ class PGGAN(object):
                     with tf.variable_scope("dense"):
                         inputs = dense(
                             inputs=inputs,
-                            units=self.max_filters * np.prod(self.min_resolutions)
+                            units=num_filters(resolution) * np.prod(self.min_resolutions)
                         )
-                        inputs = tf.reshape(inputs, [-1, self.max_filters, *self.min_resolutions])
+                        inputs = tf.reshape(inputs, [-1, num_filters(resolution), *self.min_resolutions])
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
-                            filters=self.max_filters,
+                            filters=num_filters(resolution),
                             kernel_size=[3, 3]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -42,7 +45,7 @@ class PGGAN(object):
                     with tf.variable_scope("conv_upscale"):
                         inputs = conv2d_transpose(
                             inputs=inputs,
-                            filters=inputs.shape[1].value >> 1,
+                            filters=num_filters(resolution),
                             kernel_size=[3, 3],
                             strides=[2, 2]
                         )
@@ -51,7 +54,7 @@ class PGGAN(object):
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
-                            filters=inputs.shape[1].value,
+                            filters=num_filters(resolution),
                             kernel_size=[3, 3]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -126,12 +129,15 @@ class PGGAN(object):
 
     def discriminator(self, images, labels, target_resolution, name="dicriminator", reuse=None):
 
+        def num_filters(resolution):
+            return min(self.max_filters, self.min_filters * (self.max_resolution // resolution))
+
         def color_block(inputs, resolution, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("color_block_{0}x{0}".format(resolution), reuse=reuse):
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
                         inputs=inputs,
-                        filters=self.min_filters * (self.max_resolution // resolution),
+                        filters=num_filters(resolution),
                         kernel_size=[1, 1]
                     )
                     inputs = tf.nn.leaky_relu(inputs)
@@ -143,7 +149,7 @@ class PGGAN(object):
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
-                            filters=inputs.shape[1].value,
+                            filters=num_filters(resolution),
                             kernel_size=[3, 3],
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -151,7 +157,7 @@ class PGGAN(object):
                     with tf.variable_scope("conv_downscale"):
                         inputs = conv2d(
                             inputs=inputs,
-                            filters=inputs.shape[1].value << 1,
+                            filters=num_filters(resolution >> 1),
                             kernel_size=[3, 3],
                             strides=[2, 2],
                             apply_spectral_norm=self.apply_spectral_norm
@@ -162,7 +168,7 @@ class PGGAN(object):
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
-                            filters=inputs.shape[1].value,
+                            filters=num_filters(resolution),
                             kernel_size=[3, 3],
                             apply_spectral_norm=self.apply_spectral_norm
                         )
