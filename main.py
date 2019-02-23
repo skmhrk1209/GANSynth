@@ -51,7 +51,7 @@ pggan = PGGAN(
     min_filters=8,
     max_filters=512,
     num_channels=2,
-    apply_spectral_norm=True
+    apply_spectral_norm=False
 )
 
 nsynth = NSynth(
@@ -78,7 +78,7 @@ gan = GANSynth(
         latent_size=256,
         batch_size=args.batch_size
     ),
-    resolution_fn=lambda t: (512 * t) // 100000 + 4,
+    resolution_fn=lambda t: (512 * t) // 1000000 + 8,
     hyper_params=Param(
         generator_learning_rate=8e-4,
         generator_beta1=0.0,
