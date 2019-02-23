@@ -28,20 +28,26 @@ class NSynth(object):
             features={
                 "audio": tf.FixedLenFeature([self.audio_length], dtype=tf.float32),
                 "pitch": tf.FixedLenFeature([], dtype=tf.int64),
+                "instrument_source": tf.FixedLenFeature([], dtype=tf.int64)
             }
         )
         # =========================================================================================
         # wave
         wave = features["audio"]
         # =========================================================================================
-        # one-hot label
-        label = features["pitch"]
-        label = self.index_table.lookup(label)
+        # pitch
+        pitch = features["pitch"]
+        # =========================================================================================
+        # label
+        label = self.index_table.lookup(pitch)
         label = tf.one_hot(label, len(self.pitch_counts))
+        # =========================================================================================
+        # source
+        source = features["instrument_source"]
 
-        return wave, label
+        return wave, label, pitch, source
 
-    def preprocess(self, waves, labels):
+    def preprocess(self, waves, labels, pitches, sources):
         # =========================================================================================
         time_steps, num_freq_bins = self.spectrogram_shape
         # power of two only has 1 nonzero in binary representation
@@ -67,8 +73,10 @@ class NSynth(object):
         padding_right = padding - padding_left
         # =========================================================================================
         # convert from waves to complex stfts
-        # wave: tensor of the waveform, shape [batch, time]
-        # stft: complex64 tensor of stft, shape [batch, time, freq]
+        # waves: tensor of the waveform
+        # shape [batch, time]
+        # stfts: complex64 tensor of stft
+        # shape [batch, time, freq]
         waves = tf.pad(
             tensor=waves,
             paddings=[[0, 0], [padding_left, padding_right]]
@@ -86,12 +94,12 @@ class NSynth(object):
             )
         # =========================================================================================
         # converts stft to mel spectrogram
-        # stft: complex64 tensor of stft
+        # stfts: complex64 tensor of stft
         # shape [batch, time, freq]
-        # mel spectrogram: tensor of log magnitudes and instantaneous frequencies
+        # mel spectrograms: tensor of log magnitudes and instantaneous frequencies
         # shape [batch, time, freq, 2], mel scaling of frequencies
-        magnitude_spectrograms = tf.abs(stfts)
-        phase_angles = tf.angle(stfts)
+        magnitudes = tf.abs(stfts)
+        phases = tf.angle(stfts)
 
         linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
             num_mel_bins=num_freq_bins // self.mel_downscale,
@@ -100,37 +108,37 @@ class NSynth(object):
             lower_edge_hertz=0.0,
             upper_edge_hertz=self.sample_rate / 2.0
         )
-        mel_magnitude_spectrograms = tf.tensordot(
-            a=magnitude_spectrograms,
+        mel_magnitudes = tf.tensordot(
+            a=magnitudes,
             b=linear_to_mel_weight_matrix,
             axes=1
         )
-        mel_magnitude_spectrograms.set_shape(
-            magnitude_spectrograms.shape[:-1].concatenate(
+        mel_magnitudes.set_shape(
+            magnitudes.shape[:-1].concatenate(
                 linear_to_mel_weight_matrix.shape[-1:]
             )
         )
-        mel_phase_angles = tf.tensordot(
-            a=phase_angles,
+        mel_phases = tf.tensordot(
+            a=phases,
             b=linear_to_mel_weight_matrix,
             axes=1
         )
-        mel_phase_angles.set_shape(
-            phase_angles.shape[:-1].concatenate(
+        mel_phases.set_shape(
+            phases.shape[:-1].concatenate(
                 linear_to_mel_weight_matrix.shape[-1:]
             )
         )
 
-        log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
-        mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_angles)
+        log_mel_magnitudes = tf.log(mel_magnitudes + 1e-6)
+        mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phases)
 
         def scale(input, input_min, input_max, output_min, output_max):
             return output_min + (input - input_min) / (input_max - input_min) * (output_max - output_min)
 
-        log_mel_magnitude_spectrograms = scale(log_mel_magnitude_spectrograms, -14.0, 6.0, -1.0, 1.0)
+        log_mel_magnitudes = scale(log_mel_magnitudes, -14.0, 6.0, -1.0, 1.0)
 
         data = tf.stack([
-            log_mel_magnitude_spectrograms,
+            log_mel_magnitudes,
             mel_instantaneous_frequencies
         ], axis=1)
 
@@ -152,6 +160,14 @@ class NSynth(object):
             map_func=self.parse_example,
             num_parallel_calls=os.cpu_count()
         )
+        # filter just acoustic instruments (as in the paper) and just pitches 24-84
+        dataset = dataset.filter(lambda wave, label, pitch, source: tf.logical_and(
+            x=tf.equal(source, 0),
+            y=tf.logical_and(
+                x=tf.greater_equal(pitch, min(self.pitch_counts)),
+                y=tf.less_equal(pitch, max(self.pitch_counts))
+            )
+        ))
         dataset = dataset.batch(batch_size=batch_size)
         dataset = dataset.map(
             map_func=self.preprocess,
