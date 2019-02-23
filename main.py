@@ -75,6 +75,7 @@ gan = GANSynth(
     ),
     fake_input_fn=functools.partial(
         nsynth.fake_input_fn,
+        latent_size=256,
         batch_size=args.batch_size
     ),
     resolution_fn=lambda t: (512 * t) // 100000 + 4,

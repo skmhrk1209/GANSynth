@@ -164,9 +164,9 @@ class NSynth(object):
 
         return iterator.get_next()
 
-    def fake_input_fn(self, batch_size):
+    def fake_input_fn(self, latent_size, batch_size):
 
-        latents = tf.random_normal([batch_size, 256])
+        latents = tf.random_normal([batch_size, latent_size])
 
         labels = tf.one_hot(tf.reshape(tf.multinomial(
             logits=tf.log([tf.cast(list(zip(*sorted(self.pitch_counts.items())))[1], tf.float32)]),
