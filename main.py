@@ -100,5 +100,6 @@ config = tf.ConfigProto(
 with tf.Session(config=config) as session:
 
     gan.initialize()
+
     if args.train:
         gan.train(args.max_steps)
