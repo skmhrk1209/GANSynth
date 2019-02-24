@@ -31,7 +31,7 @@ from attrdict import AttrDict as Param
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model", help="model directory")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"], help="tfrecords")
-parser.add_argument("--batch_size", type=int, default=8, help="batch size")
+parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--max_steps", type=int, default=1000000, help="maximum number of training steps")
 parser.add_argument("--steps", type=int, default=None, help="number of test steps")
 parser.add_argument('--train', action="store_true", help="with training")
