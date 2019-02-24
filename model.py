@@ -127,17 +127,15 @@ class GANSynth(object):
                     global_step, discriminator_loss, generator_loss,
                 ))
 
+                summary = session.run(self.summary)
+                writer.add_summary(summary, global_step=global_step)
+
                 if global_step % 1000 == 0:
 
-                    summary = session.run(self.summary)
-                    writer.add_summary(summary, global_step=global_step)
-
-                    if global_step % 10000 == 0:
-
-                        checkpoint = self.saver.save(
-                            sess=session,
-                            save_path=os.path.join(self.name, "model.ckpt"),
-                            global_step=global_step
-                        )
+                    checkpoint = self.saver.save(
+                        sess=session,
+                        save_path=os.path.join(self.name, "model.ckpt"),
+                        global_step=global_step
+                    )
 
         print("training ended")
