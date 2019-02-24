@@ -3,18 +3,6 @@ import numpy as np
 from ops import *
 
 
-def log2(a, b):
-    n = 0
-    while (a != b).any():
-        a <<= 1
-        n += 1
-    return n
-
-
-def lerp(a, b, t):
-    return t * a + (1 - t) * b
-
-
 class PGGAN(object):
 
     def __init__(self, min_resolution, max_resolution, min_channels, max_channels, apply_spectral_norm):
@@ -24,6 +12,8 @@ class PGGAN(object):
         self.min_channels = min_channels
         self.max_channels = max_channels
         self.apply_spectral_norm = apply_spectral_norm
+
+        def log2(a, b): return 0 if (a == b).all() else 1 + log2(a << 1, b)
 
         self.min_depth = log2(self.min_resolution, self.min_resolution)
         self.max_depth = log2(self.min_resolution, self.max_resolution)
@@ -89,6 +79,8 @@ class PGGAN(object):
                 return inputs
 
         out_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+
+        def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(feature_maps, depth):
 
@@ -198,6 +190,8 @@ class PGGAN(object):
                 return inputs
 
         in_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+
+        def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(images, depth):
 
