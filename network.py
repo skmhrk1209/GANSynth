@@ -155,7 +155,7 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                    inputs = tf.squeeze(inputs, axis=[2, 3])
+                    inputs = tf.reshape(inputs, [-1, inputs.shape[1]])
                     with tf.variable_scope("logits"):
                         logits = dense(
                             inputs=inputs,

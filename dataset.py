@@ -138,7 +138,7 @@ class NSynth(object):
 
         latents = tf.random_normal([batch_size, latent_size])
 
-        labels = tf.one_hot(tf.reshape(tf.random.categorical(
+        labels = tf.one_hot(tf.reshape(tf.random.multinomial(
             logits=tf.log([tf.cast(list(zip(*sorted(self.pitch_counts.items())))[1], tf.float32)]),
             num_samples=batch_size
         ), [batch_size]), len(self.pitch_counts))
