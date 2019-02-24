@@ -32,6 +32,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model", help="model directory")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"], help="tfrecords")
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
+parser.add_argument("--progress_steps", type=int, default=500000, help="number of progress steps")
 parser.add_argument("--max_steps", type=int, default=1000000, help="maximum number of training steps")
 parser.add_argument('--train', action="store_true", help="with training")
 parser.add_argument('--eval', action="store_true", help="with evaluation")
@@ -76,12 +77,12 @@ gan_synth = GANSynth(
         latent_size=256,
         batch_size=args.batch_size
     ),
-    max_steps=args.max_steps,
+    progress_steps=args.progress_steps,
     hyper_params=Param(
         generator_learning_rate=8e-4,
         generator_beta1=0.0,
         generator_beta2=0.99,
-        discriminator_learning_rate=4e-4,  # 8e-4,
+        discriminator_learning_rate=8e-4,
         discriminator_beta1=0.0,
         discriminator_beta2=0.99
     ),
@@ -98,4 +99,4 @@ config = tf.ConfigProto(
 with tf.Session(config=config) as session:
 
     gan_synth.initialize()
-    gan_synth.train()
+    gan_synth.train(args.max_steps)

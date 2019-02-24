@@ -8,7 +8,7 @@ import os
 class GANSynth(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
-                 max_steps, hyper_params, name="gan_synth", reuse=None):
+                 progress_steps, hyper_params, name="gan_synth", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
@@ -17,8 +17,8 @@ class GANSynth(object):
             # =========================================================================================
             # parameters
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
-            self.max_steps = max_steps
-            self.progress = tf.cast(self.global_step / self.max_steps, tf.float32)
+            self.progress_steps = progress_steps
+            self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
             # =========================================================================================
             # input_fn for real data and fake data
             with tf.device("/cpu:0"):
@@ -102,7 +102,7 @@ class GANSynth(object):
             session.run(tf.variables_initializer(global_variables))
             print("global variables in {} initialized".format(self.name))
 
-    def train(self):
+    def train(self, max_steps):
 
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
@@ -112,7 +112,7 @@ class GANSynth(object):
         while True:
 
             global_step = session.run(self.global_step)
-            if global_step > self.max_steps:
+            if global_step > max_steps:
                 break
 
             session.run(self.discriminator_train_op)
