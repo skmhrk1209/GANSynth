@@ -13,10 +13,10 @@ class PGGAN(object):
         self.max_channels = max_channels
         self.apply_spectral_norm = apply_spectral_norm
 
-        def log2(a, b): return 0 if (a == b).all() else 1 + log2(a << 1, b)
+        def log2(x): return 0 if (x == 1).all() else 1 + log2(x >> 1)
 
-        self.min_depth = log2(self.min_resolution, self.min_resolution)
-        self.max_depth = log2(self.min_resolution, self.max_resolution)
+        self.min_depth = log2(self.min_resolution // self.min_resolution)
+        self.max_depth = log2(self.max_resolution // self.min_resolution)
 
     def generator(self, latents, labels, progress, name="ganerator", reuse=None):
 
