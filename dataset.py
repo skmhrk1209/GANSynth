@@ -103,7 +103,10 @@ class NSynth(object):
         dataset = tf.data.TFRecordDataset(filenames)
         if shuffle:
             dataset = dataset.shuffle(
-                buffer_size=100000,
+                buffer_size=sum([
+                    len(list(tf.io.tf_record_iterator(filename)))
+                    for filename in filenames
+                ]),
                 reshuffle_each_iteration=True
             )
         dataset = dataset.repeat(count=num_epochs)
