@@ -94,9 +94,9 @@ class NSynth(object):
 
         log_mel_magnitudes = scale(log_mel_magnitudes, -14.0, 6.0, -1.0, 1.0)
 
-        data = tf.stack([log_mel_magnitudes, mel_instantaneous_frequencies], axis=1)
+        images = tf.stack([log_mel_magnitudes, mel_instantaneous_frequencies], axis=1)
 
-        return data, labels
+        return images, labels
 
     def real_input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
@@ -104,7 +104,7 @@ class NSynth(object):
         if shuffle:
             dataset = dataset.shuffle(
                 buffer_size=sum([
-                    len(list(tf.python_io.tf_record_iterator(filename)))
+                    len(list(tf.io.tf_record_iterator(filename)))
                     for filename in filenames
                 ]),
                 reshuffle_each_iteration=True
