@@ -21,21 +21,23 @@ class PGGAN(object):
     def generator(self, latents, labels, progress, name="ganerator", reuse=None):
 
         def resolution(depth):
-            return self.min_resolution << depth
+            return (self.min_resolution << depth).tolist()
 
         def channels(depth):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope("conv_block_{0}x{0}".format(*resolution(depth)), reuse=reuse):
+            with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
+                    inputs = tf.reshape(inputs, [-1, inputs.shape[1], 1, 1])
                     inputs = pixel_norm(inputs)
-                    with tf.variable_scope("dense"):
-                        inputs = dense(
+                    with tf.variable_scope("conv_upscale"):
+                        inputs = conv2d_transpose(
                             inputs=inputs,
-                            units=channels(depth) * resolution(depth).prod()
+                            filters=channels(depth),
+                            kernel_size=resolution(depth),
+                            strides=resolution(depth)
                         )
-                        inputs = tf.reshape(inputs, [-1, channels(depth), *resolution(depth)])
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
@@ -67,7 +69,7 @@ class PGGAN(object):
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope("color_block_{0}x{0}".format(*resolution(depth)), reuse=reuse):
+            with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
                         inputs=inputs,
@@ -127,13 +129,13 @@ class PGGAN(object):
     def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
 
         def resolution(depth):
-            return self.min_resolution << depth
+            return (self.min_resolution << depth).tolist()
 
         def channels(depth):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope("conv_block_{0}x{0}".format(*resolution(depth)), reuse=reuse):
+            with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
                     inputs = batch_stddev(inputs)
                     with tf.variable_scope("conv"):
@@ -144,8 +146,16 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                    with tf.variable_scope("global_average_pooling"):
-                        inputs = global_average_pooling2d(inputs)
+                    with tf.variable_scope("conv_downscale"):
+                        inputs = conv2d(
+                            inputs=inputs,
+                            filters=channels(depth - 1),
+                            kernel_size=resolution(depth),
+                            strides=resolution(depth),
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                        inputs = tf.nn.leaky_relu(inputs)
+                    inputs = tf.squeeze(inputs, axis=[2, 3])
                     with tf.variable_scope("logits"):
                         logits = dense(
                             inputs=inputs,
@@ -179,7 +189,7 @@ class PGGAN(object):
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope("color_block_{0}x{0}".format(*resolution(depth)), reuse=reuse):
+            with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
                         inputs=inputs,

@@ -46,10 +46,10 @@ with open("pitch_counts.pickle", "rb") as f:
     pitch_counts = pickle.load(f)
 
 pggan = PGGAN(
-    min_resolution=[2, 16],
+    min_resolution=[1, 8],
     max_resolution=[128, 1024],
-    min_channels=32,
-    max_channels=256,
+    min_channels=16,
+    max_channels=512,
     apply_spectral_norm=True
 )
 
@@ -74,7 +74,7 @@ gan_synth = GANSynth(
     ),
     fake_input_fn=functools.partial(
         nsynth.fake_input_fn,
-        latent_size=256,
+        latent_size=512,
         batch_size=args.batch_size
     ),
     progress_steps=args.progress_steps,

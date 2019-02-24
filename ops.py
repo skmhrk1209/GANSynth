@@ -94,7 +94,8 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, app
     return inputs
 
 
-def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def conv2d(inputs, filters, kernel_size, strides=[1, 1], padding="SAME", data_format="NCHW",
+           use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -105,8 +106,8 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance
         input=inputs,
         filter=weight,
         strides=[1, 1] + strides,
-        padding="SAME",
-        data_format="NCHW"
+        padding=padding,
+        data_format=data_format
     )
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
@@ -114,7 +115,8 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance
     return inputs
 
 
-def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], padding="SAME", data_format="NCHW",
+                     use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -128,8 +130,8 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
         filter=weight,
         output_shape=output_shape,
         strides=[1, 1] + strides,
-        padding="SAME",
-        data_format="NCHW"
+        padding=padding,
+        data_format=data_format
     )
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
