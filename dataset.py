@@ -101,15 +101,6 @@ class NSynth(object):
     def real_input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
         dataset = tf.data.TFRecordDataset(filenames)
-        if shuffle:
-            dataset = dataset.shuffle(
-                buffer_size=sum([
-                    len(list(tf.io.tf_record_iterator(filename)))
-                    for filename in filenames
-                ]),
-                reshuffle_each_iteration=True
-            )
-        dataset = dataset.repeat(count=num_epochs)
         dataset = dataset.map(
             map_func=self.parse_example,
             num_parallel_calls=os.cpu_count()
@@ -122,6 +113,12 @@ class NSynth(object):
                 y=tf.less_equal(pitch, max(self.pitch_counts))
             )
         ))
+        if shuffle:
+            dataset = dataset.shuffle(
+                buffer_size=100000,
+                reshuffle_each_iteration=True
+            )
+        dataset = dataset.repeat(count=num_epochs)
         dataset = dataset.batch(batch_size=batch_size)
         dataset = dataset.map(
             map_func=self.preprocess,

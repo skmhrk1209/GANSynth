@@ -80,7 +80,8 @@ def get_bias(shape):
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def dense(inputs, units, use_bias=True, variance_scale=2,
+          scale_weight=True, apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -94,8 +95,8 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, app
     return inputs
 
 
-def conv2d(inputs, filters, kernel_size, strides=[1, 1], padding="SAME", data_format="NCHW",
-           use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
+           variance_scale=2, scale_weight=True, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -106,8 +107,8 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], padding="SAME", data_fo
         input=inputs,
         filter=weight,
         strides=[1, 1] + strides,
-        padding=padding,
-        data_format=data_format
+        padding="SAME",
+        data_format="NCHW"
     )
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
@@ -115,8 +116,8 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], padding="SAME", data_fo
     return inputs
 
 
-def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], padding="SAME", data_format="NCHW",
-                     use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
+                     variance_scale=2, scale_weight=True, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -130,8 +131,8 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], padding="SAME
         filter=weight,
         output_shape=output_shape,
         strides=[1, 1] + strides,
-        padding=padding,
-        data_format=data_format
+        padding="SAME",
+        data_format="NCHW"
     )
     if use_bias:
         bias = get_bias([inputs.shape[1].value])
