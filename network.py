@@ -33,7 +33,7 @@ class PGGAN(object):
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
 
             print(yellow("--------------------------------------------------"))
-            print(yellow("conv block: {}".format(depth)))
+            print(yellow("conv block {}".format(depth)))
             print(yellow("resolution: {}x{}".format(*resolution(depth))))
             print(yellow("channels: {}".format(channels(depth))))
 
@@ -159,8 +159,8 @@ class PGGAN(object):
 
     def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
 
-        print(yellow("--------------------------------------------------"))
-        print(yellow("discriminator architecture"))
+        print(cyan("--------------------------------------------------"))
+        print(cyan("discriminator architecture"))
 
         def resolution(depth):
             return self.min_resolution << depth
@@ -170,10 +170,10 @@ class PGGAN(object):
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
 
-            print(yellow("--------------------------------------------------"))
-            print(yellow("conv block: {}".format(depth)))
-            print(yellow("resolution: {}x{}".format(*resolution(depth))))
-            print(yellow("channels: {}".format(channels(depth))))
+            print(cyan("--------------------------------------------------"))
+            print(cyan("conv block {}".format(depth)))
+            print(cyan("resolution: {}x{}".format(*resolution(depth))))
+            print(cyan("channels: {}".format(channels(depth))))
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
