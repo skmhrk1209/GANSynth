@@ -80,8 +80,7 @@ def get_bias(shape):
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2,
-          scale_weight=True, apply_spectral_norm=False):
+def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
