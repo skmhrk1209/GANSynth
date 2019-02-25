@@ -147,7 +147,8 @@ def pixel_norm(inputs, epsilon=1e-8):
 
 
 def upscale2d(inputs, factors=[2, 2]):
-    if factors == [1, 1]:
+    factors = np.asanyarray(factors)
+    if (factors == 1).all():
         return inputs
     shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2], 1, shape[3], 1])
@@ -158,7 +159,8 @@ def upscale2d(inputs, factors=[2, 2]):
 
 def downscale2d(inputs, factors=[2, 2]):
     # NOTE: requires tf_config['graph_options.place_pruned_graph'] = True
-    if factors == [1, 1]:
+    factors = np.asanyarray(factors)
+    if (factors == 1).all():
         return inputs
     inputs = tf.nn.avg_pool(
         value=inputs,

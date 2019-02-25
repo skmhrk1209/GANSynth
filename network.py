@@ -21,7 +21,7 @@ class PGGAN(object):
     def generator(self, latents, labels, progress, name="ganerator", reuse=None):
 
         def resolution(depth):
-            return (self.min_resolution << depth).tolist()
+            return self.min_resolution << depth
 
         def channels(depth):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
@@ -35,8 +35,8 @@ class PGGAN(object):
                         inputs = conv2d_transpose(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=resolution(depth),
-                            strides=resolution(depth)
+                            kernel_size=resolution(depth).tolist(),
+                            strides=resolution(depth).tolist()
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -85,22 +85,40 @@ class PGGAN(object):
         def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(feature_maps, depth):
+            ''' depthに対応する層によって特徴マップを画像として生成
+            Args:
+                feature_maps: 1つ浅い層から受け取った特徴マップ
+                depth: 現在見ている層の深さ（解像度が上がる方向に深くなると定義）
+            Returns:
+                images: 最終的な生成画像
+            '''
 
+            # 現在より深い層によって生成された画像（ここで再帰）
             def high_resolution_images():
                 return grow(conv_block(feature_maps, depth), depth + 1)
 
+            # 現在の層の解像度で生成した画像を最終解像度までupscaleする
             def middle_resolution_images():
-                return upscale2d(color_block(conv_block(feature_maps, depth), depth), [1 << (self.max_depth - depth)] * 2)
+                return upscale2d(
+                    inputs=color_block(conv_block(feature_maps, depth), depth),
+                    factors=resolution(self.max_depth) // resolution(depth)
+                )
 
+            # 1つ浅い層の解像度で生成した画像を最終解像度までupscaleする
             def low_resolution_images():
-                return upscale2d(color_block(feature_maps, depth - 1), [1 << (self.max_depth - (depth - 1))] * 2)
+                return upscale2d(
+                    inputs=color_block(feature_maps, depth - 1),
+                    factors=resolution(self.max_depth) // resolution(depth - 1)
+                )
 
+            # 最も浅い層はlow_resolution_feature_mapsは選択肢にない
             if depth == self.min_depth:
                 images = tf.cond(
                     pred=tf.greater(out_depth, depth),
                     true_fn=high_resolution_images,
                     false_fn=middle_resolution_images
                 )
+            # 最も深い層はhigh_resolution_feature_mapsは選択肢にない
             elif depth == self.max_depth:
                 images = tf.cond(
                     pred=tf.greater(out_depth, depth),
@@ -111,6 +129,9 @@ class PGGAN(object):
                         t=depth - out_depth
                     )
                 )
+            # それ以外は以下のいずれかを出力する
+            # 1. high_resolution_images
+            # 2. low_resolution_imagesとmiddle_resolution_imagesの線形補間
             else:
                 images = tf.cond(
                     pred=tf.greater(out_depth, depth),
@@ -129,7 +150,7 @@ class PGGAN(object):
     def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
 
         def resolution(depth):
-            return (self.min_resolution << depth).tolist()
+            return self.min_resolution << depth
 
         def channels(depth):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
@@ -150,8 +171,8 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth - 1),
-                            kernel_size=resolution(depth),
-                            strides=resolution(depth),
+                            kernel_size=resolution(depth).tolist(),
+                            strides=resolution(depth).tolist(),
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -204,22 +225,40 @@ class PGGAN(object):
         def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(images, depth):
+            ''' depthに対応する層によって画像を特徴マップとして取り込む
+            Args:
+                images: 入力画像（depthに関わらず一定）
+                depth: 現在見ている層の深さ（解像度が上がる方向に深くなると定義）
+            Returns:
+                feature_maps: 1つ浅い層に渡す特徴マップ
+            '''
 
+            # 現在より深い層によって取り込まれた特徴マップ（ここで再帰）
             def high_resolution_feature_maps():
                 return conv_block(grow(images, depth + 1), depth)
 
+            # 現在の層の解像度までdownscaleした後，特徴マップとして取り込む
             def middle_resolution_feature_maps():
-                return conv_block(color_block(downscale2d(images, [1 << (self.max_depth - depth)] * 2), depth), depth)
+                return conv_block(color_block(downscale2d(
+                    inputs=images,
+                    factors=resolution(self.max_depth) // resolution(depth)
+                ), depth), depth)
 
+            # 1つ浅い層の解像度までdownscaleした後，特徴マップとして取り込む
             def low_resolution_feature_maps():
-                return color_block(downscale2d(images, [1 << (self.max_depth - (depth - 1))] * 2), depth - 1)
+                return color_block(downscale2d(
+                    inputs=images,
+                    factors=resolution(self.max_depth) // resolution(depth - 1)
+                ), depth - 1)
 
+            # 最も浅い層はlow_resolution_feature_mapsは選択肢にない
             if depth == self.min_depth:
                 feature_maps = tf.cond(
                     pred=tf.greater(in_depth, depth),
                     true_fn=high_resolution_feature_maps,
                     false_fn=middle_resolution_feature_maps
                 )
+            # 最も深い層はhigh_resolution_feature_mapsは選択肢にない
             elif depth == self.max_depth:
                 feature_maps = tf.cond(
                     pred=tf.greater(in_depth, depth),
@@ -230,6 +269,9 @@ class PGGAN(object):
                         t=depth - in_depth
                     )
                 )
+            # それ以外は以下のいずれかを出力する
+            # 1. high_resolution_images
+            # 2. low_resolution_imagesとmiddle_resolution_imagesの線形補間
             else:
                 feature_maps = tf.cond(
                     pred=tf.greater(in_depth, depth),
