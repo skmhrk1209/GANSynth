@@ -21,9 +21,8 @@ class GANSynth(object):
             self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
             # =========================================================================================
             # input_fn for real data and fake data
-            with tf.device("/cpu:0"):
-                self.real_images, self.real_labels = real_input_fn()
-                self.fake_latents, self.fake_labels = fake_input_fn()
+            self.real_images, self.real_labels = real_input_fn()
+            self.fake_latents, self.fake_labels = fake_input_fn()
             # =========================================================================================
             # generated fake data
             self.fake_images = generator(self.fake_latents, self.fake_labels, self.progress, "generator")
