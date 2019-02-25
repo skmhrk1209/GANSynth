@@ -125,7 +125,8 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
         apply_spectral_norm=apply_spectral_norm
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
-    output_shape = [tf.shape(inputs)[0], filters, *np.array(inputs.shape.as_list()[2:]) * strides]
+    input_shape = np.array(inputs.shape.as_list())
+    output_shape = [tf.shape(inputs)[0], filters, *input_shape[2:] * strides]
     inputs = tf.nn.conv2d_transpose(
         value=inputs,
         filter=weight,
