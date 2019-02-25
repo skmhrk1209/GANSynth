@@ -111,14 +111,14 @@ class PGGAN(object):
                     factors=resolution(self.max_depth) // resolution(depth - 1)
                 )
 
-            # 最も浅い層はlow_resolution_feature_mapsは選択肢にない
+            # 最も浅い層はlow_resolution_imagesは選択肢にない
             if depth == self.min_depth:
                 images = tf.cond(
                     pred=tf.greater(out_depth, depth),
                     true_fn=high_resolution_images,
                     false_fn=middle_resolution_images
                 )
-            # 最も深い層はhigh_resolution_feature_mapsは選択肢にない
+            # 最も深い層はhigh_resolution_imagesは選択肢にない
             elif depth == self.max_depth:
                 images = tf.cond(
                     pred=tf.greater(out_depth, depth),
@@ -270,8 +270,8 @@ class PGGAN(object):
                     )
                 )
             # それ以外は以下のいずれかを出力する
-            # 1. high_resolution_images
-            # 2. low_resolution_imagesとmiddle_resolution_imagesの線形補間
+            # 1. high_resolution_feature_maps
+            # 2. low_resolution_feature_mapsとmiddle_resolution_feature_mapsの線形補間
             else:
                 feature_maps = tf.cond(
                     pred=tf.greater(in_depth, depth),
