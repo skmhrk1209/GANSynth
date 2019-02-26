@@ -12,16 +12,16 @@ class NSynth(object):
 
         self.pitch_counts = pitch_counts
         self.audio_length = audio_length
-        self.time_steps, self.num_freq_bins = spectrogram_shape
-        self.frame_length = self.num_freq_bins * 2
-        self.frame_step = int((1. - overlap) * self.frame_length)
-        self.num_samples = self.frame_step * (self.time_steps - 1) + self.frame_length
+        self.spectrogram_shape = spectrogram_shape
+        self.overlap = overlap
         self.sample_rate = sample_rate
         self.mel_downscale = mel_downscale
-        self.index_table = tf.contrib.lookup.index_table_from_tensor(
-            mapping=sorted(pitch_counts),
-            dtype=tf.int32
-        )
+        self.index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitch_counts), dtype=tf.int32)
+
+        self.time_steps, self.num_freq_bins = self.spectrogram_shape
+        self.frame_length = self.num_freq_bins * 2
+        self.frame_step = int((1. - self.overlap) * self.frame_length)
+        self.num_samples = self.frame_step * (self.time_steps - 1) + self.frame_length
 
     def parse_example(self, example):
         # =========================================================================================
