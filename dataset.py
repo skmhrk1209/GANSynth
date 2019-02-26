@@ -20,7 +20,7 @@ class NSynth(object):
 
         self.time_steps, self.num_freq_bins = self.spectrogram_shape
         self.frame_length = self.num_freq_bins * 2
-        self.frame_step = int((1. - self.overlap) * self.frame_length)
+        self.frame_step = int((1 - self.overlap) * self.frame_length)
         self.num_samples = self.frame_step * (self.time_steps - 1) + self.frame_length
 
     def parse_example(self, example):
