@@ -55,10 +55,9 @@ pggan = PGGAN(
 nsynth = NSynth(
     pitch_counts=pitch_counts,
     audio_length=64000,
-    spectrogram_shape=[128, 1024],
-    overlap=0.75,
     sample_rate=16000,
-    mel_downscale=1
+    spectrogram_shape=[128, 1024],
+    overlap=0.75
 )
 
 gan_synth = GANSynth(

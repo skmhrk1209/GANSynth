@@ -8,14 +8,13 @@ from ops import *
 
 class NSynth(object):
 
-    def __init__(self, pitch_counts, audio_length, spectrogram_shape, overlap, sample_rate, mel_downscale):
+    def __init__(self, pitch_counts, audio_length, sample_rate, spectrogram_shape, overlap):
 
         self.pitch_counts = pitch_counts
         self.audio_length = audio_length
+        self.sample_rate = sample_rate
         self.spectrogram_shape = spectrogram_shape
         self.overlap = overlap
-        self.sample_rate = sample_rate
-        self.mel_downscale = mel_downscale
         self.index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitch_counts), dtype=tf.int32)
 
         self.time_steps, self.num_freq_bins = self.spectrogram_shape
@@ -70,7 +69,7 @@ class NSynth(object):
         phases = tf.angle(stfts)
         # =========================================================================================
         linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
-            num_mel_bins=self.num_freq_bins // self.mel_downscale,
+            num_mel_bins=self.num_freq_bins,
             num_spectrogram_bins=self.num_freq_bins,
             sample_rate=self.sample_rate,
             lower_edge_hertz=0.0,
@@ -101,7 +100,7 @@ class NSynth(object):
         mel_phases = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
         # =========================================================================================
         linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
-            num_mel_bins=self.num_freq_bins // self.mel_downscale,
+            num_mel_bins=self.num_freq_bins,
             num_spectrogram_bins=self.num_freq_bins,
             sample_rate=self.sample_rate,
             lower_edge_hertz=0.0,
