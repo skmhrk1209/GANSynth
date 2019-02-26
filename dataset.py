@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 import numpy as np
 import spectral_ops
 import functools
@@ -106,7 +107,7 @@ class NSynth(object):
             lower_edge_hertz=0.0,
             upper_edge_hertz=self.sample_rate / 2.0
         )
-        mel_to_linear_weight_matrix = tf.linalg.inv(linear_to_mel_weight_matrix)
+        mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix)
         magnitudes = tf.tensordot(mel_magnitudes, mel_to_linear_weight_matrix, axes=1)
         magnitudes.set_shape(mel_magnitudes.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
         phases = tf.tensordot(mel_phases, mel_to_linear_weight_matrix, axes=1)
