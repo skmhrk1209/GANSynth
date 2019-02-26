@@ -35,17 +35,17 @@ def unwrap(phases, discont=np.pi, axis=-1):
     return phases + cumsums
 
 
-def instantaneous_frequency(phases, time_axis=-2):
+def instantaneous_frequency(phases, axis=-2):
 
-    unwrapped = unwrap(phases, axis=time_axis)
-    diffs = diff(unwrapped, axis=time_axis)
+    unwrapped = unwrap(phases, axis=axis)
+    diffs = diff(unwrapped, axis=axis)
 
     begin = [0] * unwrapped.shape.ndims
 
     size = [-1] * unwrapped.shape.ndims
-    size[time_axis] = 1
+    size[axis] = 1
 
     unwrapped = tf.slice(unwrapped, begin, size)
-    diffs = tf.concat([unwrapped, diffs], axis=time_axis) / np.pi
+    diffs = tf.concat([unwrapped, diffs], axis=axis) / np.pi
 
     return diffs
