@@ -8,7 +8,7 @@ import os
 class GANSynth(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
-                 progress_steps, hyper_params, name="gan_synth", reuse=None):
+                 postprocess_fn, hyper_params, name="gan_synth", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
@@ -17,8 +17,7 @@ class GANSynth(object):
             # =========================================================================================
             # parameters
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
-            self.progress_steps = progress_steps
-            self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
+            self.progress = tf.cast(self.global_step / self.hyper_params.progress_steps, tf.float32)
             # =========================================================================================
             # input_fn for real data and fake data
             self.real_images, self.real_labels = real_input_fn()
@@ -70,19 +69,16 @@ class GANSynth(object):
                     global_step=self.global_step
                 )
             #========================================================================#
+            # waveforms
+            self.waveforms = postprocess_fn(self.fake_images, self.fake_labels)
+            #========================================================================#
             # utilities
             self.saver = tf.train.Saver()
-            self.real_log_mel_magnitude_spectrograms, self.real_mel_instantaneous_frequencies = tf.unstack(self.real_images, axis=1)
-            self.fake_log_mel_magnitude_spectrograms, self.fake_mel_instantaneous_frequencies = tf.unstack(self.fake_images, axis=1)
-            self.real_log_mel_magnitude_spectrograms = tf.expand_dims(self.real_log_mel_magnitude_spectrograms, axis=-1)
-            self.real_mel_instantaneous_frequencies = tf.expand_dims(self.real_mel_instantaneous_frequencies, axis=-1)
-            self.fake_log_mel_magnitude_spectrograms = tf.expand_dims(self.fake_log_mel_magnitude_spectrograms, axis=-1)
-            self.fake_mel_instantaneous_frequencies = tf.expand_dims(self.fake_mel_instantaneous_frequencies, axis=-1)
             self.summary = tf.summary.merge([
-                tf.summary.image("real_log_mel_magnitude_spectrograms", self.real_log_mel_magnitude_spectrograms, max_outputs=2),
-                tf.summary.image("real_mel_instantaneous_frequencies", self.real_mel_instantaneous_frequencies, max_outputs=2),
-                tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_log_mel_magnitude_spectrograms, max_outputs=2),
-                tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_mel_instantaneous_frequencies, max_outputs=2),
+                tf.summary.image("real_log_mel_magnitude_spectrograms", self.real_images[:, 0, ..., tf.newaxis], max_outputs=2),
+                tf.summary.image("real_mel_instantaneous_frequencies", self.real_images[:, 1, ..., tf.newaxis], max_outputs=2),
+                tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_images[:, 0, ..., tf.newaxis], max_outputs=2),
+                tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_images[:, 1, ..., tf.newaxis], max_outputs=2),
                 tf.summary.scalar("discriminator_loss", self.discriminator_loss),
                 tf.summary.scalar("generator_loss", self.generator_loss)
             ])
@@ -138,3 +134,13 @@ class GANSynth(object):
                     )
 
         print("training ended")
+
+    def generate(self, num_samples):
+
+        session = tf.get_default_session()
+
+        for i in range(num_samples):
+
+            waveforms = session.run(self.waveforms)
+
+            # ... make waveforms
