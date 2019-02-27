@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
+def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
     ''' Spectral Normalization
         [Spectral Normalization for Generative Adversarial Networks]
         (https://arxiv.org/pdf/1802.05957.pdf)
@@ -24,7 +24,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
         # so it should be reshaped to (KH * KW * C_in, C_out), and similarly for other
         # layers that put output channels as last dimension. This implies that w
         # here is equivalent to w.T in the paper.
-        w = tf.reshape(inputs, [-1, inputs.shape[-1]])
+        w = tf.reshape(inputs, [-1, inputs.shape[-1].value])
 
         # Choose whether to persist the first left or first right singular vector.
         # As the underlying matrix is PSD, this should be equivalent, but in practice
@@ -32,9 +32,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
         # to maintain the left or right one, or pick the one which has the smaller
         # dimension. We use the same variable for the singular vector if we switch
         # from normal weights to EMA weights.
-        if singular_value == "auto":
-            singular_value = "left" if w.shape[0].value <= w.shape[1].value else "right"
-        u_shape = [w.shape[0].value, 1] if singular_value == "left" else [1, w.shape[-1].value]
+        u_shape = [1, w.shape[-1].value] if singular_value == "right" else [w.shape[0].value, 1]
 
         u_var = tf.get_variable(
             name="u_var",
