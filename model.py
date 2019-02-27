@@ -110,7 +110,10 @@ class GANSynth(object):
             if global_step % 100 == 0:
 
                 summary = session.run(self.summary)
-                writer.add_summary(summary, global_step=global_step)
+                writer.add_summary(
+                    summary=summary,
+                    global_step=global_step
+                )
 
                 if global_step % 1000 == 0:
 
