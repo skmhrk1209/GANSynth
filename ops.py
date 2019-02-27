@@ -140,8 +140,8 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
     return inputs
 
 
-def pixel_norm(inputs, epsilon=1e-8):
-    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
+def pixel_norm(inputs):
+    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + 1e-8)
     return inputs
 
 

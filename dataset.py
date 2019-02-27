@@ -57,7 +57,7 @@ class NSynth(object):
         # This causes edge effects in the tail
         waveforms = tf.pad(waveforms, [[0, 0], [self.num_samples - self.audio_length, 0]])
         # =========================================================================================
-        stfts = tf.signal.stft(
+        stfts = tf.contrib.signal.stft(
             signals=waveforms,
             frame_length=self.frame_length,
             frame_step=self.frame_step
@@ -69,7 +69,7 @@ class NSynth(object):
         magnitudes = tf.abs(stfts)
         phases = tf.angle(stfts)
         # =========================================================================================
-        linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
+        linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
             num_mel_bins=self.num_freq_bins,
             num_spectrogram_bins=self.num_freq_bins,
             sample_rate=self.sample_rate,
@@ -100,7 +100,7 @@ class NSynth(object):
         mel_magnitudes = tf.exp(log_mel_magnitudes)
         mel_phases = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
         # =========================================================================================
-        linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
+        linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
             num_mel_bins=self.num_freq_bins,
             num_spectrogram_bins=self.num_freq_bins,
             sample_rate=self.sample_rate,
@@ -118,11 +118,11 @@ class NSynth(object):
         # discard_dc
         stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])
         # =========================================================================================
-        waveforms = tf.signal.inverse_stft(
+        waveforms = tf.contrib.signal.inverse_stft(
             stfts=stfts,
             frame_length=self.frame_length,
             frame_step=self.frame_step,
-            window_fn=tf.signal.inverse_stft_window_fn(
+            window_fn=tf.contrib.signal.inverse_stft_window_fn(
                 frame_step=self.frame_step
             )
         )
