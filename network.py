@@ -51,8 +51,7 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training,
-                            apply_spectral_norm=apply_spectral_norm
+                            training=training
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         # inputs = pixel_norm(inputs)
@@ -65,8 +64,7 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training,
-                            apply_spectral_norm=apply_spectral_norm
+                            training=training
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         # inputs = pixel_norm(inputs)
@@ -81,8 +79,7 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training,
-                            apply_spectral_norm=apply_spectral_norm
+                            training=training
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         # inputs = pixel_norm(inputs)
@@ -95,8 +92,7 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training,
-                            apply_spectral_norm=apply_spectral_norm
+                            training=training
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         # inputs = pixel_norm(inputs)
