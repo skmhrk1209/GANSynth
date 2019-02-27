@@ -7,7 +7,7 @@ def spectral_norm(input):
         [Spectral Normalization for Generative Adversarial Networks]
         (https://arxiv.org/pdf/1802.05957.pdf)
         this implementation is from google
-        (https://github.com/google/compare_gan/blob/master/compare_gan/src/gans/ops.py)
+        (https://github.com/google/compare_gan/blob/master/compare_gan/architectures/arch_ops.py)
     '''
 
     if len(input.shape) < 2:
@@ -39,11 +39,11 @@ def spectral_norm(input):
     power_iteration_rounds = 1
     for _ in range(power_iteration_rounds):
         # `v` approximates the first right singular vector of matrix `w`.
-        v = tf.nn.l2_normalize(tf.matmul(tf.transpose(w), u), axis=None, epsilon=1e-12)
-        u = tf.nn.l2_normalize(tf.matmul(w, v), axis=None, epsilon=1e-12)
+        v = tf.nn.l2_normalize(tf.matmul(tf.transpose(w), u))
+        u = tf.nn.l2_normalize(tf.matmul(w, v))
 
     # Update persisted approximation.
-    with tf.control_dependencies([tf.assign(u_var, u, name="update_u")]):
+    with tf.control_dependencies([tf.assign(u_var, u)]):
         u = tf.identity(u)
 
     # The authors of SN-GAN chose to stop gradient propagating through u and v.
@@ -140,11 +140,6 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
     return inputs
 
 
-def pixel_norm(inputs):
-    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + 1e-8)
-    return inputs
-
-
 def upscale2d(inputs, factors=[2, 2]):
     factors = np.asanyarray(factors)
     if (factors == 1).all():
@@ -171,13 +166,18 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
-def batch_stddev(inputs, group_size=4):
+def pixel_norm(inputs, epsilon=1e-8):
+    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
+    return inputs
+
+
+def batch_stddev(inputs, group_size=4, epsilon=1e-8):
     shape = inputs.shape.as_list()
     stddev = tf.reshape(inputs, [group_size, -1, *shape[1:]])
     stddev -= tf.reduce_mean(stddev, axis=0, keepdims=True)
     stddev = tf.square(stddev)
     stddev = tf.reduce_mean(stddev, axis=0)
-    stddev = tf.sqrt(stddev + 1e-8)
+    stddev = tf.sqrt(stddev + epsilon)
     stddev = tf.reduce_mean(stddev, axis=[1, 2, 3], keepdims=True)
     stddev = tf.tile(stddev, [group_size, 1, *shape[2:]])
     inputs = tf.concat([inputs, stddev], axis=1)
