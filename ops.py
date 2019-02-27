@@ -10,9 +10,6 @@ def spectral_norm(input):
         (https://github.com/google/compare_gan/blob/master/compare_gan/architectures/arch_ops.py)
     '''
 
-    if len(input.shape) < 2:
-        raise ValueError("Spectral norm can only be applied to multi-dimensional tensors")
-
     # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
     # to (C_out, C_in * KH * KW). But Sonnet's and Compare_gan's Conv2D kernel
     # weight shape is (KH, KW, C_in, C_out), so it should be reshaped to
