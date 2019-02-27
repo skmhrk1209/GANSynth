@@ -44,58 +44,62 @@ tf.logging.set_verbosity(tf.logging.INFO)
 with open("pitch_counts.pickle", "rb") as f:
     pitch_counts = pickle.load(f)
 
-pggan = PGGAN(
-    min_resolution=[1, 8],
-    max_resolution=[128, 1024],
-    min_channels=16,
-    max_channels=512,
-    apply_spectral_norm=True
-)
+with tf.Graph().as_default():
 
-nsynth = NSynth(
-    pitch_counts=pitch_counts,
-    audio_length=64000,
-    sample_rate=16000,
-    spectrogram_shape=[128, 1024],
-    overlap=0.75
-)
+    tf.set_random_seed(0)
 
-gan_synth = GANSynth(
-    discriminator=pggan.discriminator,
-    generator=pggan.generator,
-    real_input_fn=functools.partial(
-        nsynth.real_input_fn,
-        filenames=args.filenames,
-        batch_size=args.batch_size,
-        num_epochs=None,
-        shuffle=True
-    ),
-    fake_input_fn=functools.partial(
-        nsynth.fake_input_fn,
-        latent_size=512,
-        batch_size=args.batch_size
-    ),
-    postprocess_fn=nsynth.postprocess,
-    hyper_params=Param(
-        progress_steps=500000,
-        generator_learning_rate=8e-4,
-        generator_beta1=0.0,
-        generator_beta2=0.99,
-        discriminator_learning_rate=4e-4,
-        discriminator_beta1=0.0,
-        discriminator_beta2=0.99
-    ),
-    name=args.model_dir
-)
-
-config = tf.ConfigProto(
-    gpu_options=tf.GPUOptions(
-        visible_device_list=args.gpu,
-        allow_growth=True
+    pggan = PGGAN(
+        min_resolution=[1, 8],
+        max_resolution=[128, 1024],
+        min_channels=16,
+        max_channels=512,
+        apply_spectral_norm=True
     )
-)
 
-with tf.Session(config=config) as session:
+    nsynth = NSynth(
+        pitch_counts=pitch_counts,
+        audio_length=64000,
+        sample_rate=16000,
+        spectrogram_shape=[128, 1024],
+        overlap=0.75
+    )
 
-    gan_synth.initialize()
-    gan_synth.train(args.max_steps)
+    gan_synth = GANSynth(
+        discriminator=pggan.discriminator,
+        generator=pggan.generator,
+        real_input_fn=functools.partial(
+            nsynth.real_input_fn,
+            filenames=args.filenames,
+            batch_size=args.batch_size,
+            num_epochs=None,
+            shuffle=True
+        ),
+        fake_input_fn=functools.partial(
+            nsynth.fake_input_fn,
+            latent_size=512,
+            batch_size=args.batch_size
+        ),
+        postprocess_fn=nsynth.postprocess,
+        hyper_params=Param(
+            progress_steps=500000,
+            generator_learning_rate=8e-4,
+            generator_beta1=0.0,
+            generator_beta2=0.99,
+            discriminator_learning_rate=4e-4,
+            discriminator_beta1=0.0,
+            discriminator_beta2=0.99
+        ),
+        name=args.model_dir
+    )
+
+    config = tf.ConfigProto(
+        gpu_options=tf.GPUOptions(
+            visible_device_list=args.gpu,
+            allow_growth=True
+        )
+    )
+
+    with tf.Session(config=config) as session:
+
+        gan_synth.initialize()
+        gan_synth.train(args.max_steps)

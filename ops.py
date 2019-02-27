@@ -21,8 +21,9 @@ def spectral_norm(input):
     # Persisted approximation of first left singular vector of matrix `w`.
 
     u_var = tf.get_variable(
-        name="u_var",
+        name=input.name.replace(":", "") + "/u_var",
         shape=[w.shape[0], 1],
+        dtype=w.dtype,
         initializer=tf.random_normal_initializer(),
         trainable=False
     )
@@ -40,7 +41,7 @@ def spectral_norm(input):
         u = tf.nn.l2_normalize(tf.matmul(w, v))
 
     # Update persisted approximation.
-    with tf.control_dependencies([tf.assign(u_var, u)]):
+    with tf.control_dependencies([tf.assign(u_var, u, name="update_u")]):
         u = tf.identity(u)
 
     # The authors of SN-GAN chose to stop gradient propagating through u and v.
