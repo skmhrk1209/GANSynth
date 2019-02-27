@@ -98,7 +98,7 @@ with tf.Graph().as_default():
         )
     )
 
-    with tf.Session(config=config) as session:
+    with tf.Session(config=config).as_default():
 
         gan_synth.initialize()
         gan_synth.train(args.max_steps)
