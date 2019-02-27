@@ -88,7 +88,7 @@ class GANSynth(object):
         checkpoint = tf.train.latest_checkpoint(self.name)
         if checkpoint:
             self.saver.restore(session, checkpoint)
-            tf.logging.info("{} loaded".format(checkpoint))
+            tf.logging.info("{} restored".format(checkpoint))
         else:
             global_variables = tf.global_variables(scope=self.name)
             session.run(tf.variables_initializer(global_variables))
