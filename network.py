@@ -3,6 +3,15 @@ import numpy as np
 from ops import *
 
 
+def scale(inputs, in_min, in_max, out_min, out_max):
+    inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
+    return inputs
+
+
+def lerp(a, b, t):
+    return t * a + (1 - t) * b
+
+
 class PGGAN(object):
 
     def __init__(self, min_resolution, max_resolution, min_channels, max_channels, apply_spectral_norm):
@@ -106,8 +115,6 @@ class PGGAN(object):
                 return inputs
 
         out_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
-
-        def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(feature_maps, depth):
             ''' depthに対応する層によって特徴マップを画像として生成
@@ -253,8 +260,6 @@ class PGGAN(object):
                 return inputs
 
         in_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
-
-        def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(images, depth):
             ''' depthに対応する層によって画像を特徴マップとして取り込む
