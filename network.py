@@ -1,7 +1,6 @@
 import tensorflow as tf
 import numpy as np
 from ops import *
-from fabric.colors import *
 
 
 class PGGAN(object):
@@ -21,9 +20,6 @@ class PGGAN(object):
 
     def generator(self, latents, labels, progress, name="ganerator", reuse=None):
 
-        print(yellow("--------------------------------------------------"))
-        print(yellow("generator architecture"))
-
         def resolution(depth):
             return self.min_resolution << depth
 
@@ -31,11 +27,6 @@ class PGGAN(object):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
-
-            print(yellow("--------------------------------------------------"))
-            print(yellow("conv block {}".format(depth)))
-            print(yellow("resolution: {}x{}".format(*resolution(depth))))
-            print(yellow("channels: {}".format(channels(depth))))
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
@@ -159,9 +150,6 @@ class PGGAN(object):
 
     def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
 
-        print(cyan("--------------------------------------------------"))
-        print(cyan("discriminator architecture"))
-
         def resolution(depth):
             return self.min_resolution << depth
 
@@ -169,11 +157,6 @@ class PGGAN(object):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
-
-            print(cyan("--------------------------------------------------"))
-            print(cyan("conv block {}".format(depth)))
-            print(cyan("resolution: {}x{}".format(*resolution(depth))))
-            print(cyan("channels: {}".format(channels(depth))))
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
