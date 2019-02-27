@@ -138,7 +138,11 @@ def get_weight(shape, variance_scale=2, scale_weight=False, apply_spectral_norm=
 
 
 def get_bias(shape):
-    bias = tf.get_variable("bias", shape=shape, initializer=tf.initializers.zeros())
+    bias = tf.get_variable(
+        name="bias",
+        shape=shape,
+        initializer=tf.initializers.zeros()
+    )
     return bias
 
 
