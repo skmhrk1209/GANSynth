@@ -8,7 +8,7 @@ import os
 class GANSynth(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn,
-                 postprocess_fn, hyper_params, name="gan_synth", reuse=None):
+                 hyper_params, name="gan_synth", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
 
@@ -69,9 +69,6 @@ class GANSynth(object):
                     global_step=self.global_step
                 )
             #========================================================================#
-            # waveforms
-            self.waveforms = postprocess_fn(self.fake_images)
-            #========================================================================#
             # utilities
             self.saver = tf.train.Saver()
             self.summary = tf.summary.merge([
@@ -102,8 +99,6 @@ class GANSynth(object):
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
 
-        print("training started")
-
         while True:
 
             global_step = session.run(self.global_step)
@@ -115,13 +110,6 @@ class GANSynth(object):
 
             if global_step % 100 == 0:
 
-                generator_loss, discriminator_loss = session.run([
-                    self.generator_loss, self.discriminator_loss
-                ])
-                print("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
-                    global_step, discriminator_loss, generator_loss,
-                ))
-
                 summary = session.run(self.summary)
                 writer.add_summary(summary, global_step=global_step)
 
@@ -132,13 +120,3 @@ class GANSynth(object):
                         save_path=os.path.join(self.name, "model.ckpt"),
                         global_step=global_step
                     )
-
-        print("training ended")
-
-    def generate(self, num_samples):
-
-        session = tf.get_default_session()
-
-        for i in range(num_samples):
-
-            waveforms = session.run(self.waveforms)

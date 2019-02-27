@@ -79,7 +79,6 @@ with tf.Graph().as_default():
             latent_size=512,
             batch_size=args.batch_size
         ),
-        postprocess_fn=nsynth.postprocess,
         hyper_params=Param(
             progress_steps=500000,
             generator_learning_rate=8e-4,
