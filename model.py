@@ -16,6 +16,7 @@ class GANSynth(object):
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
+            self.training = tf.placeholder(dtype=tf.bool, shape=[])
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
             self.progress = tf.cast(self.global_step / self.hyper_params.progress_steps, tf.float32)
             # =========================================================================================
@@ -24,11 +25,31 @@ class GANSynth(object):
             self.fake_latents, self.fake_labels = fake_input_fn()
             # =========================================================================================
             # generated fake data
-            self.fake_images = generator(self.fake_latents, self.fake_labels, self.progress, "generator")
+            self.fake_images = generator(
+                latents=self.fake_latents,
+                labels=self.fake_labels,
+                training=self.training,
+                progress=self.progress,
+                name="generator",
+                reuse=False
+            )
             # =========================================================================================
             # logits for real data and fake data
-            self.real_logits = discriminator(self.real_images, self.real_labels, self.progress, "discriminator")
-            self.fake_logits = discriminator(self.fake_images, self.fake_labels, self.progress, "discriminator", reuse=True)
+            self.real_logits = discriminator(
+                images=self.real_images,
+                labels=self.real_labels,
+                training=self.training,
+                progress=self.progress,
+                name="discriminator",
+                reuse=False
+            )
+            self.fake_logits = discriminator(
+                images=self.fake_images,
+                labels=self.fake_labels,
+                progress=self.progress,
+                name="discriminator",
+                reuse=True
+            )
             #========================================================================#
             # hinge loss for discriminator and generator
             self.discriminator_loss = tf.reduce_mean(tf.nn.relu(1 - self.real_logits))

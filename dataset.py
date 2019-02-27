@@ -4,7 +4,11 @@ import numpy as np
 import spectral_ops
 import functools
 import os
-from ops import *
+
+
+def scale(inputs, in_min, in_max, out_min, out_max):
+    inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
+    return inputs
 
 
 class NSynth(object):

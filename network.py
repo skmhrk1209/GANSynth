@@ -18,7 +18,7 @@ class PGGAN(object):
         self.min_depth = log2(self.min_resolution // self.min_resolution)
         self.max_depth = log2(self.max_resolution // self.min_resolution)
 
-    def generator(self, latents, labels, progress, name="ganerator", reuse=None):
+    def generator(self, latents, labels, training, progress, name="ganerator", reuse=None):
 
         def resolution(depth):
             return self.min_resolution << depth
@@ -31,7 +31,7 @@ class PGGAN(object):
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
                     inputs = tf.reshape(inputs, [-1, inputs.shape[1], 1, 1])
-                    inputs = pixel_norm(inputs)
+                    # inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv_upscale"):
                         inputs = conv2d_transpose(
                             inputs=inputs,
@@ -39,16 +39,28 @@ class PGGAN(object):
                             kernel_size=resolution(depth).tolist(),
                             strides=resolution(depth).tolist()
                         )
+                        inputs = conditional_batch_norm(
+                            inputs=inputs,
+                            labels=labels,
+                            training=training,
+                            apply_spectral_norm=apply_spectral_norm
+                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        # inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3]
                         )
+                        inputs = conditional_batch_norm(
+                            inputs=inputs,
+                            labels=labels,
+                            training=training,
+                            apply_spectral_norm=apply_spectral_norm
+                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        # inputs = pixel_norm(inputs)
                 else:
                     with tf.variable_scope("conv_upscale"):
                         inputs = conv2d_transpose(
@@ -57,16 +69,28 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             strides=[2, 2]
                         )
+                        inputs = conditional_batch_norm(
+                            inputs=inputs,
+                            labels=labels,
+                            training=training,
+                            apply_spectral_norm=apply_spectral_norm
+                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        # inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3]
                         )
+                        inputs = conditional_batch_norm(
+                            inputs=inputs,
+                            labels=labels,
+                            training=training,
+                            apply_spectral_norm=apply_spectral_norm
+                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        # inputs = pixel_norm(inputs)
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -148,7 +172,7 @@ class PGGAN(object):
         with tf.variable_scope(name, reuse=reuse):
             return grow(tf.concat([latents, labels], axis=-1), self.min_depth)
 
-    def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
+    def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
 
         def resolution(depth):
             return self.min_resolution << depth
@@ -178,7 +202,7 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                    inputs = tf.reshape(inputs, [-1, inputs.shape[1]])
+                    inputs = tf.squeeze(inputs, axis=[2, 3])
                     with tf.variable_scope("logits"):
                         logits = dense(
                             inputs=inputs,
@@ -186,11 +210,17 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("projection"):
-                        inputs = logits + projection(
-                            inputs=inputs,
-                            labels=labels,
-                            apply_spectral_norm=self.apply_spectral_norm
+                        labels = embedding(
+                            inputs=labels,
+                            units=inputs.shape[1],
+                            apply_spectral_norm=apply_spectral_norm
                         )
+                        labels = tf.reduce_sum(
+                            input_tensor=inputs * labels,
+                            axis=1,
+                            keepdims=True
+                        )
+                    inputs = logits + labels
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
