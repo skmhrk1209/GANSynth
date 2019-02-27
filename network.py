@@ -187,7 +187,7 @@ class PGGAN(object):
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
-                    inputs = batch_stddev(inputs)
+                    # inputs = batch_stddev(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -213,17 +213,17 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("projection"):
-                        labels = embedding(
+                        embedded = embedding(
                             inputs=labels,
                             units=inputs.shape[1],
                             apply_spectral_norm=apply_spectral_norm
                         )
-                        labels = tf.reduce_sum(
-                            input_tensor=inputs * labels,
+                        projection = tf.reduce_sum(
+                            input_tensor=inputs * embedded,
                             axis=1,
                             keepdims=True
                         )
-                    inputs = logits + labels
+                    inputs = logits + projection
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
