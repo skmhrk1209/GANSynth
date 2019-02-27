@@ -24,7 +24,7 @@ def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
         # so it should be reshaped to (KH * KW * C_in, C_out), and similarly for other
         # layers that put output channels as last dimension. This implies that w
         # here is equivalent to w.T in the paper.
-        w = tf.reshape(inputs, [-1, inputs.shape[-1].value])
+        w = tf.reshape(inputs, [-1, inputs.shape[-1]])
 
         # Choose whether to persist the first left or first right singular vector.
         # As the underlying matrix is PSD, this should be equivalent, but in practice
@@ -32,7 +32,7 @@ def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
         # to maintain the left or right one, or pick the one which has the smaller
         # dimension. We use the same variable for the singular vector if we switch
         # from normal weights to EMA weights.
-        u_shape = [1, w.shape[-1].value] if singular_value == "right" else [w.shape[0].value, 1]
+        u_shape = [w.shape[0], 1] if singular_value == "left" else [1, w.shape[-1]]
 
         u_var = tf.get_variable(
             name="u_var",
@@ -100,19 +100,19 @@ def conditional_batch_norm(inputs, labels, training, apply_spectral_norm=False):
         with tf.variable_scope("scale"):
             scale = embedding(
                 inputs=labels,
-                units=inputs.shape[1].value,
+                units=inputs.shape[1],
                 apply_spectral_norm=apply_spectral_norm
             )
-            scale = tf.reshape(scale, [-1, scale.shape[1].value, 1, 1])
+            scale = tf.reshape(scale, [-1, scale.shape[1], 1, 1])
             inputs *= scale
 
         with tf.variable_scope("center"):
             center = embedding(
                 inputs=labels,
-                units=inputs.shape[1].value,
+                units=inputs.shape[1],
                 apply_spectral_norm=apply_spectral_norm
             )
-            center = tf.reshape(center, [-1, center.shape[1].value, 1, 1])
+            center = tf.reshape(center, [-1, center.shape[1], 1, 1])
             inputs += center
 
     return inputs
@@ -121,9 +121,17 @@ def conditional_batch_norm(inputs, labels, training, apply_spectral_norm=False):
 def get_weight(shape, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
-        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal()) * stddev
+        weight = tf.get_variable(
+            name="weight",
+            shape=shape,
+            initializer=tf.initializers.random_normal()
+        ) * stddev
     else:
-        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal(0, stddev))
+        weight = tf.get_variable(
+            name="weight",
+            shape=shape,
+            initializer=tf.initializers.random_normal(0, stddev)
+        )
     if apply_spectral_norm:
         weight = spectral_norm(weight)
     return weight
@@ -136,14 +144,14 @@ def get_bias(shape):
 
 def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[inputs.shape[1].value, units],
+        shape=[inputs.shape[1], units],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
     )
     inputs = tf.matmul(inputs, weight)
     if use_bias:
-        bias = get_bias([inputs.shape[1].value])
+        bias = get_bias([inputs.shape[1]])
         inputs = tf.nn.bias_add(inputs, bias)
     return inputs
 
@@ -151,7 +159,7 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False, ap
 def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
            variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[*kernel_size, inputs.shape[1].value, filters],
+        shape=[*kernel_size, inputs.shape[1], filters],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
@@ -164,7 +172,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
         data_format="NCHW"
     )
     if use_bias:
-        bias = get_bias([inputs.shape[1].value])
+        bias = get_bias([inputs.shape[1]])
         inputs = tf.nn.bias_add(inputs, bias, data_format="NCHW")
     return inputs
 
@@ -172,14 +180,14 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
 def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
                      variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[*kernel_size, inputs.shape[1].value, filters],
+        shape=[*kernel_size, inputs.shape[1], filters],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
-    input_shape = np.array(inputs.shape.as_list())
-    output_shape = [tf.shape(inputs)[0], filters, *input_shape[2:] * strides]
+    input_shape = np.asanyarray(inputs.shape)
+    output_shape = [-1, filters, *input_shape[2:] * strides]
     inputs = tf.nn.conv2d_transpose(
         value=inputs,
         filter=weight,
@@ -189,7 +197,7 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
         data_format="NCHW"
     )
     if use_bias:
-        bias = get_bias([inputs.shape[1].value])
+        bias = get_bias([inputs.shape[1]])
         inputs = tf.nn.bias_add(inputs, bias, data_format="NCHW")
     return inputs
 
@@ -198,7 +206,7 @@ def upscale2d(inputs, factors=[2, 2]):
     factors = np.asanyarray(factors)
     if (factors == 1).all():
         return inputs
-    shape = inputs.shape.as_list()
+    shape = inputs.shape
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2], 1, shape[3], 1])
     inputs = tf.tile(inputs, [1, 1, 1, factors[0], 1, factors[1]])
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2] * factors[0], shape[3] * factors[1]])
@@ -226,7 +234,7 @@ def pixel_norm(inputs, epsilon=1e-8):
 
 
 def batch_stddev(inputs, group_size=4, epsilon=1e-8):
-    shape = inputs.shape.as_list()
+    shape = inputs.shape
     stddev = tf.reshape(inputs, [group_size, -1, *shape[1:]])
     stddev -= tf.reduce_mean(stddev, axis=0, keepdims=True)
     stddev = tf.square(stddev)
@@ -240,7 +248,7 @@ def batch_stddev(inputs, group_size=4, epsilon=1e-8):
 
 def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[inputs.shape[1].value, units],
+        shape=[inputs.shape[1], units],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm

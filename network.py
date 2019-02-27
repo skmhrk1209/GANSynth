@@ -216,7 +216,7 @@ class PGGAN(object):
                         embedded = embedding(
                             inputs=labels,
                             units=inputs.shape[1],
-                            apply_spectral_norm=apply_spectral_norm
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                         projection = tf.reduce_sum(
                             input_tensor=inputs * embedded,
