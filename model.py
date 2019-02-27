@@ -126,8 +126,8 @@ class GANSynth(object):
             if global_step > max_steps:
                 break
 
-            session.run(self.discriminator_train_op)
-            session.run(self.generator_train_op)
+            session.run(self.discriminator_train_op, feed_dict={self.training: True})
+            session.run(self.generator_train_op, feed_dict={self.training: True})
 
             if global_step % 100 == 0:
 
