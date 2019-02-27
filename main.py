@@ -83,7 +83,7 @@ with tf.Graph().as_default():
             progress_steps=args.max_steps // 2,
             discriminator_learning_rate=4e-4,
             discriminator_beta1=0.0,
-            discriminator_beta2=0.99
+            discriminator_beta2=0.99,
             generator_learning_rate=8e-4,
             generator_beta1=0.0,
             generator_beta2=0.99
