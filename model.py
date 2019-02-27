@@ -88,11 +88,11 @@ class GANSynth(object):
         checkpoint = tf.train.latest_checkpoint(self.name)
         if checkpoint:
             self.saver.restore(session, checkpoint)
-            print(checkpoint, "loaded")
+            tf.logging.info("{} loaded".format(checkpoint))
         else:
             global_variables = tf.global_variables(scope=self.name)
             session.run(tf.variables_initializer(global_variables))
-            print("global variables in {} initialized".format(self.name))
+            tf.logging.info("global variables in {} initialized".format(self.name))
 
     def train(self, max_steps):
 
