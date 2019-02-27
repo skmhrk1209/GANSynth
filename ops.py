@@ -144,7 +144,7 @@ def get_bias(shape):
 
 def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[inputs.shape[1], units],
+        shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
@@ -159,7 +159,7 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False, ap
 def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
            variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[*kernel_size, inputs.shape[1], filters],
+        shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
@@ -180,7 +180,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
 def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
                      variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[*kernel_size, inputs.shape[1], filters],
+        shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
@@ -247,7 +247,7 @@ def pixel_norm(inputs, epsilon=1e-8):
 
 def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
-        shape=[inputs.shape[1], units],
+        shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
         scale_weight=scale_weight,
         apply_spectral_norm=apply_spectral_norm
