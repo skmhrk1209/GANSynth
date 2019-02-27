@@ -46,6 +46,7 @@ class GANSynth(object):
             self.fake_logits = discriminator(
                 images=self.fake_images,
                 labels=self.fake_labels,
+                training=self.training,
                 progress=self.progress,
                 name="discriminator",
                 reuse=True
