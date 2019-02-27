@@ -142,5 +142,3 @@ class GANSynth(object):
         for i in range(num_samples):
 
             waveforms = session.run(self.waveforms)
-
-            # ... make waveforms
