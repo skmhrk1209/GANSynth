@@ -187,7 +187,7 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
     input_shape = np.asanyarray(inputs.shape)
-    output_shape = [-1, filters, *input_shape[2:] * strides]
+    output_shape = [-1, filters, *input_shape * strides]
     inputs = tf.nn.conv2d_transpose(
         value=inputs,
         filter=weight,
@@ -228,21 +228,20 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
-def pixel_norm(inputs, epsilon=1e-8):
-    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
+def batch_stddev(inputs, group_size=4, epsilon=1e-8):
+    shape = inputs.shape
+    inputs = tf.reshape(inputs, [group_size, -1, *shape[1:]])
+    inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
+    inputs = tf.square(inputs)
+    inputs = tf.reduce_mean(inputs, axis=0)
+    inputs = tf.sqrt(inputs + epsilon)
+    inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
+    inputs = tf.tile(inputs, [group_size, 1, *shape[2:]])
     return inputs
 
 
-def batch_stddev(inputs, group_size=4, epsilon=1e-8):
-    shape = inputs.shape
-    stddev = tf.reshape(inputs, [group_size, -1, *shape[1:]])
-    stddev -= tf.reduce_mean(stddev, axis=0, keepdims=True)
-    stddev = tf.square(stddev)
-    stddev = tf.reduce_mean(stddev, axis=0)
-    stddev = tf.sqrt(stddev + epsilon)
-    stddev = tf.reduce_mean(stddev, axis=[1, 2, 3], keepdims=True)
-    stddev = tf.tile(stddev, [group_size, 1, *shape[2:]])
-    inputs = tf.concat([inputs, stddev], axis=1)
+def pixel_norm(inputs, epsilon=1e-8):
+    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     return inputs
 
 

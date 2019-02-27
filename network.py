@@ -187,7 +187,7 @@ class PGGAN(object):
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
-                    # inputs = batch_stddev(inputs)
+                    # inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
