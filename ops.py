@@ -186,7 +186,7 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
         apply_spectral_norm=apply_spectral_norm
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
-    input_shape = np.asanyarray(inputs.shape)
+    input_shape = np.asanyarray(inputs.shape.as_list())
     output_shape = [-1, filters, *input_shape[2:] * strides]
     inputs = tf.nn.conv2d_transpose(
         value=inputs,
@@ -206,10 +206,10 @@ def upscale2d(inputs, factors=[2, 2]):
     factors = np.asanyarray(factors)
     if (factors == 1).all():
         return inputs
-    shape = inputs.shape
-    inputs = tf.reshape(inputs, [-1, shape[1], shape[2], 1, shape[3], 1])
+    input_shape = np.asanyarray(inputs.shape.as_list())
+    inputs = tf.reshape(inputs, [-1, input_shape[1], input_shape[2], 1, input_shape[3], 1])
     inputs = tf.tile(inputs, [1, 1, 1, factors[0], 1, factors[1]])
-    inputs = tf.reshape(inputs, [-1, shape[1], shape[2] * factors[0], shape[3] * factors[1]])
+    inputs = tf.reshape(inputs, [-1, input_shape[1], *input_shape[2:] * factors])
     return inputs
 
 
@@ -229,14 +229,14 @@ def downscale2d(inputs, factors=[2, 2]):
 
 
 def batch_stddev(inputs, group_size=4, epsilon=1e-8):
-    shape = inputs.shape
-    inputs = tf.reshape(inputs, [group_size, -1, *shape[1:]])
+    input_shape = np.asanyarray(inputs.shape.as_list())
+    inputs = tf.reshape(inputs, [group_size, -1, *input_shape[1:]])
     inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
     inputs = tf.square(inputs)
     inputs = tf.reduce_mean(inputs, axis=0)
     inputs = tf.sqrt(inputs + epsilon)
     inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
-    inputs = tf.tile(inputs, [group_size, 1, *shape[2:]])
+    inputs = tf.tile(inputs, [group_size, 1, *input_shape[2:]])
     return inputs
 
 
