@@ -70,7 +70,7 @@ class GANSynth(object):
                 )
             #========================================================================#
             # waveforms
-            self.waveforms = postprocess_fn(self.fake_images, self.fake_labels)
+            self.waveforms = postprocess_fn(self.fake_images)
             #========================================================================#
             # utilities
             self.saver = tf.train.Saver()

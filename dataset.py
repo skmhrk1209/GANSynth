@@ -91,7 +91,7 @@ class NSynth(object):
 
         return images, labels
 
-    def postprocess(self, images, labels):
+    def postprocess(self, images):
         # =========================================================================================
         log_mel_magnitudes, mel_instantaneous_frequencies = tf.unstack(images, axis=1)
         # =========================================================================================
