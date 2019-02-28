@@ -33,6 +33,9 @@ parser.add_argument("--model_dir", type=str, default="gan_synth_model", help="mo
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"], help="tfrecords")
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--max_steps", type=int, default=1000000, help="maximum number of training steps")
+parser.add_argument('--train', action="store_true", help="with training")
+parser.add_argument('--eval', action="store_true", help="with evaluation")
+parser.add_argument('--predict', action="store_true", help="with prediction")
 parser.add_argument("--gpu", type=str, default="0", help="gpu id")
 args = parser.parse_args()
 
@@ -77,13 +80,13 @@ with tf.Graph().as_default():
             batch_size=args.batch_size
         ),
         hyper_params=Param(
-            progress_steps=args.max_steps // 2,
-            discriminator_learning_rate=4e-4,
-            discriminator_beta1=0.0,
-            discriminator_beta2=0.99,
+            progress_steps=500000,
             generator_learning_rate=8e-4,
             generator_beta1=0.0,
-            generator_beta2=0.99
+            generator_beta2=0.99,
+            discriminator_learning_rate=4e-4,
+            discriminator_beta1=0.0,
+            discriminator_beta2=0.99
         ),
         name=args.model_dir
     )
@@ -95,7 +98,7 @@ with tf.Graph().as_default():
         )
     )
 
-    with tf.Session(config=config).as_default():
+    with tf.Session(config=config) as session:
 
         gan_synth.initialize()
         gan_synth.train(args.max_steps)

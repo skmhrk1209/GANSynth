@@ -3,15 +3,6 @@ import numpy as np
 from ops import *
 
 
-def scale(inputs, in_min, in_max, out_min, out_max):
-    inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-    return inputs
-
-
-def lerp(a, b, t):
-    return t * a + (1 - t) * b
-
-
 class PGGAN(object):
 
     def __init__(self, min_resolution, max_resolution, min_channels, max_channels, apply_spectral_norm):
@@ -27,7 +18,7 @@ class PGGAN(object):
         self.min_depth = log2(self.min_resolution // self.min_resolution)
         self.max_depth = log2(self.max_resolution // self.min_resolution)
 
-    def generator(self, latents, labels, training, progress, name="ganerator", reuse=None):
+    def generator(self, latents, labels, progress, name="ganerator", reuse=None):
 
         def resolution(depth):
             return self.min_resolution << depth
@@ -46,8 +37,7 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=resolution(depth).tolist(),
-                            strides=resolution(depth).tolist(),
-                            # apply_spectral_norm=self.apply_spectral_norm
+                            strides=resolution(depth).tolist()
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -55,8 +45,7 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=[3, 3],
-                            # apply_spectral_norm=self.apply_spectral_norm
+                            kernel_size=[3, 3]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -66,8 +55,7 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            strides=[2, 2],
-                            # apply_spectral_norm=self.apply_spectral_norm
+                            strides=[2, 2]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -75,8 +63,7 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=[3, 3],
-                            # apply_spectral_norm=self.apply_spectral_norm
+                            kernel_size=[3, 3]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -89,13 +76,14 @@ class PGGAN(object):
                         inputs=inputs,
                         filters=2,
                         kernel_size=[1, 1],
-                        variance_scale=1,
-                        # apply_spectral_norm=self.apply_spectral_norm
+                        variance_scale=1
                     )
                     inputs = tf.nn.tanh(inputs)
                 return inputs
 
         out_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+
+        def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(feature_maps, depth):
             ''' depthに対応する層によって特徴マップを画像として生成
@@ -160,7 +148,7 @@ class PGGAN(object):
         with tf.variable_scope(name, reuse=reuse):
             return grow(tf.concat([latents, labels], axis=-1), self.min_depth)
 
-    def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
+    def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
 
         def resolution(depth):
             return self.min_resolution << depth
@@ -172,7 +160,7 @@ class PGGAN(object):
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
-                    inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
+                    inputs = batch_stddev(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -190,7 +178,7 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                    inputs = tf.squeeze(inputs, axis=[2, 3])
+                    inputs = tf.reshape(inputs, [-1, inputs.shape[1]])
                     with tf.variable_scope("logits"):
                         logits = dense(
                             inputs=inputs,
@@ -198,17 +186,11 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("projection"):
-                        embedded = embedding(
-                            inputs=labels,
-                            units=inputs.shape[1],
+                        inputs = logits + projection(
+                            inputs=inputs,
+                            labels=labels,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
-                        projection = tf.reduce_sum(
-                            input_tensor=inputs * embedded,
-                            axis=1,
-                            keepdims=True
-                        )
-                    inputs = logits + projection
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
@@ -235,13 +217,14 @@ class PGGAN(object):
                     inputs = conv2d(
                         inputs=inputs,
                         filters=channels(depth),
-                        kernel_size=[1, 1],
-                        apply_spectral_norm=self.apply_spectral_norm
+                        kernel_size=[1, 1]
                     )
                     inputs = tf.nn.leaky_relu(inputs)
                 return inputs
 
         in_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+
+        def lerp(a, b, t): return t * a + (1 - t) * b
 
         def grow(images, depth):
             ''' depthに対応する層によって画像を特徴マップとして取り込む

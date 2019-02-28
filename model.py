@@ -11,12 +11,11 @@ class GANSynth(object):
                  hyper_params, name="gan_synth", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
-            # =========================================================================================
+
             self.name = name
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
-            self.training = tf.placeholder(tf.bool)
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
             self.progress = tf.cast(self.global_step / self.hyper_params.progress_steps, tf.float32)
             # =========================================================================================
@@ -25,32 +24,11 @@ class GANSynth(object):
             self.fake_latents, self.fake_labels = fake_input_fn()
             # =========================================================================================
             # generated fake data
-            self.fake_images = generator(
-                latents=self.fake_latents,
-                labels=self.fake_labels,
-                training=self.training,
-                progress=self.progress,
-                name="generator",
-                reuse=False
-            )
+            self.fake_images = generator(self.fake_latents, self.fake_labels, self.progress, "generator")
             # =========================================================================================
             # logits for real data and fake data
-            self.real_logits = discriminator(
-                images=self.real_images,
-                labels=self.real_labels,
-                training=self.training,
-                progress=self.progress,
-                name="discriminator",
-                reuse=False
-            )
-            self.fake_logits = discriminator(
-                images=self.fake_images,
-                labels=self.fake_labels,
-                training=self.training,
-                progress=self.progress,
-                name="discriminator",
-                reuse=True
-            )
+            self.real_logits = discriminator(self.real_images, self.real_labels, self.progress, "discriminator")
+            self.fake_logits = discriminator(self.fake_images, self.fake_labels, self.progress, "discriminator", reuse=True)
             #========================================================================#
             # hinge loss for discriminator and generator
             self.discriminator_loss = tf.reduce_mean(tf.nn.relu(1 - self.real_logits))
@@ -79,23 +57,12 @@ class GANSynth(object):
                 beta2=self.hyper_params.generator_beta2
             )
             #========================================================================#
-            # update ops for discriminator and generator
-            self.discriminator_update_ops = tf.get_collection(
-                key=tf.GraphKeys.UPDATE_OPS,
-                scope="{}/discriminator".format(self.name)
-            )
-            self.generator_update_ops = tf.get_collection(
-                key=tf.GraphKeys.UPDATE_OPS,
-                scope="{}/generator".format(self.name)
-            )
-            #========================================================================#
             # training op for generator and discriminator
-            with tf.control_dependencies(self.discriminator_update_ops):
+            with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
                 self.discriminator_train_op = self.discriminator_optimizer.minimize(
                     loss=self.discriminator_loss,
                     var_list=self.discriminator_variables
                 )
-            with tf.control_dependencies(self.generator_update_ops):
                 self.generator_train_op = self.generator_optimizer.minimize(
                     loss=self.generator_loss,
                     var_list=self.generator_variables,
@@ -138,35 +105,13 @@ class GANSynth(object):
             if global_step > max_steps:
                 break
 
-            session.run(
-                fetches=self.discriminator_train_op,
-                feed_dict={self.training: True}
-            )
-            session.run(
-                fetches=self.generator_train_op,
-                feed_dict={self.training: True}
-            )
+            session.run(self.discriminator_train_op)
+            session.run(self.generator_train_op)
 
             if global_step % 100 == 0:
 
-                discriminator_loss, generator_loss = session.run(
-                    fetches=[self.discriminator_loss, self.generator_loss],
-                    feed_dict={self.training: True}
-                )
-
-                tf.logging.info("global step: {}, discriminator loss: {}, generator loss: {}".format(
-                    global_step, discriminator_loss, generator_loss
-                ))
-
-                summary = session.run(
-                    fetches=self.summary,
-                    feed_dict={self.training: True}
-                )
-
-                writer.add_summary(
-                    summary=summary,
-                    global_step=global_step
-                )
+                summary = session.run(self.summary)
+                writer.add_summary(summary, global_step=global_step)
 
                 if global_step % 1000 == 0:
 
