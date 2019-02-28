@@ -127,13 +127,15 @@ class GANSynth(object):
             if global_step > max_steps:
                 break
 
-            session.run(self.discriminator_train_op, feed_dict={self.training: True})
-            session.run(self.generator_train_op, feed_dict={self.training: True})
+            run = functools.partial(session.run, feed_dict={self.training: True})
+
+            run(self.discriminator_train_op)
+            run(self.generator_train_op)
 
             if global_step % 100 == 0:
 
                 writer.add_summary(
-                    summary=session.run(self.summary),
+                    summary=run(self.summary),
                     global_step=global_step
                 )
 
