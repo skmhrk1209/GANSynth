@@ -46,8 +46,8 @@ def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
         # Use power iteration method to approximate the spectral norm.
         # The authors suggest that one round of power iteration was sufficient in the
         # actual experiment to achieve satisfactory performance.
-        power_iteration_rounds = 1
-        for _ in range(power_iteration_rounds):
+        power_iterations = 1
+        for _ in range(power_iterations):
             if singular_value == "left":
                 # `v` approximates the first right singular vector of matrix `w`.
                 v = tf.nn.l2_normalize(tf.matmul(w, u, transpose_a=True), epsilon=epsilon)
