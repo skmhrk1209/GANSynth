@@ -79,12 +79,23 @@ class GANSynth(object):
                 beta2=self.hyper_params.generator_beta2
             )
             #========================================================================#
+            # update ops for discriminator and generator
+            self.discriminator_update_ops = tf.get_collection(
+                key=tf.GraphKeys.UPDATE_OPS,
+                scope="{}/discriminator".format(self.name)
+            )
+            self.generator_update_ops = tf.get_collection(
+                key=tf.GraphKeys.UPDATE_OPS,
+                scope="{}/generator".format(self.name)
+            )
+            #========================================================================#
             # training op for generator and discriminator
-            with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+            with tf.control_dependencies(self.discriminator_update_ops):
                 self.discriminator_train_op = self.discriminator_optimizer.minimize(
                     loss=self.discriminator_loss,
                     var_list=self.discriminator_variables
                 )
+            with tf.control_dependencies(self.generator_update_ops):
                 self.generator_train_op = self.generator_optimizer.minimize(
                     loss=self.generator_loss,
                     var_list=self.generator_variables,
@@ -121,7 +132,7 @@ class GANSynth(object):
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
 
-        def run(**fetches):
+        def run(*fetches):
             session.run(fetches, feed_dict={self.training: True})
 
         while True:
