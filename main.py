@@ -53,6 +53,7 @@ with tf.Graph().as_default():
         max_resolution=[128, 1024],
         min_channels=16,
         max_channels=512,
+        scale_weight=True,
         apply_spectral_norm=True
     )
 
@@ -81,12 +82,12 @@ with tf.Graph().as_default():
         ),
         hyper_params=Param(
             progress_steps=500000,
-            generator_learning_rate=8e-4,
-            generator_beta1=0.0,
-            generator_beta2=0.99,
             discriminator_learning_rate=4e-4,
             discriminator_beta1=0.0,
-            discriminator_beta2=0.99
+            discriminator_beta2=0.99,
+            generator_learning_rate=8e-4,
+            generator_beta1=0.0,
+            generator_beta2=0.99
         ),
         name=args.model_dir
     )

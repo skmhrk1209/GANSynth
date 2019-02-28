@@ -62,23 +62,35 @@ def spectral_norm(input):
     return w_tensor_normalized
 
 
-def get_weight(shape, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def get_weight(shape, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
-        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal()) * stddev
+        weight = tf.get_variable(
+            name="weight",
+            shape=shape,
+            initializer=tf.initializers.random_normal(0.0, 1.0)
+        ) * stddev
     else:
-        weight = tf.get_variable("weight", shape=shape, initializer=tf.initializers.random_normal(0, stddev))
+        weight = tf.get_variable(
+            name="weight",
+            shape=shape,
+            initializer=tf.initializers.random_normal(0.0, stddev)
+        )
     if apply_spectral_norm:
         weight = spectral_norm(weight)
     return weight
 
 
 def get_bias(shape):
-    bias = tf.get_variable("bias", shape=shape, initializer=tf.initializers.zeros())
+    bias = tf.get_variable(
+        name="bias",
+        shape=shape,
+        initializer=tf.initializers.zeros()
+    )
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -93,7 +105,7 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, app
 
 
 def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-           variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+           variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -114,7 +126,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
 
 
 def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-                     variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+                     variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -164,6 +176,11 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
+def global_average_pooling2d(inputs):
+    inputs = tf.reduce_mean(inputs, axis=[2, 3])
+    return inputs
+
+
 def pixel_norm(inputs, epsilon=1e-8):
     inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     return inputs
@@ -182,12 +199,7 @@ def batch_stddev(inputs, group_size=4, epsilon=1e-8):
     return inputs
 
 
-def global_average_pooling2d(inputs):
-    inputs = tf.reduce_mean(inputs, axis=[2, 3])
-    return inputs
-
-
-def projection(inputs, labels, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def projection(inputs, labels, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[labels.shape[1].value, inputs.shape[1].value],
         variance_scale=variance_scale,
@@ -195,7 +207,7 @@ def projection(inputs, labels, variance_scale=2, scale_weight=True, apply_spectr
         apply_spectral_norm=apply_spectral_norm
     )
     labels = tf.nn.embedding_lookup(weight, tf.argmax(labels, axis=1))
-    inputs = tf.reduce_mean(inputs * labels, axis=1, keepdims=True)
+    inputs = tf.reduce_sum(inputs * labels, axis=1, keepdims=True)
     return inputs
 
 

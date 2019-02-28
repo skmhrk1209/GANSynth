@@ -11,7 +11,7 @@ class GANSynth(object):
                  hyper_params, name="gan_synth", reuse=None):
 
         with tf.variable_scope(name, reuse=reuse):
-
+            # =========================================================================================
             self.name = name
             self.hyper_params = hyper_params
             # =========================================================================================

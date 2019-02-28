@@ -5,12 +5,14 @@ from ops import *
 
 class PGGAN(object):
 
-    def __init__(self, min_resolution, max_resolution, min_channels, max_channels, apply_spectral_norm):
+    def __init__(self, min_resolution, max_resolution, min_channels, max_channels,
+                 scale_weight, apply_spectral_norm):
 
         self.min_resolution = np.asanyarray(min_resolution)
         self.max_resolution = np.asanyarray(max_resolution)
         self.min_channels = min_channels
         self.max_channels = max_channels
+        self.scale_weight = scale_weight
         self.apply_spectral_norm = apply_spectral_norm
 
         def log2(x): return 0 if (x == 1).all() else 1 + log2(x >> 1)
@@ -37,7 +39,9 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=resolution(depth).tolist(),
-                            strides=resolution(depth).tolist()
+                            strides=resolution(depth).tolist(),
+                            variable_scale=2,
+                            scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -45,7 +49,9 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=[3, 3]
+                            kernel_size=[3, 3],
+                            variable_scale=2,
+                            scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -55,7 +61,9 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            strides=[2, 2]
+                            strides=[2, 2],
+                            variable_scale=2,
+                            scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -63,7 +71,9 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=[3, 3]
+                            kernel_size=[3, 3],
+                            variable_scale=2,
+                            scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -76,7 +86,8 @@ class PGGAN(object):
                         inputs=inputs,
                         filters=2,
                         kernel_size=[1, 1],
-                        variance_scale=1
+                        variance_scale=1,
+                        scale_weight=self.scale_weight
                     )
                     inputs = tf.nn.tanh(inputs)
                 return inputs
@@ -166,6 +177,8 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
+                            variable_scale=2,
+                            scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -175,6 +188,8 @@ class PGGAN(object):
                             filters=channels(depth - 1),
                             kernel_size=resolution(depth).tolist(),
                             strides=resolution(depth).tolist(),
+                            variable_scale=2,
+                            scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -183,12 +198,16 @@ class PGGAN(object):
                         logits = dense(
                             inputs=inputs,
                             units=1,
+                            variable_scale=1,
+                            scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("projection"):
                         inputs = logits + projection(
                             inputs=inputs,
                             labels=labels,
+                            variable_scale=1,
+                            scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                 else:
@@ -197,6 +216,8 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
+                            variable_scale=2,
+                            scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -206,6 +227,8 @@ class PGGAN(object):
                             filters=channels(depth - 1),
                             kernel_size=[3, 3],
                             strides=[2, 2],
+                            variable_scale=2,
+                            scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -217,7 +240,10 @@ class PGGAN(object):
                     inputs = conv2d(
                         inputs=inputs,
                         filters=channels(depth),
-                        kernel_size=[1, 1]
+                        kernel_size=[1, 1],
+                        variable_scale=2,
+                        scale_weight=self.scale_weight,
+                        apply_spectral_norm=self.apply_spectral_norm
                     )
                     inputs = tf.nn.leaky_relu(inputs)
                 return inputs
