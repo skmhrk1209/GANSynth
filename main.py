@@ -53,7 +53,7 @@ with tf.Graph().as_default():
         max_resolution=[128, 1024],
         min_channels=16,
         max_channels=512,
-        scale_weight=True,
+        scale_weight=False,
         apply_spectral_norm=True
     )
 

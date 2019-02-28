@@ -11,8 +11,7 @@ def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
     Args:
       inputs: The weight tensor to normalize.
       epsilon: Epsilon for L2 normalization.
-      singular_value: Which first singular value to store (left or right). Use
-        "auto" to automatically choose the one that has fewer dimensions.
+      singular_value: Which first singular value to store (left or right). 
     Returns:
       The normalized weight tensor.
     '''
@@ -87,7 +86,8 @@ def get_weight(shape, variance_scale=2, scale_weight=False, apply_spectral_norm=
             name="weight",
             shape=shape,
             initializer=tf.initializers.random_normal(0.0, 1.0)
-        ) * stddev
+        )
+        weight *= stddev
     else:
         weight = tf.get_variable(
             name="weight",
