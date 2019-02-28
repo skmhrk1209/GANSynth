@@ -81,44 +81,7 @@ def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
     return w_tensor_normalized
 
 
-def conditional_batch_norm(inputs, labels, training, apply_spectral_norm=False):
-    ''' conditional batch normalization
-        [Modulating early visual processing by language]
-        (https://arxiv.org/pdf/1707.00683.pdf)
-    '''
-
-    with tf.variable_scope("conditional_batch_norm"):
-
-        inputs = tf.layers.batch_normalization(
-            inputs=inputs,
-            axis=1,
-            center=False,
-            scale=False,
-            training=training
-        )
-
-        with tf.variable_scope("scale"):
-            scale = embedding(
-                inputs=labels,
-                units=inputs.shape[1].value,
-                apply_spectral_norm=apply_spectral_norm
-            )
-            scale = tf.reshape(scale, [-1, scale.shape[1].value, 1, 1])
-            inputs *= scale
-
-        with tf.variable_scope("center"):
-            center = embedding(
-                inputs=labels,
-                units=inputs.shape[1].value,
-                apply_spectral_norm=apply_spectral_norm
-            )
-            center = tf.reshape(center, [-1, center.shape[1].value, 1, 1])
-            inputs += center
-
-    return inputs
-
-
-def get_weight(shape, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def get_weight(shape, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
         weight = tf.get_variable(
@@ -146,7 +109,7 @@ def get_bias(shape):
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -161,7 +124,7 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=True, app
 
 
 def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-           variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+           variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -182,7 +145,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
 
 
 def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-                     variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+                     variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -249,7 +212,7 @@ def pixel_norm(inputs, epsilon=1e-8):
     return inputs
 
 
-def embedding(inputs, units, variance_scale=2, scale_weight=True, apply_spectral_norm=False):
+def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -257,4 +220,41 @@ def embedding(inputs, units, variance_scale=2, scale_weight=True, apply_spectral
         apply_spectral_norm=apply_spectral_norm
     )
     inputs = tf.nn.embedding_lookup(weight, tf.argmax(inputs, axis=1))
+    return inputs
+
+
+def conditional_batch_norm(inputs, labels, training, apply_spectral_norm=False):
+    ''' conditional batch normalization
+        [Modulating early visual processing by language]
+        (https://arxiv.org/pdf/1707.00683.pdf)
+    '''
+
+    with tf.variable_scope("conditional_batch_norm"):
+
+        inputs = tf.layers.batch_normalization(
+            inputs=inputs,
+            axis=1,
+            center=False,
+            scale=False,
+            training=training
+        )
+
+        with tf.variable_scope("scale"):
+            scale = embedding(
+                inputs=labels,
+                units=inputs.shape[1].value,
+                apply_spectral_norm=apply_spectral_norm
+            )
+            scale = tf.reshape(scale, [-1, scale.shape[1].value, 1, 1])
+            inputs *= scale
+
+        with tf.variable_scope("center"):
+            center = embedding(
+                inputs=labels,
+                units=inputs.shape[1].value,
+                apply_spectral_norm=apply_spectral_norm
+            )
+            center = tf.reshape(center, [-1, center.shape[1].value, 1, 1])
+            inputs += center
+
     return inputs
