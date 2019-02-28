@@ -86,8 +86,7 @@ def get_weight(shape, variance_scale=2, scale_weight=False, apply_spectral_norm=
             name="weight",
             shape=shape,
             initializer=tf.initializers.random_normal(0.0, 1.0)
-        )
-        weight *= stddev
+        ) * stddev
     else:
         weight = tf.get_variable(
             name="weight",
