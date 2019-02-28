@@ -46,7 +46,8 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=resolution(depth).tolist(),
-                            strides=resolution(depth).tolist()
+                            strides=resolution(depth).tolist(),
+                            # apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -54,7 +55,8 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=[3, 3]
+                            kernel_size=[3, 3],
+                            # apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -64,7 +66,8 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            strides=[2, 2]
+                            strides=[2, 2],
+                            # apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -72,7 +75,8 @@ class PGGAN(object):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
-                            kernel_size=[3, 3]
+                            kernel_size=[3, 3],
+                            # apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
@@ -85,7 +89,8 @@ class PGGAN(object):
                         inputs=inputs,
                         filters=2,
                         kernel_size=[1, 1],
-                        variance_scale=1
+                        variance_scale=1,
+                        # apply_spectral_norm=self.apply_spectral_norm
                     )
                     inputs = tf.nn.tanh(inputs)
                 return inputs
@@ -230,7 +235,8 @@ class PGGAN(object):
                     inputs = conv2d(
                         inputs=inputs,
                         filters=channels(depth),
-                        kernel_size=[1, 1]
+                        kernel_size=[1, 1],
+                        apply_spectral_norm=self.apply_spectral_norm
                     )
                     inputs = tf.nn.leaky_relu(inputs)
                 return inputs
