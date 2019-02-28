@@ -57,6 +57,16 @@ class GANSynth(object):
             self.discriminator_loss += tf.reduce_mean(tf.nn.relu(1 + self.fake_logits))
             self.generator_loss = -tf.reduce_mean(self.fake_logits)
             #========================================================================#
+            # update ops for discriminator and generator
+            self.discriminator_update_ops = tf.get_collection(
+                key=tf.GraphKeys.UPDATE_OPS,
+                scope="{}/discriminator".format(self.name)
+            )
+            self.generator_update_ops = tf.get_collection(
+                key=tf.GraphKeys.UPDATE_OPS,
+                scope="{}/generator".format(self.name)
+            )
+            #========================================================================#
             # variables for discriminator and generator
             self.discriminator_variables = tf.get_collection(
                 key=tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -77,16 +87,6 @@ class GANSynth(object):
                 learning_rate=self.hyper_params.generator_learning_rate,
                 beta1=self.hyper_params.generator_beta1,
                 beta2=self.hyper_params.generator_beta2
-            )
-            #========================================================================#
-            # update ops for discriminator and generator
-            self.discriminator_update_ops = tf.get_collection(
-                key=tf.GraphKeys.UPDATE_OPS,
-                scope="{}/discriminator".format(self.name)
-            )
-            self.generator_update_ops = tf.get_collection(
-                key=tf.GraphKeys.UPDATE_OPS,
-                scope="{}/generator".format(self.name)
             )
             #========================================================================#
             # training op for generator and discriminator
