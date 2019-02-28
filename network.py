@@ -40,7 +40,7 @@ class PGGAN(object):
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
                     inputs = tf.reshape(inputs, [-1, inputs.shape[1], 1, 1])
-                    # inputs = pixel_norm(inputs)
+                    inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv_upscale"):
                         inputs = conv2d_transpose(
                             inputs=inputs,
@@ -48,26 +48,16 @@ class PGGAN(object):
                             kernel_size=resolution(depth).tolist(),
                             strides=resolution(depth).tolist()
                         )
-                        inputs = conditional_batch_norm(
-                            inputs=inputs,
-                            labels=labels,
-                            training=training
-                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        # inputs = pixel_norm(inputs)
+                        inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3]
                         )
-                        inputs = conditional_batch_norm(
-                            inputs=inputs,
-                            labels=labels,
-                            training=training
-                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        # inputs = pixel_norm(inputs)
+                        inputs = pixel_norm(inputs)
                 else:
                     with tf.variable_scope("conv_upscale"):
                         inputs = conv2d_transpose(
@@ -76,26 +66,16 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             strides=[2, 2]
                         )
-                        inputs = conditional_batch_norm(
-                            inputs=inputs,
-                            labels=labels,
-                            training=training
-                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        # inputs = pixel_norm(inputs)
+                        inputs = pixel_norm(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3]
                         )
-                        inputs = conditional_batch_norm(
-                            inputs=inputs,
-                            labels=labels,
-                            training=training
-                        )
                         inputs = tf.nn.leaky_relu(inputs)
-                        # inputs = pixel_norm(inputs)
+                        inputs = pixel_norm(inputs)
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -187,7 +167,7 @@ class PGGAN(object):
 
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
-                    # inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
+                    inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
