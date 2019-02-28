@@ -110,6 +110,13 @@ class GANSynth(object):
 
             if global_step % 100 == 0:
 
+                discriminator_loss, generator_loss = session.run([
+                    self.discriminator_loss, self.generator_loss
+                ])
+                print("global step: {}, discriminator loss: {}, generator loss: {}".format(
+                    global_step, discriminator_loss, generator_loss
+                ))
+
                 summary = session.run(self.summary)
                 writer.add_summary(summary, global_step=global_step)
 
