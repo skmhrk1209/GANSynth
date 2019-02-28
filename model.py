@@ -149,11 +149,22 @@ class GANSynth(object):
 
             if global_step % 100 == 0:
 
+                discriminator_loss, generator_loss = session.run(
+                    fetches=[self.discriminator_loss, self.generator_loss],
+                    feed_dict={self.training: True}
+                )
+
+                tf.logging.info("global step: {}, discriminator loss: {}, generator loss: {}".format(
+                    global_step, discriminator_loss, generator_loss
+                ))
+
+                summary = session.run(
+                    fetches=self.summary,
+                    feed_dict={self.training: True}
+                )
+
                 writer.add_summary(
-                    summary=session.run(
-                        fetches=self.summary,
-                        feed_dict={self.training: True}
-                    ),
+                    summary=summary,
                     global_step=global_step
                 )
 
