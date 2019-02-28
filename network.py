@@ -40,7 +40,7 @@ class PGGAN(object):
                             filters=channels(depth),
                             kernel_size=resolution(depth).tolist(),
                             strides=resolution(depth).tolist(),
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -50,7 +50,7 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -62,7 +62,7 @@ class PGGAN(object):
                             filters=channels(depth),
                             kernel_size=[3, 3],
                             strides=[2, 2],
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -72,7 +72,7 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -177,7 +177,7 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -188,7 +188,7 @@ class PGGAN(object):
                             filters=channels(depth - 1),
                             kernel_size=resolution(depth).tolist(),
                             strides=resolution(depth).tolist(),
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -198,7 +198,7 @@ class PGGAN(object):
                         logits = dense(
                             inputs=inputs,
                             units=1,
-                            variable_scale=1,
+                            variance_scale=1,
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -206,7 +206,7 @@ class PGGAN(object):
                         inputs = logits + projection(
                             inputs=inputs,
                             labels=labels,
-                            variable_scale=1,
+                            variance_scale=1,
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -216,7 +216,7 @@ class PGGAN(object):
                             inputs=inputs,
                             filters=channels(depth),
                             kernel_size=[3, 3],
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -227,7 +227,7 @@ class PGGAN(object):
                             filters=channels(depth - 1),
                             kernel_size=[3, 3],
                             strides=[2, 2],
-                            variable_scale=2,
+                            variance_scale=2,
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
@@ -241,7 +241,7 @@ class PGGAN(object):
                         inputs=inputs,
                         filters=channels(depth),
                         kernel_size=[1, 1],
-                        variable_scale=2,
+                        variance_scale=2,
                         scale_weight=self.scale_weight,
                         apply_spectral_norm=self.apply_spectral_norm
                     )
