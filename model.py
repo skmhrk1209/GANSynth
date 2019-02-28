@@ -121,13 +121,14 @@ class GANSynth(object):
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
 
+        def run(**fetches):
+            session.run(fetches, feed_dict={self.training: True})
+
         while True:
 
             global_step = session.run(self.global_step)
             if global_step > max_steps:
                 break
-
-            run = functools.partial(session.run, feed_dict={self.training: True})
 
             run(self.discriminator_train_op)
             run(self.generator_train_op)
