@@ -100,7 +100,7 @@ class GANSynth(object):
             )
             print("generator_update_ops", self.generator_update_ops)
             self.discriminator_train_op = tf.group([self.discriminator_train_op, self.discriminator_update_ops])
-            self.generator_train_op = tf.group([self.generator_train_op, self.self.generator_update_ops])
+            self.generator_train_op = tf.group([self.generator_train_op, self.generator_update_ops])
             #========================================================================#
             # utilities
             self.saver = tf.train.Saver()

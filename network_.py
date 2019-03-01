@@ -170,19 +170,19 @@ class PGGAN(object):
             # 最も浅い層はlow_resolution_imagesは選択肢にない
             if depth == self.min_depth:
                 images = tf.cond(
-                    pred=tf.greater(out_depth, depth),
+                    pred=tf.greater(progressive_depth, depth),
                     true_fn=high_resolution_images,
                     false_fn=middle_resolution_images
                 )
             # 最も深い層はhigh_resolution_imagesは選択肢にない
             elif depth == self.max_depth:
                 images = tf.cond(
-                    pred=tf.greater(out_depth, depth),
+                    pred=tf.greater(progressive_depth, depth),
                     true_fn=middle_resolution_images,
                     false_fn=lambda: lerp(
                         a=low_resolution_images(),
                         b=middle_resolution_images(),
-                        t=depth - out_depth
+                        t=depth - progressive_depth
                     )
                 )
             # それ以外は以下のいずれかを出力する
@@ -190,17 +190,17 @@ class PGGAN(object):
             # 2. low_resolution_imagesとmiddle_resolution_imagesの線形補間
             else:
                 images = tf.cond(
-                    pred=tf.greater(out_depth, depth),
+                    pred=tf.greater(progressive_depth, depth),
                     true_fn=high_resolution_images,
                     false_fn=lambda: lerp(
                         a=low_resolution_images(),
                         b=middle_resolution_images(),
-                        t=depth - out_depth
+                        t=depth - progressive_depth
                     )
                 )
             return images
 
-        out_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+        progressive_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
 
         with tf.variable_scope(name, reuse=reuse):
             return grow(tf.concat([latents, labels], axis=-1), self.min_depth)
@@ -340,19 +340,19 @@ class PGGAN(object):
             # 最も浅い層はlow_resolution_feature_mapsは選択肢にない
             if depth == self.min_depth:
                 feature_maps = tf.cond(
-                    pred=tf.greater(in_depth, depth),
+                    pred=tf.greater(progressive_depth, depth),
                     true_fn=high_resolution_feature_maps,
                     false_fn=middle_resolution_feature_maps
                 )
             # 最も深い層はhigh_resolution_feature_mapsは選択肢にない
             elif depth == self.max_depth:
                 feature_maps = tf.cond(
-                    pred=tf.greater(in_depth, depth),
+                    pred=tf.greater(progressive_depth, depth),
                     true_fn=middle_resolution_feature_maps,
                     false_fn=lambda: lerp(
                         a=low_resolution_feature_maps(),
                         b=middle_resolution_feature_maps(),
-                        t=depth - in_depth
+                        t=depth - progressive_depth
                     )
                 )
             # それ以外は以下のいずれかを出力する
@@ -360,17 +360,17 @@ class PGGAN(object):
             # 2. low_resolution_feature_mapsとmiddle_resolution_feature_mapsの線形補間
             else:
                 feature_maps = tf.cond(
-                    pred=tf.greater(in_depth, depth),
+                    pred=tf.greater(progressive_depth, depth),
                     true_fn=high_resolution_feature_maps,
                     false_fn=lambda: lerp(
                         a=low_resolution_feature_maps(),
                         b=middle_resolution_feature_maps(),
-                        t=depth - in_depth
+                        t=depth - progressive_depth
                     )
                 )
             return feature_maps
 
-        in_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+        progressive_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
 
         with tf.variable_scope(name, reuse=reuse):
             return grow(images, self.min_depth)
