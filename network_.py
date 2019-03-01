@@ -199,7 +199,7 @@ class PGGAN(object):
         with tf.variable_scope(name, reuse=reuse):
             return grow(tf.concat([latents, labels], axis=-1), self.min_depth)
 
-    def discriminator(self, images, labels, progress, name="dicriminator", reuse=None):
+    def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
 
         def resolution(depth):
             return self.min_resolution << depth
