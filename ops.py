@@ -2,6 +2,62 @@ import tensorflow as tf
 import numpy as np
 
 
+def batch_norm(inputs, training, center=True, scale=True):
+    inputs = tf.layers.batch_normalization(
+        inputs=inputs,
+        axis=1,
+        center=center,
+        scale=scale,
+        training=training,
+        fused=False
+    )
+    return inputs
+
+
+def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
+                           variance_scale=2, scale_weight=False, apply_spectral_norm=False):
+    ''' Conditional Batch Normalization
+        [Modulating early visual processing by language]
+        (https://arxiv.org/pdf/1707.00683.pdf)
+    '''
+    with tf.variable_scope("conditional_batch_norm"):
+        inputs = batch_norm(
+            inputs=inputs,
+            training=training,
+            center=False,
+            scale=False
+        )
+        if scale:
+            with tf.variable_scope("scale"):
+                gamma = embedding(
+                    inputs=labels,
+                    units=inputs.shape[1],
+                    variance_scale=variance_scale,
+                    scale_weight=scale_weight,
+                    apply_spectral_norm=apply_spectral_norm
+                )
+                gamma = tf.reshape(
+                    tensor=gamma,
+                    shape=[-1, 1, 1, gamma.shape[1]]
+                )
+                inputs *= gamma
+        if center:
+            with tf.variable_scope("center"):
+                beta = embedding(
+                    inputs=labels,
+                    units=inputs.shape[1],
+                    variance_scale=variance_scale,
+                    scale_weight=scale_weight,
+                    apply_spectral_norm=apply_spectral_norm
+                )
+                beta = tf.reshape(
+                    tensor=beta,
+                    shape=[-1, 1, 1, beta.shape[1]]
+                )
+                inputs += beta
+    return inputs
+
+
 def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
     ''' Spectral Normalization
         [Spectral Normalization for Generative Adversarial Networks]
@@ -223,56 +279,4 @@ def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectra
 
 def scale(inputs, in_min, in_max, out_min, out_max):
     inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-    return inputs
-
-
-def batch_norm(inputs, training, center=True, scale=True):
-    inputs = tf.layers.batch_normalization(
-        inputs=inputs,
-        axis=1,
-        center=center,
-        scale=scale,
-        training=training,
-        fused=False
-    )
-    return inputs
-
-
-def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
-                           variance_scale=2, scale_weight=False, apply_spectral_norm=False):
-    with tf.variable_scope("conditional_batch_norm"):
-        inputs = batch_norm(
-            inputs=inputs,
-            training=training,
-            center=False,
-            scale=False
-        )
-        if scale:
-            with tf.variable_scope("scale"):
-                gamma = embedding(
-                    inputs=labels,
-                    units=inputs.shape[1],
-                    variance_scale=variance_scale,
-                    scale_weight=scale_weight,
-                    apply_spectral_norm=apply_spectral_norm
-                )
-                gamma = tf.reshape(
-                    input_tensor=gamma,
-                    shape=[-1, 1, 1, gamma.shape[1]]
-                )
-                inputs *= gamma
-        if center:
-            with tf.variable_scope("center"):
-                beta = embedding(
-                    inputs=labels,
-                    units=inputs.shape[1],
-                    variance_scale=variance_scale,
-                    scale_weight=scale_weight,
-                    apply_spectral_norm=apply_spectral_norm
-                )
-                beta = tf.reshape(
-                    input_tensor=beta,
-                    shape=[-1, 1, 1, beta.shape[1]]
-                )
-                inputs += beta
     return inputs
