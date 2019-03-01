@@ -2,18 +2,6 @@ import tensorflow as tf
 import numpy as np
 
 
-def batch_norm(inputs, training, center=True, scale=True):
-    inputs = tf.layers.batch_normalization(
-        inputs=inputs,
-        axis=1,
-        center=center,
-        scale=scale,
-        training=training,
-        fused=False
-    )
-    return inputs
-
-
 def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                            variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     ''' Conditional Batch Normalization
@@ -21,11 +9,13 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
         (https://arxiv.org/pdf/1707.00683.pdf)
     '''
     with tf.variable_scope("conditional_batch_norm"):
-        inputs = batch_norm(
+        inputs = tf.layers.batch_normalization(
             inputs=inputs,
-            training=training,
+            axis=1,
             center=False,
-            scale=False
+            scale=False,
+            training=training,
+            fused=False
         )
         if scale:
             with tf.variable_scope("scale"):
