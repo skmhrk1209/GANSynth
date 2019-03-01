@@ -77,28 +77,30 @@ class GANSynth(object):
                 beta2=self.hyper_params.generator_beta2
             )
             #========================================================================#
+            # training op for generator and discriminator
+            self.discriminator_train_op = self.discriminator_optimizer.minimize(
+                loss=self.discriminator_loss,
+                var_list=self.discriminator_variables
+            )
+            self.generator_train_op = self.generator_optimizer.minimize(
+                loss=self.generator_loss,
+                var_list=self.generator_variables,
+                global_step=self.global_step
+            )
+            #========================================================================#
             # update ops for discriminator and generator
             self.discriminator_update_ops = tf.get_collection(
                 key=tf.GraphKeys.UPDATE_OPS,
                 scope="{}/discriminator".format(self.name)
             )
+            print("discriminator_update_ops", self.discriminator_update_ops)
             self.generator_update_ops = tf.get_collection(
                 key=tf.GraphKeys.UPDATE_OPS,
                 scope="{}/generator".format(self.name)
             )
-            #========================================================================#
-            # training op for generator and discriminator
-            with tf.control_dependencies(self.discriminator_update_ops):
-                self.discriminator_train_op = self.discriminator_optimizer.minimize(
-                    loss=self.discriminator_loss,
-                    var_list=self.discriminator_variables
-                )
-            with tf.control_dependencies(self.generator_update_ops):
-                self.generator_train_op = self.generator_optimizer.minimize(
-                    loss=self.generator_loss,
-                    var_list=self.generator_variables,
-                    global_step=self.global_step
-                )
+            print("generator_update_ops", self.generator_update_ops)
+            self.discriminator_train_op = tf.group([self.discriminator_train_op, self.discriminator_update_ops])
+            self.generator_train_op = tf.group([self.generator_train_op, self.self.generator_update_ops])
             #========================================================================#
             # utilities
             self.saver = tf.train.Saver()
