@@ -89,16 +89,15 @@ class GANSynth(object):
             )
             #========================================================================#
             # update ops for discriminator and generator
+            # NOTE: tf.control_dependencies doesn't work
             self.discriminator_update_ops = tf.get_collection(
                 key=tf.GraphKeys.UPDATE_OPS,
                 scope="{}/discriminator".format(self.name)
             )
-            print("discriminator_update_ops", self.discriminator_update_ops)
             self.generator_update_ops = tf.get_collection(
                 key=tf.GraphKeys.UPDATE_OPS,
                 scope="{}/generator".format(self.name)
             )
-            print("generator_update_ops", self.generator_update_ops)
             self.discriminator_train_op = tf.group([self.discriminator_train_op, self.discriminator_update_ops])
             self.generator_train_op = tf.group([self.generator_train_op, self.generator_update_ops])
             #========================================================================#
