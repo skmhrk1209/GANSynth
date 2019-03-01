@@ -228,7 +228,6 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs = tf.nn.relu(inputs)
-                    # global pooling
                     inputs = tf.reduce_sum(inputs, axis=[2, 3])
                     with tf.variable_scope("logits"):
                         logits = dense(
@@ -239,7 +238,6 @@ class PGGAN(object):
                             scale_weight=self.scale_weight,
                             apply_spectral_norm=self.apply_spectral_norm
                         )
-                    # projection discriminator
                     with tf.variable_scope("projections"):
                         embedded = embedding(
                             inputs=labels,
