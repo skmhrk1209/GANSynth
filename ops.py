@@ -37,11 +37,11 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                     scale_weight=scale_weight,
                     apply_spectral_norm=apply_spectral_norm
                 )
-                gamma = tf.reshape(
-                    tensor=gamma,
-                    shape=[-1, gamma.shape[1], 1, 1]
-                )
-                inputs *= gamma
+            gamma = tf.reshape(
+                tensor=gamma,
+                shape=[-1, gamma.shape[1], 1, 1]
+            )
+            inputs *= gamma
         if center:
             with tf.variable_scope("center"):
                 beta = embedding(
@@ -51,11 +51,11 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                     scale_weight=scale_weight,
                     apply_spectral_norm=apply_spectral_norm
                 )
-                beta = tf.reshape(
-                    tensor=beta,
-                    shape=[-1, beta.shape[1], 1, 1]
-                )
-                inputs += beta
+            beta = tf.reshape(
+                tensor=beta,
+                shape=[-1, beta.shape[1], 1, 1]
+            )
+            inputs += beta
     return inputs
 
 
