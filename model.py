@@ -113,7 +113,8 @@ class GANSynth(object):
                 discriminator_loss, generator_loss = session.run([
                     self.discriminator_loss, self.generator_loss
                 ])
-                print("global step: {}, discriminator loss: {:.4f}, generator loss: {:.4f}".format(
+
+                tf.logging.info("global step: {}, discriminator loss: {:.4f}, generator loss: {:.4f}".format(
                     global_step, discriminator_loss, generator_loss
                 ))
 

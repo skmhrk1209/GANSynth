@@ -33,16 +33,16 @@ parser.add_argument("--model_dir", type=str, default="gan_synth_model", help="mo
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"], help="tfrecords")
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--max_steps", type=int, default=1000000, help="maximum number of training steps")
-parser.add_argument('--train', action="store_true", help="with training")
-parser.add_argument('--eval', action="store_true", help="with evaluation")
-parser.add_argument('--predict', action="store_true", help="with prediction")
+parser.add_argument("--train", action="store_true", help="with training")
+parser.add_argument("--eval", action="store_true", help="with evaluation")
+parser.add_argument("--predict", action="store_true", help="with prediction")
 parser.add_argument("--gpu", type=str, default="0", help="gpu id")
 args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-with open("pitch_counts.pickle", "rb") as f:
-    pitch_counts = pickle.load(f)
+with open("pitch_counts.pickle", "rb") as file:
+    pitch_counts = pickle.load(file)
 
 with tf.Graph().as_default():
 
