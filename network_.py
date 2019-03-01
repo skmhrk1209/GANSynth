@@ -255,7 +255,7 @@ class PGGAN(object):
                     with tf.variable_scope("projection_shortcut"):
                         shortcut = conv2d(
                             inputs=inputs,
-                            filters=channels(depth),
+                            filters=channels(depth - 1),
                             kernel_size=[1, 1],
                             use_bias=False,
                             variance_scale=2,
