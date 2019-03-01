@@ -25,7 +25,7 @@ import itertools
 import pickle
 from dataset import NSynth
 from model import GANSynth
-from network import PGGAN
+from network_ import PGGAN
 from attrdict import AttrDict as Param
 
 parser = argparse.ArgumentParser()

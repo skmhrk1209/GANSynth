@@ -16,6 +16,7 @@ class GANSynth(object):
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
+            self.training = tf.placeholder(tf.bool)
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
             self.progress = tf.cast(self.global_step / self.hyper_params.progress_steps, tf.float32)
             # =========================================================================================
@@ -116,21 +117,25 @@ class GANSynth(object):
             if global_step > max_steps:
                 break
 
-            session.run(self.discriminator_train_op)
-            session.run(self.generator_train_op)
+            session.run(
+                fetches=self.discriminator_train_op,
+                feed_dict={self.training: True}
+            )
+            session.run(
+                fetches=self.generator_train_op,
+                feed_dict={self.training: True}
+            )
 
             if global_step % 100 == 0:
 
-                discriminator_loss, generator_loss = session.run([
-                    self.discriminator_loss, self.generator_loss
-                ])
-
-                tf.logging.info("global step: {}, discriminator loss: {:.4f}, generator loss: {:.4f}".format(
-                    global_step, discriminator_loss, generator_loss
-                ))
-
-                summary = session.run(self.summary)
-                writer.add_summary(summary, global_step=global_step)
+                summary = session.run(
+                    fetches=self.summary,
+                    feed_dict={self.training: True}
+                )
+                writer.add_summary(
+                    summary=summary,
+                    global_step=global_step
+                )
 
                 if global_step % 1000 == 0:
 

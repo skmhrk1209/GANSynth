@@ -224,3 +224,21 @@ def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectra
 def scale(inputs, in_min, in_max, out_min, out_max):
     inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
     return inputs
+
+
+def batch_norm(inputs, training):
+
+    return tf.layers.batch_normalization(
+        inputs=inputs,
+        axis=1,
+        training=training
+    )
+
+
+def conditional_batch_norm(inputs, labels, training):
+
+    return tf.layers.batch_normalization(
+        inputs=inputs,
+        axis=1,
+        training=training
+    )
