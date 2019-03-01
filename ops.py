@@ -226,10 +226,12 @@ def scale(inputs, in_min, in_max, out_min, out_max):
     return inputs
 
 
-def batch_norm(inputs, training):
+def batch_norm(inputs, training, center=True, scale=True):
     inputs = tf.layers.batch_normalization(
         inputs=inputs,
         axis=1,
+        center=center,
+        scale=scale,
         training=training,
         fused=False
     )
