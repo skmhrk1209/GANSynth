@@ -51,7 +51,9 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training
+                            training=training,
+                            variance_scale=1,
+                            scale_weight=self.scale_weight
                         )
                     inputs = tf.nn.relu(inputs)
                     with tf.variable_scope("conv"):
@@ -68,7 +70,9 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training
+                            training=training,
+                            variance_scale=1,
+                            scale_weight=self.scale_weight
                         )
                     inputs = tf.nn.relu(inputs)
                     # projection shortcut should come after batch norm and relu
@@ -97,7 +101,9 @@ class PGGAN(object):
                         inputs = conditional_batch_norm(
                             inputs=inputs,
                             labels=labels,
-                            training=training
+                            training=training,
+                            variance_scale=1,
+                            scale_weight=self.scale_weight
                         )
                     inputs = tf.nn.relu(inputs)
                     with tf.variable_scope("conv_2nd"):

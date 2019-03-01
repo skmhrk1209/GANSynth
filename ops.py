@@ -227,43 +227,50 @@ def scale(inputs, in_min, in_max, out_min, out_max):
 
 
 def batch_norm(inputs, training):
-
-    return tf.layers.batch_normalization(
+    inputs = tf.layers.batch_normalization(
         inputs=inputs,
         axis=1,
         training=training,
         fused=False
     )
+    return inputs
 
 
-def conditional_batch_norm(inputs, labels, training):
-
-    return batch_norm(
-        inputs=inputs,
-        training=training
-    )
-
-'''
-def conditional_batch_norm_(inputs, labels, training, center=True,
-                           scale=True, name="batch_norm", use_bias=False):
-    """Conditional batch normalization."""
-    if y is None:
-        raise ValueError("You must provide y for conditional batch normalization.")
-    if y.shape.ndims != 2:
-        raise ValueError("Conditioning must have rank 2.")
-    with tf.variable_scope(name, values=[inputs]):
-        outputs = standardize_batch(inputs, is_training=is_training)
-        num_channels = inputs.shape[-1].value
-        with tf.variable_scope("condition", values=[inputs, y]):
-            if scale:
-                gamma = linear(y, num_channels, scope="gamma", use_sn=use_sn,
-                               use_bias=use_bias)
-                gamma = tf.reshape(gamma, [-1, 1, 1, num_channels])
-                outputs *= gamma
-            if center:
-                beta = linear(y, num_channels, scope="beta", use_sn=use_sn,
-                              use_bias=use_bias)
-                beta = tf.reshape(beta, [-1, 1, 1, num_channels])
-                outputs += beta
-            return outputs
-'''
+def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
+                           variance_scale=2, scale_weight=False, apply_spectral_norm=False):
+    with tf.variable_scope("conditional_batch_norm"):
+        inputs = batch_norm(
+            inputs=inputs,
+            training=training,
+            center=False,
+            scale=False
+        )
+        if scale:
+            with tf.variable_scope("scale"):
+                gamma = embedding(
+                    inputs=labels,
+                    units=inputs.shape[1],
+                    variance_scale=variance_scale,
+                    scale_weight=scale_weight,
+                    apply_spectral_norm=apply_spectral_norm
+                )
+                gamma = tf.reshape(
+                    input_tensor=gamma,
+                    shape=[-1, 1, 1, gamma.shape[1]]
+                )
+                inputs *= gamma
+        if center:
+            with tf.variable_scope("center"):
+                beta = embedding(
+                    inputs=labels,
+                    units=inputs.shape[1],
+                    variance_scale=variance_scale,
+                    scale_weight=scale_weight,
+                    apply_spectral_norm=apply_spectral_norm
+                )
+                beta = tf.reshape(
+                    input_tensor=beta,
+                    shape=[-1, 1, 1, beta.shape[1]]
+                )
+                inputs += beta
+    return inputs
