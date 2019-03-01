@@ -73,7 +73,7 @@ class PGGAN(object):
                     inputs = tf.nn.relu(inputs)
                     # projection shortcut should come after batch norm and relu
                     # since it performs a 1x1 convolution
-                    with tf.variable_scope("projection shortcut"):
+                    with tf.variable_scope("projection_shortcut"):
                         shortcut = upscale2d(inputs)
                         shortcut = conv2d(
                             inputs=shortcut,
@@ -211,8 +211,6 @@ class PGGAN(object):
             with tf.variable_scope("residual_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
                     inputs = tf.nn.relu(inputs)
-                    # minibatch standard deviation
-                    inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -254,7 +252,7 @@ class PGGAN(object):
                     inputs = tf.nn.relu(inputs)
                     # projection shortcut should come after batch norm and relu
                     # since it performs a 1x1 convolution
-                    with tf.variable_scope("projection shortcut"):
+                    with tf.variable_scope("projection_shortcut"):
                         shortcut = conv2d(
                             inputs=inputs,
                             filters=channels(depth),
