@@ -38,7 +38,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                 )
                 gamma = tf.reshape(
                     tensor=gamma,
-                    shape=[-1, 1, 1, gamma.shape[1]]
+                    shape=[-1, gamma.shape[1], 1, 1]
                 )
                 inputs *= gamma
         if center:
@@ -52,7 +52,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                 )
                 beta = tf.reshape(
                     tensor=beta,
-                    shape=[-1, 1, 1, beta.shape[1]]
+                    shape=[-1, beta.shape[1], 1, 1]
                 )
                 inputs += beta
     return inputs
