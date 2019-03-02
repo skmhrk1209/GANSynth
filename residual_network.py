@@ -6,7 +6,7 @@ from ops import *
 def log(x, base): return tf.log(x) / tf.log(base)
 
 
-def lerp(a, b, t): return t * a + (1 - t) * b
+def lerp(a, b, t): return t * a + (1. - t) * b
 
 
 class PGGAN(object):
@@ -179,7 +179,7 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = log(1 + progress * ((1 << self.max_depth) - 1), 2)
+            growing_depth = log(1. + progress * ((1 << self.max_depth) - 1), 2.)
             return grow(latents, self.min_depth)
 
     def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
@@ -318,5 +318,5 @@ class PGGAN(object):
             return feature_maps
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = log(1 + progress * ((1 << self.max_depth) - 1), 2)
+            growing_depth = log(1. + progress * ((1 << self.max_depth) - 1), 2.)
             return grow(images, self.min_depth)
