@@ -139,7 +139,7 @@ class PGGAN(object):
                 )
             return images
 
-        growing_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+        growing_depth = linear_map(progress, 0.0, 1.0, self.min_depth, self.max_depth)
 
         with tf.variable_scope(name, reuse=reuse):
             return grow(tf.concat([latents, labels], axis=-1), self.min_depth)
@@ -188,7 +188,7 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("projection"):
-                        embedded = embedding(
+                        embedded = embed_one_hot(
                             inputs=labels,
                             units=inputs.shape[1],
                             variance_scale=1,
@@ -286,7 +286,7 @@ class PGGAN(object):
                 )
             return feature_maps
 
-        growing_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+        growing_depth = linear_map(progress, 0.0, 1.0, self.min_depth, self.max_depth)
 
         with tf.variable_scope(name, reuse=reuse):
             return grow(images, self.min_depth)

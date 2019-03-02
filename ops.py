@@ -30,7 +30,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
         )
         if scale:
             with tf.variable_scope("scale"):
-                gamma = embedding(
+                gamma = embed_one_hot(
                     inputs=labels,
                     units=inputs.shape[1],
                     variance_scale=variance_scale,
@@ -44,7 +44,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
             inputs *= gamma
         if center:
             with tf.variable_scope("center"):
-                beta = embedding(
+                beta = embed_one_hot(
                     inputs=labels,
                     units=inputs.shape[1],
                     variance_scale=variance_scale,
@@ -267,7 +267,7 @@ def batch_stddev(inputs, group_size=4, epsilon=1e-8):
     return inputs
 
 
-def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
+def embed_one_hot(inputs, units, variance_scale=2, scale_weight=False, apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -278,6 +278,6 @@ def embedding(inputs, units, variance_scale=2, scale_weight=False, apply_spectra
     return inputs
 
 
-def scale(inputs, in_min, in_max, out_min, out_max):
+def linear_map(inputs, in_min, in_max, out_min, out_max):
     inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
     return inputs

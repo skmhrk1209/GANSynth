@@ -35,15 +35,28 @@ class PGGAN(object):
                 (https://arxiv.org/pdf/1603.05027.pdf)
             '''
             with tf.variable_scope("residual_block_{}x{}".format(*resolution(depth)), reuse=reuse):
-                with tf.variable_scope("conditional_batch_norm_1st"):
-                    inputs = conditional_batch_norm(
-                        inputs=inputs,
-                        labels=labels,
-                        training=training,
-                        variance_scale=1,
-                        scale_weight=self.scale_weight,
-                        apply_spectral_norm=self.apply_spectral_norm
-                    )
+                if depth == self.min_depth:
+                    with tf.variable_scope("dense"):
+                        inputs = dense(
+                            inputs=inputs,
+                            units=channels(depth) * resolution(depth).prod(),
+                            use_bias=False,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                        inputs = tf.reshape(
+                            tensor=inputs,
+                            shape=[-1, channels(depth), *resolution(depth)]
+                        )
+                else:
+                    with tf.variable_scope("conditional_batch_norm_1st"):
+                        inputs = conditional_batch_norm(
+                            inputs=inputs,
+                            labels=labels,
+                            training=training,
+                            variance_scale=1,
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
                     inputs = tf.nn.relu(inputs)
                     # projection shortcut should come after batch norm and relu
                     # since it performs a 1x1 convolution
@@ -90,7 +103,6 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs += shortcut
-
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -163,20 +175,8 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
-            with tf.variable_scope("dense"):
-                feature_vectors = dense(
-                    inputs=latents,
-                    units=channels(self.min_depth) * resolution(self.min_depth).prod(),
-                    use_bias=False,
-                    apply_spectral_norm=self.apply_spectral_norm
-                )
-                feature_maps = tf.reshape(
-                    tensor=feature_vectors,
-                    shape=[-1, channels(self.min_depth), *resolution(self.min_depth)]
-                )
-            images = grow(feature_maps, self.min_depth + 1)
-            return images
+            growing_depth = linear_map(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+            return grow(feature_maps, self.min_depth)
 
     def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
 
@@ -188,43 +188,70 @@ class PGGAN(object):
 
         def residual_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("residual_block_{}x{}".format(*resolution(depth)), reuse=reuse):
-                inputs = tf.nn.relu(inputs)
-                # projection shortcut should come after batch norm and relu
-                # since it performs a 1x1 convolution
-                with tf.variable_scope("projection_shortcut"):
-                    shortcut = conv2d(
-                        inputs=inputs,
-                        filters=channels(depth - 1),
-                        kernel_size=[1, 1],
-                        use_bias=False,
-                        variance_scale=2,
-                        scale_weight=self.scale_weight,
-                        apply_spectral_norm=self.apply_spectral_norm
-                    )
-                    shortcut = downscale2d(shortcut)
-                with tf.variable_scope("conv_1st"):
-                    inputs = conv2d(
-                        inputs=inputs,
-                        filters=channels(depth),
-                        kernel_size=[3, 3],
-                        use_bias=True,
-                        variance_scale=2,
-                        scale_weight=self.scale_weight,
-                        apply_spectral_norm=self.apply_spectral_norm
-                    )
-                inputs = tf.nn.relu(inputs)
-                with tf.variable_scope("conv_2nd"):
-                    inputs = conv2d(
-                        inputs=inputs,
-                        filters=channels(depth - 1),
-                        kernel_size=[3, 3],
-                        use_bias=True,
-                        variance_scale=2,
-                        scale_weight=self.scale_weight,
-                        apply_spectral_norm=self.apply_spectral_norm
-                    )
-                    inputs = downscale2d(inputs)
-                inputs += shortcut
+                if depth == self.min_depth:
+                    inputs = tf.nn.relu(inputs)
+                    inputs = tf.reduce_sum(inputs, axis=[2, 3])
+                    with tf.variable_scope("logits"):
+                        logits = dense(
+                            inputs=inputs,
+                            units=1,
+                            use_bias=True,
+                            variance_scale=1,
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                    with tf.variable_scope("projections"):
+                        embeddings = embed_one_hot(
+                            inputs=labels,
+                            units=inputs.shape[1],
+                            variance_scale=1,
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                        projections = tf.reduce_sum(
+                            input_tensor=inputs * embeddings,
+                            axis=1,
+                            keepdims=True
+                        )
+                    inputs = logits + projections
+                else:
+                    inputs = tf.nn.relu(inputs)
+                    # projection shortcut should come after batch norm and relu
+                    # since it performs a 1x1 convolution
+                    with tf.variable_scope("projection_shortcut"):
+                        shortcut = conv2d(
+                            inputs=inputs,
+                            filters=channels(depth - 1),
+                            kernel_size=[1, 1],
+                            use_bias=False,
+                            variance_scale=2,
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                        shortcut = downscale2d(shortcut)
+                    with tf.variable_scope("conv_1st"):
+                        inputs = conv2d(
+                            inputs=inputs,
+                            filters=channels(depth),
+                            kernel_size=[3, 3],
+                            use_bias=True,
+                            variance_scale=2,
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                    inputs = tf.nn.relu(inputs)
+                    with tf.variable_scope("conv_2nd"):
+                        inputs = conv2d(
+                            inputs=inputs,
+                            filters=channels(depth - 1),
+                            kernel_size=[3, 3],
+                            use_bias=True,
+                            variance_scale=2,
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
+                        )
+                        inputs = downscale2d(inputs)
+                    inputs += shortcut
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -289,31 +316,5 @@ class PGGAN(object):
             return feature_maps
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = scale(progress, 0.0, 1.0, self.min_depth, self.max_depth)
-            feature_maps = grow(images, self.min_depth + 1)
-            feature_maps = tf.nn.relu(feature_maps)
-            feature_vectors = tf.reduce_sum(feature_maps, axis=[2, 3])
-            with tf.variable_scope("logits"):
-                logits = dense(
-                    inputs=feature_vectors,
-                    units=1,
-                    use_bias=True,
-                    variance_scale=1,
-                    scale_weight=self.scale_weight,
-                    apply_spectral_norm=self.apply_spectral_norm
-                )
-            with tf.variable_scope("projections"):
-                labels = embedding(
-                    inputs=labels,
-                    units=feature_vectors.shape[1],
-                    variance_scale=1,
-                    scale_weight=self.scale_weight,
-                    apply_spectral_norm=self.apply_spectral_norm
-                )
-                projections = tf.reduce_sum(
-                    input_tensor=feature_vectors * labels,
-                    axis=1,
-                    keepdims=True
-                )
-            logits += projections
-            return logits
+            growing_depth = linear_map(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+            return grow(images, self.min_depth)

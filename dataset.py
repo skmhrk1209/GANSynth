@@ -84,7 +84,7 @@ class NSynth(object):
         log_mel_magnitudes = tf.log(mel_magnitudes + 1e-6)
         mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phases)
         # =========================================================================================
-        log_mel_magnitudes = scale(log_mel_magnitudes, -14.0, 6.0, -1.0, 1.0)
+        log_mel_magnitudes = linear_map(log_mel_magnitudes, -14.0, 6.0, -1.0, 1.0)
         # =========================================================================================
         images = tf.stack([log_mel_magnitudes, mel_instantaneous_frequencies], axis=1)
         # =========================================================================================
@@ -95,7 +95,7 @@ class NSynth(object):
         # =========================================================================================
         log_mel_magnitudes, mel_instantaneous_frequencies = tf.unstack(images, axis=1)
         # =========================================================================================
-        log_mel_magnitudes = scale(log_mel_magnitudes, -1.0, 1.0, -14.0, 6.0)
+        log_mel_magnitudes = linear_map(log_mel_magnitudes, -1.0, 1.0, -14.0, 6.0)
         # =========================================================================================
         mel_magnitudes = tf.exp(log_mel_magnitudes)
         mel_phases = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
