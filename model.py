@@ -16,8 +16,8 @@ class GANSynth(object):
             self.hyper_params = hyper_params
             # =========================================================================================
             # parameters
-            self.training = tf.placeholder(tf.bool)
-            self.progress_steps = tf.placeholder(tf.int32)
+            self.training = tf.placeholder(dtype=tf.bool, shape=[])
+            self.progress_steps = tf.placeholder(dtype=tf.int32, shape=[])
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
             self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
             # =========================================================================================
