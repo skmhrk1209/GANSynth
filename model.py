@@ -137,16 +137,15 @@ class GANSynth(object):
             if global_step > max_steps:
                 break
 
-            for _ in range(self.hyper_params.n_discriminator):
-                session.run(
-                    fetches=self.discriminator_train_op,
-                    feed_dict={self.training: True}
-                )
-            for _ in range(self.hyper_params.n_generator):
-                session.run(
-                    fetches=self.generator_train_op,
-                    feed_dict={self.training: True}
-                )
+            session.run(
+                fetches=self.discriminator_train_op,
+                feed_dict={self.training: True}
+            )
+
+            session.run(
+                fetches=self.generator_train_op,
+                feed_dict={self.training: True}
+            )
 
             if global_step % 100 == 0:
 
