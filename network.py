@@ -11,13 +11,15 @@ def lerp(a, b, t): return t * a + (1. - t) * b
 
 class PGGAN(object):
 
-    def __init__(self, min_resolution, max_resolution, min_channels, max_channels, apply_spectral_norm):
+    def __init__(self, min_resolution, max_resolution, min_channels, max_channels,
+                 apply_spectral_norm, apply_self_attention):
 
         self.min_resolution = np.asanyarray(min_resolution)
         self.max_resolution = np.asanyarray(max_resolution)
         self.min_channels = min_channels
         self.max_channels = max_channels
         self.apply_spectral_norm = apply_spectral_norm
+        self.apply_self_attention = apply_self_attention
 
         def log2(x): return 0 if (x == 1).all() else 1 + log2(x >> 1)
 
@@ -107,6 +109,15 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs += shortcut
+                if depth == (self.min_depth + self.max_depth) // 2:
+                    if self.apply_self_attention:
+                        with tf.variable_scope("self_attention"):
+                            inputs = self_attention(
+                                inputs=inputs,
+                                filters=inputs.shape[1] // 8,
+                                weight_initializer=tf.initializers.glorot_normal,
+                                apply_spectral_norm=self.apply_spectral_norm
+                            )
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -177,7 +188,7 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = log(1. + progress * ((1 << self.max_depth) - 1), 2.)
+            growing_depth = log((1 << self.min_depth) + progress * ((1 << self.max_depth) - (1 << self.min_depth)), 2.)
             return grow(latents, self.min_depth)
 
     def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
@@ -201,7 +212,7 @@ class PGGAN(object):
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("projections"):
-                        embeddings = embed_one_hot(
+                        embeddings = embed(
                             inputs=labels,
                             units=inputs.shape[1],
                             weight_initializer=tf.initializers.glorot_normal(),
@@ -251,6 +262,15 @@ class PGGAN(object):
                         )
                         inputs = downscale2d(inputs)
                     inputs += shortcut
+                if depth == (self.min_depth + self.max_depth) // 2:
+                    if self.apply_self_attention:
+                        with tf.variable_scope("self_attention"):
+                            inputs = self_attention(
+                                inputs=inputs,
+                                filters=inputs.shape[1] // 8,
+                                weight_initializer=tf.initializers.glorot_normal,
+                                apply_spectral_norm=self.apply_spectral_norm
+                            )
                 return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -313,5 +333,5 @@ class PGGAN(object):
             return feature_maps
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = log(1. + progress * ((1 << self.max_depth) - 1), 2.)
+            growing_depth = log((1 << self.min_depth) + progress * ((1 << self.max_depth) - (1 << self.min_depth)), 2.)
             return grow(images, self.min_depth)

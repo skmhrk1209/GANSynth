@@ -121,9 +121,9 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
-def embed_one_hot(inputs, units,
-                  weight_initializer=tf.initializers.glorot_normal(),
-                  apply_spectral_norm=False):
+def embed(inputs, units,
+          weight_initializer=tf.initializers.glorot_normal(),
+          apply_spectral_norm=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         initializer=weight_initializer,
@@ -162,7 +162,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
     )
     if scale:
         with tf.variable_scope("scale"):
-            gamma = embed_one_hot(
+            gamma = embed(
                 inputs=labels,
                 units=inputs.shape[1],
                 weight_initializer=scale_initializer,
@@ -175,7 +175,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
         inputs *= gamma
     if center:
         with tf.variable_scope("center"):
-            beta = embed_one_hot(
+            beta = embed(
                 inputs=labels,
                 units=inputs.shape[1],
                 weight_initializer=center_initializer,
@@ -263,3 +263,78 @@ def spectral_norm(inputs, singular_value="right", epsilon=1e-12):
         w_tensor_normalized = tf.reshape(w_normalized, inputs.shape)
 
     return w_tensor_normalized
+
+
+def self_attention(inputs, filters,
+                   weight_initializer=tf.initializers.glorot_normal(),
+                   apply_spectral_norm=False):
+    ''' Self Attention Mechanism
+        [Self-Attention Generative Adversarial Networks]
+        (https://arxiv.org/pdf/1805.08318.pdf)
+    '''
+    with tf.variable_scope("query"):
+        queries = conv2d(
+            inputs=inputs,
+            filters=filters,
+            kernel_size=[1, 1],
+            use_bias=False,
+            weight_initializer=weight_initializer,
+            apply_spectral_norm=apply_spectral_norm
+        )
+        queries = tf.reshape(
+            tensor=queries,
+            shape=[-1, queries.shape[1], np.prod(queries.shape[2:])]
+        )
+    with tf.variable_scope("key"):
+        keys = conv2d(
+            inputs=inputs,
+            filters=filters,
+            kernel_size=[1, 1],
+            use_bias=False,
+            weight_initializer=weight_initializer,
+            apply_spectral_norm=apply_spectral_norm
+        )
+        keys = tf.reshape(
+            tensor=keys,
+            shape=[-1, keys.shape[1], np.prod(keys.shape[2:])]
+        )
+    with tf.variable_scope("value"):
+        values = conv2d(
+            inputs=inputs,
+            filters=inputs.shape[1],
+            kernel_size=[1, 1],
+            use_bias=False,
+            weight_initializer=weight_initializer,
+            apply_spectral_norm=apply_spectral_norm
+        )
+        values = tf.reshape(
+            tensor=values,
+            shape=[-1, values.shape[1], np.prod(values.shape[2:])]
+        )
+    attention_map = tf.matmul(
+        a=queries,
+        b=keys,
+        transpose_a=True,
+        transpose_b=False
+    )
+    attention_map = tf.nn.softmax(
+        logits=attention_map,
+        axis=-1
+    )
+    self_attention_maps = tf.matmul(
+        a=values,
+        b=attention_map,
+        transpose_a=False,
+        transpose_b=True
+    )
+    self_attention_maps = tf.reshape(
+        tensor=self_attention_maps,
+        shape=inputs.shape
+    )
+    gamma = tf.get_variable(
+        name="gamma",
+        shape=[],
+        initializer=tf.initializers.zeros()
+    )
+    inputs += gamma * self_attention_maps
+    return inputs
