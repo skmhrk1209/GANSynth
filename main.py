@@ -15,9 +15,6 @@
 #
 # [cGANs with Projection Discriminator]
 # (https://arxiv.org/pdf/1802.05637.pdf)
-
-# [Self-Attention Generative Adversarial Networks]
-# (https://arxiv.org/pdf/1805.08318.pdf)
 #=================================================================================================#
 
 import tensorflow as tf

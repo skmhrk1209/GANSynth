@@ -7,7 +7,6 @@
 * [Progressive Growing of GANs for Improved Quality, Stability, and Variation](https://arxiv.org/pdf/1710.10196.pdf)
 * [Spectral Normalization for Generative Adversarial Networks](https://arxiv.org/pdf/1802.05957.pdf)
 * [cGANs with Projection Discriminator](https://arxiv.org/pdf/1802.05637.pdf)
-* [Self-Attention Generative Adversarial Networks](https://arxiv.org/pdf/1805.08318.pdf)
 
 ## Dataset
 * [The NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth)
@@ -17,4 +16,3 @@
 * Spectral Normalization on generator and discriminator
 * Conditional Batch Normalization on generator
 * Conditional information projection on discriminator
-* Self-Attention Mechanism on generator and discriminator
