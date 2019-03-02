@@ -132,38 +132,22 @@ class GANSynth(object):
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
 
+        feed_dict = {
+            self.training: True,
+            self.progress_steps: progress_steps
+        }
+
         while True:
 
             global_step = session.run(self.global_step)
 
-            session.run(
-                fetches=self.discriminator_train_op,
-                feed_dict={
-                    self.training: True,
-                    self.progress_steps: progress_steps
-                }
-            )
-            session.run(
-                fetches=self.generator_train_op,
-                feed_dict={
-                    self.training: True,
-                    self.progress_steps: progress_steps
-                }
-            )
+            session.run(self.discriminator_train_op, feed_dict=feed_dict)
+            session.run(self.generator_train_op, feed_dict=feed_dict)
 
             if global_step % 100 == 0:
 
-                summary = session.run(
-                    fetches=self.summary,
-                    feed_dict={
-                        self.training: True,
-                        self.progress_steps: progress_steps
-                    }
-                )
-                writer.add_summary(
-                    summary=summary,
-                    global_step=global_step
-                )
+                summary = session.run(self.summary, feed_dict=feed_dict)
+                writer.add_summary(summary, global_step=global_step)
 
                 if global_step % 1000 == 0:
 
