@@ -25,7 +25,7 @@ import itertools
 import pickle
 from dataset import NSynth
 from model import GANSynth
-from residual_network import PGGAN
+from network import PGGAN
 from attrdict import AttrDict as Param
 
 parser = argparse.ArgumentParser()
@@ -51,7 +51,6 @@ with tf.Graph().as_default():
         max_resolution=[128, 1024],
         min_channels=16,
         max_channels=256,
-        scale_weight=False,
         apply_spectral_norm=True
     )
 
