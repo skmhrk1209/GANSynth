@@ -19,7 +19,7 @@ class GANSynth(object):
             self.training = tf.placeholder(tf.bool)
             self.progress_steps = tf.placeholder(tf.int32)
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
-            self.progress = self.global_step / self.progress_steps
+            self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
             # =========================================================================================
             # input_fn for real data and fake data
             self.real_images, self.real_labels = real_input_fn()
