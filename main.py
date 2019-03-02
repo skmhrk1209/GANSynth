@@ -49,9 +49,9 @@ with tf.Graph().as_default():
     tf.set_random_seed(0)
 
     pggan = PGGAN(
-        min_resolution=[2, 16],
+        min_resolution=[1, 8],
         max_resolution=[128, 1024],
-        min_channels=32,
+        min_channels=16,
         max_channels=256,
         scale_weight=False,
         apply_spectral_norm=True
