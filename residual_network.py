@@ -40,7 +40,8 @@ class PGGAN(object):
                         inputs = dense(
                             inputs=inputs,
                             units=channels(depth) * resolution(depth).prod(),
-                            use_bias=False
+                            use_bias=False,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                         inputs = tf.reshape(
                             tensor=inputs,
@@ -52,7 +53,8 @@ class PGGAN(object):
                             labels=labels,
                             training=training,
                             variance_scale=1,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs = tf.nn.relu(inputs)
                     with tf.variable_scope("conv"):
@@ -62,7 +64,8 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             use_bias=False,
                             variance_scale=2,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                 else:
                     with tf.variable_scope("conditional_batch_norm_1st"):
@@ -71,7 +74,8 @@ class PGGAN(object):
                             labels=labels,
                             training=training,
                             variance_scale=1,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs = tf.nn.relu(inputs)
                     # projection shortcut should come after batch norm and relu
@@ -84,7 +88,8 @@ class PGGAN(object):
                             kernel_size=[1, 1],
                             use_bias=False,
                             variance_scale=2,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("conv_1st"):
                         inputs = upscale2d(inputs)
@@ -94,7 +99,8 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             use_bias=False,
                             variance_scale=2,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                     with tf.variable_scope("conditional_batch_norm_2nd"):
                         inputs = conditional_batch_norm(
@@ -102,7 +108,8 @@ class PGGAN(object):
                             labels=labels,
                             training=training,
                             variance_scale=1,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs = tf.nn.relu(inputs)
                     with tf.variable_scope("conv_2nd"):
@@ -112,7 +119,8 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             use_bias=False,
                             variance_scale=2,
-                            scale_weight=self.scale_weight
+                            scale_weight=self.scale_weight,
+                            apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs += shortcut
                 return inputs
@@ -133,7 +141,8 @@ class PGGAN(object):
                         kernel_size=[1, 1],
                         use_bias=True,
                         variance_scale=1,
-                        scale_weight=self.scale_weight
+                        scale_weight=self.scale_weight,
+                        apply_spectral_norm=self.apply_spectral_norm
                     )
                 inputs = tf.nn.tanh(inputs)
                 return inputs

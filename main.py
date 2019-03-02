@@ -49,10 +49,10 @@ with tf.Graph().as_default():
     tf.set_random_seed(0)
 
     pggan = PGGAN(
-        min_resolution=[1, 8],
+        min_resolution=[2, 16],
         max_resolution=[128, 1024],
-        min_channels=16,
-        max_channels=512,
+        min_channels=32,
+        max_channels=256,
         scale_weight=False,
         apply_spectral_norm=True
     )
@@ -77,7 +77,7 @@ with tf.Graph().as_default():
         ),
         fake_input_fn=functools.partial(
             nsynth.fake_input_fn,
-            latent_size=512,
+            latent_size=256,
             batch_size=args.batch_size
         ),
         hyper_params=Param(
@@ -87,7 +87,9 @@ with tf.Graph().as_default():
             discriminator_beta2=0.9,
             generator_learning_rate=2e-4,
             generator_beta1=0.0,
-            generator_beta2=0.9
+            generator_beta2=0.9,
+            n_discriminator=5,
+            n_generator=1,
         ),
         name=args.model_dir
     )
