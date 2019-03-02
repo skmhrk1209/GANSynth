@@ -3,6 +3,12 @@ import numpy as np
 from ops import *
 
 
+def log(x, base): return tf.log(x) / tf.log(base)
+
+
+def lerp(a, b, t): return t * a + (1 - t) * b
+
+
 class PGGAN(object):
 
     def __init__(self, min_resolution, max_resolution, min_channels, max_channels,
@@ -127,8 +133,6 @@ class PGGAN(object):
                 inputs = tf.nn.tanh(inputs)
                 return inputs
 
-        def lerp(a, b, t): return t * a + (1 - t) * b
-
         def grow(feature_maps, depth):
 
             def high_resolution_images():
@@ -175,7 +179,7 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = linear_map(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+            growing_depth = log(1 + progress * ((1 << self.max_depth) - 1), 2)
             return grow(latents, self.min_depth)
 
     def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
@@ -268,8 +272,6 @@ class PGGAN(object):
                     )
                 return inputs
 
-        def lerp(a, b, t): return t * a + (1 - t) * b
-
         def grow(images, depth):
 
             def high_resolution_feature_maps():
@@ -316,5 +318,5 @@ class PGGAN(object):
             return feature_maps
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = linear_map(progress, 0.0, 1.0, self.min_depth, self.max_depth)
+            growing_depth = log(1 + progress * ((1 << self.max_depth) - 1), 2)
             return grow(images, self.min_depth)

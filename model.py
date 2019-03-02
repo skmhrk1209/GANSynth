@@ -17,8 +17,9 @@ class GANSynth(object):
             # =========================================================================================
             # parameters
             self.training = tf.placeholder(tf.bool)
+            self.progress_steps = tf.placeholder(tf.int32)
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
-            self.progress = tf.cast(self.global_step / self.hyper_params.progress_steps, tf.float32)
+            self.progress = self.global_step / self.progress_steps
             # =========================================================================================
             # input_fn for real data and fake data
             self.real_images, self.real_labels = real_input_fn()
@@ -126,7 +127,7 @@ class GANSynth(object):
             session.run(tf.variables_initializer(global_variables))
             tf.logging.info("global variables in {} initialized".format(self.name))
 
-    def train(self, max_steps):
+    def train(self, progress_steps, total_steps):
 
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
@@ -134,24 +135,33 @@ class GANSynth(object):
         while True:
 
             global_step = session.run(self.global_step)
-            if global_step > max_steps:
+            if global_step > total_steps:
                 break
 
             session.run(
                 fetches=self.discriminator_train_op,
-                feed_dict={self.training: True}
+                feed_dict={
+                    self.training: True,
+                    self.progress_steps: progress_steps
+                }
             )
 
             session.run(
                 fetches=self.generator_train_op,
-                feed_dict={self.training: True}
+                feed_dict={
+                    self.training: True,
+                    self.progress_steps: progress_steps
+                }
             )
 
             if global_step % 100 == 0:
 
                 summary = session.run(
                     fetches=self.summary,
-                    feed_dict={self.training: True}
+                    feed_dict={
+                        self.training: True,
+                        self.progress_steps: progress_steps
+                    }
                 )
                 writer.add_summary(
                     summary=summary,
