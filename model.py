@@ -19,7 +19,7 @@ class GANSynth(object):
             self.training = tf.placeholder(tf.bool)
             self.progress_steps = tf.placeholder(tf.int32)
             self.global_step = tf.get_variable("global_step", initializer=0, trainable=False)
-            self.progress = self.global_step / self.progress_steps
+            self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
             # =========================================================================================
             # input_fn for real data and fake data
             self.real_images, self.real_labels = real_input_fn()
@@ -135,8 +135,6 @@ class GANSynth(object):
         while True:
 
             global_step = session.run(self.global_step)
-            if global_step > total_steps:
-                break
 
             session.run(
                 fetches=self.discriminator_train_op,
@@ -145,7 +143,6 @@ class GANSynth(object):
                     self.progress_steps: progress_steps
                 }
             )
-
             session.run(
                 fetches=self.generator_train_op,
                 feed_dict={
@@ -175,3 +172,6 @@ class GANSynth(object):
                         save_path=os.path.join(self.name, "model.ckpt"),
                         global_step=global_step
                     )
+
+            if global_step == total_steps:
+                break
