@@ -276,8 +276,3 @@ def embed_one_hot(inputs, units, variance_scale=2, scale_weight=False, apply_spe
     )
     inputs = tf.nn.embedding_lookup(weight, tf.argmax(inputs, axis=1))
     return inputs
-
-
-def linear_map(inputs, in_min, in_max, out_min, out_max):
-    inputs = out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-    return inputs

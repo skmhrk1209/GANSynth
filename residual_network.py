@@ -6,7 +6,7 @@ from ops import *
 def log(x, base): return tf.log(x) / tf.log(base)
 
 
-def lerp(a, b, t): return t * a + (1. - t) * b
+def lerp(a, b, t): return t * a + (1 - t) * b
 
 
 class PGGAN(object):
