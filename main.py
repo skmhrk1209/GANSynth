@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=64)
-parser.add_argument("--max_steps", type=int, default=1000000)
+parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--train", action="store_true")
 parser.add_argument("--gpu", type=str, default="0")
 args = parser.parse_args()
@@ -100,6 +100,6 @@ with tf.Graph().as_default():
 
         gan_synth.initialize()
         gan_synth.train(
-            progress_steps=args.max_steps // 2,
-            total_steps=args.max_steps,
+            progress_steps=args.total_steps // 2,
+            total_steps=args.total_steps,
         )
