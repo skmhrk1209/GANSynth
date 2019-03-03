@@ -107,7 +107,7 @@ def upscale2d(inputs, factors=[2, 2]):
 
 
 def downscale2d(inputs, factors=[2, 2]):
-    # NOTE: requires tf_config['graph_options.place_pruned_graph'] = True
+    # NOTE: requires tf_config["graph_options.place_pruned_graph"] = True
     factors = np.asanyarray(factors)
     if (factors == 1).all():
         return inputs
@@ -329,7 +329,7 @@ def self_attention(inputs, filters,
     )
     self_attention_maps = tf.reshape(
         tensor=self_attention_maps,
-        shape=inputs.shape
+        shape=[-1, *inputs.shape[1:]]
     )
     gamma = tf.get_variable(
         name="gamma",

@@ -17,9 +17,9 @@ class GANSynth(object):
             # =========================================================================================
             # parameters
             self.training = tf.placeholder(dtype=tf.bool, shape=[])
-            self.progress_steps = tf.placeholder(dtype=tf.int32, shape=[])
+            self.total_steps = tf.placeholder(dtype=tf.int32, shape=[])
             self.global_step = tf.Variable(initial_value=0, trainable=False)
-            self.progress = tf.cast(self.global_step / self.progress_steps, tf.float32)
+            self.progress = tf.cast(self.global_step / self.total_steps, tf.float32)
             # =========================================================================================
             # input_fn for real data and fake data
             self.real_images, self.real_labels = real_input_fn()
@@ -127,14 +127,14 @@ class GANSynth(object):
             session.run(tf.variables_initializer(global_variables))
             tf.logging.info("global variables in {} initialized".format(self.name))
 
-    def train(self, progress_steps, total_steps):
+    def train(self, total_steps):
 
         session = tf.get_default_session()
         writer = tf.summary.FileWriter(self.name, session.graph)
 
         feed_dict = {
             self.training: True,
-            self.progress_steps: progress_steps
+            self.total_steps: total_steps
         }
 
         while True:

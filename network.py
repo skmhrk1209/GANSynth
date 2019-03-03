@@ -12,7 +12,7 @@ def lerp(a, b, t): return t * a + (1. - t) * b
 class PGGAN(object):
 
     def __init__(self, min_resolution, max_resolution, min_channels, max_channels,
-                 apply_spectral_norm, apply_self_attention):
+                 apply_spectral_norm=True, apply_self_attention=False):
 
         self.min_resolution = np.asanyarray(min_resolution)
         self.max_resolution = np.asanyarray(max_resolution)

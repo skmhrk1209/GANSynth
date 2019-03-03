@@ -52,7 +52,7 @@ with tf.Graph().as_default():
         min_channels=16,
         max_channels=256,
         apply_spectral_norm=True,
-        apply_self_attention=False
+        apply_self_attention=True
     )
 
     nsynth = NSynth(
@@ -99,7 +99,4 @@ with tf.Graph().as_default():
     with tf.Session(config=config) as session:
 
         gan_synth.initialize()
-        gan_synth.train(
-            progress_steps=args.total_steps // 2,
-            total_steps=args.total_steps,
-        )
+        gan_synth.train(args.total_steps)
