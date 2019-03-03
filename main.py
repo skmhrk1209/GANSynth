@@ -21,7 +21,6 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import functools
-import itertools
 import pickle
 from dataset import NSynth
 from model import GANSynth
