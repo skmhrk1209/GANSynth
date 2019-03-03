@@ -66,16 +66,18 @@ with tf.Graph().as_default():
         discriminator=pggan.discriminator,
         generator=pggan.generator,
         real_input_fn=functools.partial(
-            nsynth.real_input_fn,
+            nsynth.input_fn,
             filenames=args.filenames,
             batch_size=args.batch_size,
             num_epochs=None,
             shuffle=True
         ),
-        fake_input_fn=functools.partial(
-            nsynth.fake_input_fn,
-            latent_size=256,
-            batch_size=args.batch_size
+        fake_input_fn=lambda: (
+            tf.random_normal([args.batch_size, 256]),
+            tf.one_hot(tf.reshape(tf.random.multinomial(
+                logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
+                num_samples=args.batch_size
+            ), [args.batch_size]), len(pitch_counts))
         ),
         hyper_params=Param(
             discriminator_learning_rate=4e-4,

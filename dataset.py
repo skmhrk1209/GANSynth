@@ -138,7 +138,7 @@ class NSynth(object):
 
         return waveforms
 
-    def real_input_fn(self, filenames, batch_size, num_epochs, shuffle):
+    def input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
         dataset = tf.data.TFRecordDataset(filenames)
         if shuffle:
@@ -173,14 +173,3 @@ class NSynth(object):
         tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
         return iterator.get_next()
-
-    def fake_input_fn(self, latent_size, batch_size):
-
-        latents = tf.random_normal([batch_size, latent_size])
-
-        labels = tf.one_hot(tf.reshape(tf.random.multinomial(
-            logits=tf.log([tf.cast(list(zip(*sorted(self.pitch_counts.items())))[1], tf.float32)]),
-            num_samples=batch_size
-        ), [batch_size]), len(self.pitch_counts))
-
-        return latents, labels
