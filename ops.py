@@ -141,6 +141,7 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
         [Modulating early visual processing by language]
         (https://arxiv.org/pdf/1707.00683.pdf)
     '''
+    # standard batch normalization
     # NOTE: fused version doesn't work
     inputs = tf.layers.batch_normalization(
         inputs=inputs,
