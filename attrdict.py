@@ -1,4 +1,4 @@
-class AttrDict(dict):
+class Param(dict):
 
     def __init__(self, *args, **kwargs): super().__init__(*args, **kwargs)
 
