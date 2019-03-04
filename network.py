@@ -57,8 +57,8 @@ class PGGAN(object):
                             inputs=inputs,
                             labels=labels,
                             training=training,
-                            center_initializer=tf.initializers.zeros(),
-                            scale_initializer=tf.initializers.ones(),
+                            center_weight_initializer=tf.initializers.zeros(),
+                            scale_weight_initializer=tf.initializers.ones(),
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs = tf.nn.relu(inputs)
@@ -91,8 +91,8 @@ class PGGAN(object):
                             inputs=inputs,
                             labels=labels,
                             training=training,
-                            center_initializer=tf.initializers.zeros(),
-                            scale_initializer=tf.initializers.ones(),
+                            center_weight_initializer=tf.initializers.zeros(),
+                            scale_weight_initializer=tf.initializers.ones(),
                             apply_spectral_norm=self.apply_spectral_norm
                         )
                     inputs = tf.nn.relu(inputs)
@@ -113,9 +113,11 @@ class PGGAN(object):
             with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 # standard batch norm
                 with tf.variable_scope("batch_norm"):
-                    inputs = batch_norm(
+                    inputs = tf.layers.batch_normalization(
                         inputs=inputs,
-                        training=training
+                        axis=1,
+                        training=training,
+                        fused=False
                     )
                 inputs = tf.nn.relu(inputs)
                 with tf.variable_scope("conv"):

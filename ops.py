@@ -133,39 +133,30 @@ def embed(inputs, units,
     return inputs
 
 
-def batch_norm(inputs, training, center=True, scale=True):
-    # NOTE: fused version doesn't work
-    inputs = tf.layers.batch_normalization(
-        inputs=inputs,
-        axis=1,
-        center=center,
-        scale=scale,
-        training=training,
-        fused=False
-    )
-    return inputs
-
-
 def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
-                           center_initializer=tf.initializers.zeros(),
-                           scale_initializer=tf.initializers.ones(),
+                           center_weight_initializer=tf.initializers.zeros(),
+                           scale_weight_initializer=tf.initializers.ones(),
                            apply_spectral_norm=False):
     ''' Conditional Batch Normalization
         [Modulating early visual processing by language]
         (https://arxiv.org/pdf/1707.00683.pdf)
     '''
-    inputs = batch_norm(
+    # NOTE: fused version doesn't work
+    inputs = tf.layers.batch_normalization(
         inputs=inputs,
-        training=training,
+        axis=1,
         center=False,
-        scale=False
+        scale=False,
+        training=training,
+        fused=False
     )
+
     if scale:
         with tf.variable_scope("scale"):
             gamma = embed(
                 inputs=labels,
                 units=inputs.shape[1],
-                weight_initializer=scale_initializer,
+                weight_initializer=scale_weight_initializer,
                 apply_spectral_norm=apply_spectral_norm
             )
             gamma = tf.reshape(
@@ -173,12 +164,13 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                 shape=[-1, gamma.shape[1], 1, 1]
             )
         inputs *= gamma
+
     if center:
         with tf.variable_scope("center"):
             beta = embed(
                 inputs=labels,
                 units=inputs.shape[1],
-                weight_initializer=center_initializer,
+                weight_initializer=center_weight_initializer,
                 apply_spectral_norm=apply_spectral_norm
             )
             beta = tf.reshape(
@@ -186,6 +178,56 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                 shape=[-1, beta.shape[1], 1, 1]
             )
         inputs += beta
+
+    return inputs
+
+
+def adaptive_instance_norm(inputs, latents, use_bias=True, center=True, scale=True,
+                           center_weight_initializer=tf.initializers.glorot_normal(),
+                           center_bias_initializer=tf.initializers.zeros(),
+                           scale_weight_initializer=tf.initializers.glorot_normal(),
+                           scale_bias_initializer=tf.initializers.zeros(),
+                           apply_spectral_norm=False,
+                           epsilon=1e-8):
+    ''' Adaptive Instance Normalization
+        [Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization]
+        (https://arxiv.org/pdf/1703.06868.pdf)
+    '''
+    inputs -= tf.reduce_mean(inputs, axis=[2, 3], keepdims=True)
+    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=[2, 3], keepdims=True) + epsilon)
+
+    if scale:
+        with tf.variable_scope("scale"):
+            gamma = dense(
+                inputs=latents,
+                units=inputs.shape[1],
+                use_bias=use_bias,
+                weight_initializer=scale_weight_initializer,
+                bias_initializer=scale_bias_initializer,
+                apply_spectral_norm=apply_spectral_norm
+            )
+            gamma = tf.reshape(
+                tensor=gamma,
+                shape=[-1, gamma.shape[1], 1, 1]
+            )
+        inputs *= gamma
+
+    if center:
+        with tf.variable_scope("center"):
+            beta = dense(
+                inputs=latents,
+                units=inputs.shape[1],
+                use_bias=use_bias,
+                weight_initializer=center_weight_initializer,
+                bias_initializer=center_bias_initializer,
+                apply_spectral_norm=apply_spectral_norm
+            )
+            beta = tf.reshape(
+                tensor=beta,
+                shape=[-1, beta.shape[1], 1, 1]
+            )
+        inputs += beta
+
     return inputs
 
 
