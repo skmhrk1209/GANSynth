@@ -25,7 +25,7 @@ import pickle
 from dataset import NSynth
 from model import GANSynth
 from network import PGGAN
-from attrdict import Param
+from param import Param
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
