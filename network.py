@@ -177,7 +177,7 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = log((1 << self.min_depth) + progress * ((1 << self.max_depth) - (1 << self.min_depth)), 2.)
+            growing_depth = log((1 << self.min_depth) + progress * ((1 << (self.max_depth + 1)) - (1 << self.min_depth)), 2.)
             return grow(latents, self.min_depth)
 
     def discriminator(self, images, labels, training, progress, name="dicriminator", reuse=None):
@@ -313,5 +313,5 @@ class PGGAN(object):
             return feature_maps
 
         with tf.variable_scope(name, reuse=reuse):
-            growing_depth = log((1 << self.min_depth) + progress * ((1 << self.max_depth) - (1 << self.min_depth)), 2.)
+            growing_depth = log((1 << self.min_depth) + progress * ((1 << (self.max_depth + 1)) - (1 << self.min_depth)), 2.)
             return grow(images, self.min_depth)
