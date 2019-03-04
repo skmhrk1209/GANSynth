@@ -50,8 +50,7 @@ with tf.Graph().as_default():
         max_resolution=[128, 1024],
         min_channels=16,
         max_channels=256,
-        apply_spectral_norm=True,
-        apply_self_attention=True
+        apply_spectral_norm=True
     )
 
     nsynth = NSynth(

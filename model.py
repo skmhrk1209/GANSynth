@@ -141,13 +141,33 @@ class GANSynth(object):
 
             global_step = session.run(self.global_step)
 
-            session.run(self.discriminator_train_op, feed_dict=feed_dict)
-            session.run(self.generator_train_op, feed_dict=feed_dict)
+            session.run(
+                fetches=self.discriminator_train_op,
+                feed_dict=feed_dict
+            )
+            session.run(
+                fetches=self.generator_train_op,
+                feed_dict=feed_dict
+            )
 
             if global_step % 100 == 0:
 
-                summary = session.run(self.summary, feed_dict=feed_dict)
-                writer.add_summary(summary, global_step=global_step)
+                discriminator_loss, generator_loss = session.run(
+                    fetches=[self.discriminator_loss, self.generator_loss],
+                    feed_dict=feed_dict
+                )
+                tf.logging.info("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
+                    global_step. discriminator_loss, generator_loss
+                ))
+
+                summary = session.run(
+                    fetches=self.summary,
+                    feed_dict=feed_dict
+                )
+                writer.add_summary(
+                    summary=summary,
+                    global_step=global_step
+                )
 
                 if global_step % 1000 == 0:
 
