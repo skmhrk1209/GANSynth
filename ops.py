@@ -27,14 +27,14 @@ def dense(inputs, units, use_bias=True,
           bias_initializer=tf.initializers.zeros(),
           apply_spectral_norm=False):
     weight = get_weight(
-        shape=[inputs.shape[1].value, units],
+        shape=[inputs.shape[1], units],
         initializer=weight_initializer,
         apply_spectral_norm=apply_spectral_norm
     )
     inputs = tf.matmul(inputs, weight)
     if use_bias:
         bias = get_bias(
-            shape=[inputs.shape[1].value],
+            shape=[inputs.shape[1]],
             initializer=bias_initializer
         )
         inputs = tf.nn.bias_add(inputs, bias)
@@ -46,7 +46,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
            bias_initializer=tf.initializers.zeros(),
            apply_spectral_norm=False):
     weight = get_weight(
-        shape=[*kernel_size, inputs.shape[1].value, filters],
+        shape=[*kernel_size, inputs.shape[1], filters],
         initializer=weight_initializer,
         apply_spectral_norm=apply_spectral_norm
     )
@@ -59,7 +59,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
     )
     if use_bias:
         bias = get_bias(
-            shape=[inputs.shape[1].value],
+            shape=[inputs.shape[1]],
             initializer=bias_initializer
         )
         inputs = tf.nn.bias_add(inputs, bias, data_format="NCHW")
@@ -71,12 +71,12 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
                      bias_initializer=tf.initializers.zeros(),
                      apply_spectral_norm=False):
     weight = get_weight(
-        shape=[*kernel_size, inputs.shape[1].value, filters],
+        shape=[*kernel_size, inputs.shape[1], filters],
         weight_initializer=weight_initializer,
         apply_spectral_norm=apply_spectral_norm
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
-    input_shape = np.array(inputs.shape.as_list())
+    input_shape = np.array(inputs.shape)
     output_shape = [tf.shape(inputs)[0], filters, *input_shape[2:] * strides]
     inputs = tf.nn.conv2d_transpose(
         value=inputs,
@@ -88,7 +88,7 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
     )
     if use_bias:
         bias = get_bias(
-            shape=[inputs.shape[1].value],
+            shape=[inputs.shape[1]],
             initializer=bias_initializer
         )
         inputs = tf.nn.bias_add(inputs, bias, data_format="NCHW")
@@ -99,7 +99,7 @@ def upscale2d(inputs, factors=[2, 2]):
     factors = np.asanyarray(factors)
     if (factors == 1).all():
         return inputs
-    shape = inputs.shape.as_list()
+    shape = inputs.shape
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2], 1, shape[3], 1])
     inputs = tf.tile(inputs, [1, 1, 1, factors[0], 1, factors[1]])
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2] * factors[0], shape[3] * factors[1]])
@@ -125,7 +125,7 @@ def embed(inputs, units,
           weight_initializer=tf.initializers.glorot_normal(),
           apply_spectral_norm=False):
     weight = get_weight(
-        shape=[inputs.shape[1].value, units],
+        shape=[inputs.shape[1], units],
         initializer=weight_initializer,
         apply_spectral_norm=apply_spectral_norm
     )
@@ -171,55 +171,6 @@ def conditional_batch_norm(inputs, labels, training, center=True, scale=True,
                 inputs=labels,
                 units=inputs.shape[1],
                 weight_initializer=center_weight_initializer,
-                apply_spectral_norm=apply_spectral_norm
-            )
-            beta = tf.reshape(
-                tensor=beta,
-                shape=[-1, beta.shape[1], 1, 1]
-            )
-        inputs += beta
-
-    return inputs
-
-
-def adaptive_instance_norm(inputs, latents, use_bias=True, center=True, scale=True,
-                           center_weight_initializer=tf.initializers.glorot_normal(),
-                           center_bias_initializer=tf.initializers.zeros(),
-                           scale_weight_initializer=tf.initializers.glorot_normal(),
-                           scale_bias_initializer=tf.initializers.zeros(),
-                           apply_spectral_norm=False,
-                           epsilon=1e-8):
-    ''' Adaptive Instance Normalization
-        [Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization]
-        (https://arxiv.org/pdf/1703.06868.pdf)
-    '''
-    inputs -= tf.reduce_mean(inputs, axis=[2, 3], keepdims=True)
-    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=[2, 3], keepdims=True) + epsilon)
-
-    if scale:
-        with tf.variable_scope("scale"):
-            gamma = dense(
-                inputs=latents,
-                units=inputs.shape[1],
-                use_bias=use_bias,
-                weight_initializer=scale_weight_initializer,
-                bias_initializer=scale_bias_initializer,
-                apply_spectral_norm=apply_spectral_norm
-            )
-            gamma = tf.reshape(
-                tensor=gamma,
-                shape=[-1, gamma.shape[1], 1, 1]
-            )
-        inputs *= gamma
-
-    if center:
-        with tf.variable_scope("center"):
-            beta = dense(
-                inputs=latents,
-                units=inputs.shape[1],
-                use_bias=use_bias,
-                weight_initializer=center_weight_initializer,
-                bias_initializer=center_bias_initializer,
                 apply_spectral_norm=apply_spectral_norm
             )
             beta = tf.reshape(
