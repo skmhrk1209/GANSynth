@@ -49,7 +49,7 @@ with tf.Graph().as_default():
         min_resolution=[1, 8],
         max_resolution=[128, 1024],
         min_channels=16,
-        max_channels=256,
+        max_channels=512,
         apply_spectral_norm=True
     )
 
@@ -72,17 +72,17 @@ with tf.Graph().as_default():
             shuffle=True
         ),
         fake_input_fn=lambda: (
-            tf.random_normal([args.batch_size, 256]),
+            tf.random_normal([args.batch_size, 512]),
             tf.one_hot(tf.reshape(tf.random.multinomial(
                 logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
                 num_samples=args.batch_size
             ), [args.batch_size]), len(pitch_counts))
         ),
         hyper_params=Param(
-            discriminator_learning_rate=4e-4,
+            discriminator_learning_rate=8e-4,
             discriminator_beta1=0.0,
             discriminator_beta2=0.9,
-            generator_learning_rate=1e-4,
+            generator_learning_rate=8e-4,
             generator_beta1=0.0,
             generator_beta2=0.9
         ),
