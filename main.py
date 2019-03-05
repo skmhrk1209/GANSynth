@@ -84,7 +84,7 @@ with tf.Graph().as_default():
             generator_beta1=0.0,
             generator_beta2=0.9
         ),
-        name=args.model_dir
+        model_dir=args.model_dir
     )
 
     config = tf.ConfigProto(
