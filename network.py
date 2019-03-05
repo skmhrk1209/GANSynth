@@ -92,7 +92,7 @@ class PGGAN(object):
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
                         inputs=inputs,
-                        filters=3,
+                        filters=2,
                         kernel_size=[1, 1],
                         use_bias=True,
                         variance_scale=1,

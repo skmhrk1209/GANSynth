@@ -17,7 +17,7 @@ import argparse
 import functools
 import pickle
 from dataset import NSynth
-from model import GAN
+from model import GANSynth
 from network import PGGAN
 from param import Param
 
@@ -59,7 +59,7 @@ with tf.Graph().as_default():
         overlap=0.75
     )
 
-    gan = GAN(
+    gan_synth = GANSynth(
         discriminator=pggan.discriminator,
         generator=pggan.generator,
         real_input_fn=functools.partial(
@@ -96,5 +96,5 @@ with tf.Graph().as_default():
 
     with tf.Session(config=config) as session:
 
-        gan.initialize()
-        gan.train(args.total_steps)
+        gan_synth.initialize()
+        gan_synth.train(args.total_steps)

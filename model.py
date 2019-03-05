@@ -5,7 +5,7 @@ import functools
 import os
 
 
-class GAN(object):
+class GANSynth(object):
 
     def __init__(self, discriminator, generator, real_input_fn, fake_input_fn, hyper_params, model_dir):
 
@@ -111,8 +111,10 @@ class GAN(object):
         self.model_dir = model_dir
         self.saver = tf.train.Saver()
         self.summary = tf.summary.merge([
-            tf.summary.image("real_images", tf.transpose(self.real_images, [0, 2, 3, 1]), max_outputs=2),
-            tf.summary.image("fake_images", tf.transpose(self.fake_images, [0, 2, 3, 1]), max_outputs=2),
+            tf.summary.image("real_log_mel_magnitude_spectrograms", self.real_images[:, 0, ..., tf.newaxis], max_outputs=2),
+            tf.summary.image("real_mel_instantaneous_frequencies", self.real_images[:, 1, ..., tf.newaxis], max_outputs=2),
+            tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_images[:, 0, ..., tf.newaxis], max_outputs=2),
+            tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_images[:, 1, ..., tf.newaxis], max_outputs=2),
             tf.summary.scalar("discriminator_loss", self.discriminator_loss),
             tf.summary.scalar("generator_loss", self.generator_loss)
         ])
