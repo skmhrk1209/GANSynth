@@ -50,7 +50,11 @@ with tf.Graph().as_default():
         max_resolution=[128, 1024],
         min_channels=16,
         max_channels=512,
-        apply_spectral_norm=True
+        growing_level=tf.cast(tf.get_variable(
+            name="global_step",
+            initializer=0,
+            trainable=False
+        ) / args.total_steps, tf.float32)
     )
 
     nsynth = NSynth(
