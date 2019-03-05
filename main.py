@@ -59,7 +59,7 @@ with tf.Graph().as_default():
         overlap=0.75
     )
 
-    gan_synth = GANSynth(
+    gan = GAN(
         discriminator=pggan.discriminator,
         generator=pggan.generator,
         real_input_fn=functools.partial(
@@ -96,5 +96,5 @@ with tf.Graph().as_default():
 
     with tf.Session(config=config) as session:
 
-        gan_synth.initialize()
-        gan_synth.train(args.total_steps)
+        gan.initialize()
+        gan.train(args.total_steps)
