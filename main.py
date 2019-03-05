@@ -9,12 +9,6 @@
 #
 # [Progressive Growing of GANs for Improved Quality, Stability, and Variation]
 # (https://arxiv.org/pdf/1710.10196.pdf)
-#
-# [Spectral Normalization for Generative Adversarial Networks]
-# (https://arxiv.org/pdf/1802.05957.pdf)
-#
-# [cGANs with Projection Discriminator]
-# (https://arxiv.org/pdf/1802.05637.pdf)
 #=================================================================================================#
 
 import tensorflow as tf
@@ -23,7 +17,7 @@ import argparse
 import functools
 import pickle
 from dataset import NSynth
-from model import GANSynth
+from model import GAN
 from network import PGGAN
 from param import Param
 
