@@ -82,7 +82,7 @@ with tf.Graph().as_default():
             discriminator_learning_rate=4e-4,
             discriminator_beta1=0.0,
             discriminator_beta2=0.9,
-            generator_learning_rate=2e-4,
+            generator_learning_rate=1e-4,
             generator_beta1=0.0,
             generator_beta2=0.9
         ),
