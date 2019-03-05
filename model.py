@@ -157,7 +157,7 @@ class GANSynth(object):
                     feed_dict=feed_dict
                 )
                 tf.logging.info("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
-                    global_step. discriminator_loss, generator_loss
+                    global_step, discriminator_loss, generator_loss
                 ))
 
                 summary = session.run(
