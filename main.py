@@ -24,7 +24,7 @@ from param import Param
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
-parser.add_argument("--batch_size", type=int, default=64)
+parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--train", action="store_true")
 parser.add_argument("--gpu", type=str, default="0")
@@ -40,10 +40,10 @@ with tf.Graph().as_default():
     tf.set_random_seed(0)
 
     pggan = PGGAN(
-        min_resolution=[1, 8],
+        min_resolution=[2, 16],
         max_resolution=[128, 1024],
-        min_channels=16,
-        max_channels=512,
+        min_channels=32,
+        max_channels=256,
         growing_level=tf.cast(tf.get_variable(
             name="global_step",
             initializer=0,
@@ -70,7 +70,7 @@ with tf.Graph().as_default():
             shuffle=True
         ),
         fake_input_fn=lambda: (
-            tf.random_normal([args.batch_size, 512]),
+            tf.random_normal([args.batch_size, 256]),
             tf.one_hot(tf.reshape(tf.random.multinomial(
                 logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
                 num_samples=args.batch_size

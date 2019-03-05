@@ -38,8 +38,8 @@ class GANSynth(object):
         # [Which Training Methods for GANs do actually Converge?]
         # (https://arxiv.org/pdf/1801.04406.pdf)
 
-        self.discriminator_loss = tf.nn.softplus(self.fake_logits)
-        self.discriminator_loss += tf.nn.softplus(-self.real_logits)
+        self.discriminator_loss = tf.nn.softplus(-self.real_logits)
+        self.discriminator_loss += tf.nn.softplus(self.fake_logits)
 
         # zero-centerd gradient penalty
         if hyper_params.r1_gamma:
