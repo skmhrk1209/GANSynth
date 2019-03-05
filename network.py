@@ -193,11 +193,9 @@ class PGGAN(object):
                         # label conditioning from
                         # [Which Training Methods for GANs do actually Converge?]
                         # (https://arxiv.org/pdf/1801.04406.pdf)
-                        inputs *= tf.cast(labels, tf.float32)
-                        inputs = tf.reduce_sum(
-                            input_tensor=inputs,
-                            axis=1,
-                            keepdims=True
+                        inputs = tf.gather_nd(
+                            params=inputs,
+                            indices=tf.where(labels)
                         )
 
                 else:
