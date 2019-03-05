@@ -55,7 +55,10 @@ class GANSynth(object):
             r2_penalty = tf.reduce_sum(tf.square(fake_grads), axis=[1, 2, 3])
             self.discriminator_loss += 0.5 * hyper_params.r2_gamma * r2_penalty
 
+        self.discriminator_loss = tf.reduce_mean(self.discriminator_loss)
+
         self.generator_loss = tf.nn.softplus(-self.fake_logits)
+        self.generator_loss = tf.reduce_mean(self.generator_loss)
         #========================================================================#
         # variables for discriminator and generator
         self.discriminator_variables = tf.get_collection(
