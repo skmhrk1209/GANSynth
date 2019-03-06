@@ -114,10 +114,10 @@ class GANSynth(object):
         self.model_dir = model_dir
         self.saver = tf.train.Saver()
         self.summary = tf.summary.merge([
-            tf.summary.image("real_log_mel_magnitude_spectrograms", self.real_images[:, 0, ..., tf.newaxis], max_outputs=2),
-            tf.summary.image("real_mel_instantaneous_frequencies", self.real_images[:, 1, ..., tf.newaxis], max_outputs=2),
-            tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_images[:, 0, ..., tf.newaxis], max_outputs=2),
-            tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_images[:, 1, ..., tf.newaxis], max_outputs=2),
+            tf.summary.image("real_log_mel_magnitude_spectrograms", self.real_images[:, 0, ..., tf.newaxis], max_outputs=4),
+            tf.summary.image("real_mel_instantaneous_frequencies", self.real_images[:, 1, ..., tf.newaxis], max_outputs=4),
+            tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_images[:, 0, ..., tf.newaxis], max_outputs=4),
+            tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_images[:, 1, ..., tf.newaxis], max_outputs=4),
             tf.summary.scalar("discriminator_loss", self.discriminator_loss),
             tf.summary.scalar("generator_loss", self.generator_loss)
         ])
