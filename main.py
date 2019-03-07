@@ -90,4 +90,20 @@ with tf.Graph().as_default():
         )
     )
 
-    gan_synth.train(args.total_steps, args.model_dir)
+    config = tf.ConfigProto(
+        gpu_options=tf.GPUOptions(
+            visible_device_list=args.gpu,
+            allow_growth=True
+        )
+    )
+
+    if args.train:
+
+        gan_synth.train(
+            total_steps=args.total_steps,
+            model_dir=args.model_dir,
+            save_checkpoint_steps=1000,
+            save_summary_steps=100,
+            log_step_count_steps=100,
+            condig=config
+        )

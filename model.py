@@ -152,20 +152,22 @@ class GANSynth(object):
             ])
         )
 
-    def train(self, total_steps, model_dir):
+    def train(self, total_steps, model_dir, save_checkpoint_steps,
+              save_summary_steps, log_step_count_steps, config):
 
         with tf.train.SingularMonitoredSession(
-            checkpoint_dir=model_dir,
             scaffold=self.scaffold,
+            checkpoint_dir=model_dir,
+            config=config,
             hooks=[
                 tf.train.CheckpointSaverHook(
                     checkpoint_dir=model_dir,
-                    save_steps=1000,
+                    save_steps=save_checkpoint_steps,
                     scaffold=self.scaffold,
                 ),
                 tf.train.SummarySaverHook(
                     output_dir=model_dir,
-                    save_steps=100,
+                    save_steps=save_summary_steps,
                     scaffold=self.scaffold
                 ),
                 tf.train.LoggingTensorHook(
@@ -173,7 +175,11 @@ class GANSynth(object):
                         generator_loss=self.generator_loss,
                         discriminator_loss=self.discriminator_loss
                     ),
-                    every_n_iter=100,
+                    every_n_iter=log_step_count_steps,
+                ),
+                tf.train.StepCounterHook(
+                    output_dir=model_dir,
+                    every_n_steps=log_step_count_steps,
                 ),
                 tf.train.StopAtStepHook(
                     last_step=total_steps
