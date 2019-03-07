@@ -60,8 +60,8 @@ with tf.Graph().as_default():
     )
 
     gan_synth = GANSynth(
-        discriminator=pggan.discriminator,
         generator=pggan.generator,
+        discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
             nsynth.input_fn,
             filenames=args.filenames,
@@ -77,14 +77,17 @@ with tf.Graph().as_default():
             ), [args.batch_size]), len(pitch_counts))
         ),
         hyper_params=Param(
-            discriminator_learning_rate=8e-4,
-            discriminator_beta1=0.0,
-            discriminator_beta2=0.99,
             generator_learning_rate=8e-4,
             generator_beta1=0.0,
             generator_beta2=0.99,
-            r1_gamma=10.0,
-            r2_gamma=0.0
+            discriminator_learning_rate=8e-4,
+            discriminator_beta1=0.0,
+            discriminator_beta2=0.99,
+            real_zero_centered_gp_weight=10.0,
+            fake_zero_centered_gp_weight=0.0,
+            one_centered_gp_weight=10.0,
+            generator_acgan_weight=10.0,
+            discriminator_acgan_weight=10.0,
         ),
         model_dir=args.model_dir
     )

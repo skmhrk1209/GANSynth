@@ -26,7 +26,7 @@ class PGGAN(object):
 
         self.growing_depth = log(1 + ((1 << (self.max_depth + 1)) - 1) * self.growing_level, 2.)
 
-    def generator(self, latents, labels, name="ganerator", reuse=None):
+    def generator(self, latents, labels, name="generator", reuse=tf.AUTO_REUSE):
 
         def resolution(depth): return self.min_resolution << depth
 
@@ -152,7 +152,7 @@ class PGGAN(object):
 
             return grow(latents, self.min_depth)
 
-    def discriminator(self, images, labels, name="dicriminator", reuse=None):
+    def discriminator(self, images, labels, name="discriminator", reuse=tf.AUTO_REUSE):
 
         def resolution(depth): return self.min_resolution << depth
 
@@ -183,6 +183,9 @@ class PGGAN(object):
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                     with tf.variable_scope("logits"):
+                        # label conditioning from
+                        # [Which Training Methods for GANs do actually Converge?]
+                        # (https://arxiv.org/pdf/1801.04406.pdf)
                         inputs = dense(
                             inputs=inputs,
                             units=labels.shape[1],
@@ -190,13 +193,22 @@ class PGGAN(object):
                             variance_scale=1,
                             scale_weight=True
                         )
-                        # label conditioning from
-                        # [Which Training Methods for GANs do actually Converge?]
-                        # (https://arxiv.org/pdf/1801.04406.pdf)
                         inputs = tf.gather_nd(
                             params=inputs,
                             indices=tf.where(labels)
                         )
+                        '''
+                        # label conditioning from
+                        # [Conditional Image Synthesis With Auxiliary Classifier GANs]
+                        # (https://arxiv.org/pdf/1610.09585.pdf)
+                        inputs = dense(
+                            inputs=inputs,
+                            units=labels.shape[1] + 1,
+                            use_bias=True,
+                            variance_scale=1,
+                            scale_weight=True
+                        )
+                        '''
 
                 else:
                     with tf.variable_scope("conv"):
