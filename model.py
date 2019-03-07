@@ -60,9 +60,9 @@ class GANSynth(object):
         # wasserstein loss
         self.generator_losses = -self.fake_logits[:, 0]
         # auxiliary classification loss
-        if hyper_params.generator_acgan_weight:
+        if hyper_params.generator_ac_weight:
             generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
-            self.generator_losses += hyper_params.generator_acgan_weight * generator_classification_losses
+            self.generator_losses += hyper_params.generator_ac_weight * generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # discriminator
         # wasserstein loss
@@ -76,10 +76,10 @@ class GANSynth(object):
             gradient_penalties = tf.square(tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]) + 1e-8) - 1.)
             self.discriminator_losses += hyper_params.one_centered_gp_weight * gradient_penalties
         # auxiliary classification loss
-        if hyper_params.discriminator_acgan_weight:
+        if hyper_params.discriminator_ac_weight:
             discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.real_labels, self.real_logits[:, 1:])
             discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
-            self.discriminator_losses += hyper_params.discriminator_acgan_weight * discriminator_classification_losses
+            self.discriminator_losses += hyper_params.discriminator_ac_weight * discriminator_classification_losses
         '''
         # =========================================================================================
         # training op for generator and discriminator

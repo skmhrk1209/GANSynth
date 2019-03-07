@@ -86,8 +86,8 @@ with tf.Graph().as_default():
             real_zero_centered_gp_weight=10.0,
             fake_zero_centered_gp_weight=0.0,
             one_centered_gp_weight=10.0,
-            generator_acgan_weight=10.0,
-            discriminator_acgan_weight=10.0,
+            generator_ac_weight=10.0,
+            discriminator_ac_weight=10.0,
         ),
         model_dir=args.model_dir
     )
