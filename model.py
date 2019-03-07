@@ -117,10 +117,7 @@ class GANSynth(object):
         # scaffold
         self.scaffold = tf.train.Scaffold(
             init_op=tf.global_variables_initializer(),
-            local_init_op=tf.group([
-                tf.local_variables_initializer(),
-                tf.tables_initializer()
-            ]),
+            local_init_op=tf.tables_initializer(),
             saver=tf.train.Saver(
                 max_to_keep=10,
                 keep_checkpoint_every_n_hours=12,
