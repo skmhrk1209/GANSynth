@@ -192,7 +192,7 @@ class PGGAN(object):
                         )
                         inputs = tf.gather_nd(
                             params=inputs,
-                            indices=tf.where(labels)
+                            indices=tf.where(tf.equal(labels, 1))
                         )
                         '''
                         # label conditioning from
