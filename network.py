@@ -183,7 +183,6 @@ class PGGAN(object):
                         # label conditioning from
                         # [Which Training Methods for GANs do actually Converge?]
                         # (https://arxiv.org/pdf/1801.04406.pdf)
-                        print(labels)
                         inputs = dense(
                             inputs=inputs,
                             units=labels.shape[1],

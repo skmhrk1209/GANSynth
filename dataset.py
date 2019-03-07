@@ -46,7 +46,9 @@ class NSynth(object):
         # =========================================================================================
         # label
         label = self.index_table.lookup(pitch)
+        print(label)
         label = tf.one_hot(label, len(self.pitch_counts))
+        print(label)
         # =========================================================================================
         # source
         source = features["instrument_source"]
