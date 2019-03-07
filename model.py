@@ -109,8 +109,8 @@ class GANSynth(object):
         generator_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope="generator")
         discriminator_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope="discriminator")
         # -----------------------------------------------------------------------------------------
-        self.generator_train_op = tf.group([generator_train_op, generator_update_ops])
-        self.discriminator_train_op = tf.group([discriminator_train_op, discriminator_update_ops])
+        self.generator_train_op = tf.group(generator_train_op, generator_update_ops)
+        self.discriminator_train_op = tf.group(discriminator_train_op, discriminator_update_ops)
         # =========================================================================================
         # scaffold
         self.scaffold = tf.train.Scaffold(
