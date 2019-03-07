@@ -87,18 +87,7 @@ with tf.Graph().as_default():
             one_centered_gradient_penalty_weight=10.0,
             generator_auxiliary_classification_weight=10.0,
             discriminator_auxiliary_classification_weight=10.0,
-        ),
-        model_dir=args.model_dir
-    )
-
-    config = tf.ConfigProto(
-        gpu_options=tf.GPUOptions(
-            visible_device_list=args.gpu,
-            allow_growth=True
         )
     )
 
-    with tf.Session(config=config) as session:
-
-        gan_synth.initialize()
-        gan_synth.train(args.total_steps)
+    gan_synth.train(args.total_steps, args.model_dir)

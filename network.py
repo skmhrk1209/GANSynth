@@ -147,10 +147,7 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-
-            latents = tf.concat([latents, labels], axis=1)
-
-            return grow(latents, self.min_depth)
+            return grow(tf.concat([latents, labels], axis=1), self.min_depth)
 
     def discriminator(self, images, labels, name="discriminator", reuse=tf.AUTO_REUSE):
 
@@ -183,7 +180,6 @@ class PGGAN(object):
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                     with tf.variable_scope("logits"):
-                        '''
                         # label conditioning from
                         # [Which Training Methods for GANs do actually Converge?]
                         # (https://arxiv.org/pdf/1801.04406.pdf)
@@ -209,6 +205,7 @@ class PGGAN(object):
                             variance_scale=1,
                             scale_weight=True
                         )
+                        '''
 
                 else:
                     with tf.variable_scope("conv"):
@@ -294,5 +291,4 @@ class PGGAN(object):
             return feature_maps
 
         with tf.variable_scope(name, reuse=reuse):
-
             return grow(images, self.min_depth)

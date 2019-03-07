@@ -5,22 +5,18 @@ import functools
 import os
 
 
-def lerp(a, b, t): return t * a + (1. - t) * b
-
-
 class GANSynth(object):
 
-    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params, model_dir):
+    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
 
         # =========================================================================================
-        self.real_images, self.real_labels = real_input_fn()
-        self.fake_latents, self.fake_labels = fake_input_fn()
+        real_images, real_labels = real_input_fn()
+        fake_latents, fake_labels = fake_input_fn()
         # =========================================================================================
-        self.fake_images = generator(self.fake_latents, self.fake_labels)
+        fake_images = generator(fake_latents, fake_labels)
         # =========================================================================================
-        self.real_logits = discriminator(self.real_images, self.real_labels)
-        self.fake_logits = discriminator(self.fake_images, self.fake_labels)
-        '''
+        real_logits = discriminator(real_images, real_labels)
+        fake_logits = discriminator(fake_images, fake_labels)
         # =========================================================================================
         # Non-Saturating + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
@@ -30,22 +26,22 @@ class GANSynth(object):
         # -----------------------------------------------------------------------------------------
         # generator
         # non-saturating loss
-        self.generator_losses = tf.nn.softplus(-self.fake_logits)
+        generator_losses = tf.nn.softplus(-fake_logits)
         # -----------------------------------------------------------------------------------------
         # discriminator
         # non-saturating loss
-        self.discriminator_losses = tf.nn.softplus(-self.real_logits)
-        self.discriminator_losses += tf.nn.softplus(self.fake_logits)
+        discriminator_losses = tf.nn.softplus(-real_logits)
+        discriminator_losses += tf.nn.softplus(fake_logits)
         # zero-centerd gradient penalty on data distribution
         if hyper_params.real_zero_centered_gradient_penalty_weight:
-            real_gradients = tf.gradients(self.real_logits, [self.real_images])[0]
+            real_gradients = tf.gradients(real_logits, [real_images])[0]
             real_gradient_penalties = tf.reduce_sum(tf.square(real_gradients), axis=[1, 2, 3])
-            self.discriminator_losses += 0.5 * hyper_params.real_zero_centered_gradient_penalty_weight * real_gradient_penalties
+            discriminator_losses += 0.5 * hyper_params.real_zero_centered_gradient_penalty_weight * real_gradient_penalties
         # zero-centerd gradient penalty on generator distribution
         if hyper_params.fake_zero_centered_gradient_penalty_weight:
-            fake_gradients = tf.gradients(self.fake_logits, [self.fake_images])[0]
+            fake_gradients = tf.gradients(fake_logits, [fake_images])[0]
             fake_gradient_penalties = tf.reduce_sum(tf.square(fake_gradients), axis=[1, 2, 3])
-            self.discriminator_losses += 0.5 * hyper_params.fake_zero_centered_gradient_penalty_weight * fake_gradient_penalties
+            discriminator_losses += 0.5 * hyper_params.fake_zero_centered_gradient_penalty_weight * fake_gradient_penalties
         '''
         # =========================================================================================
         # WGAN-GP + ACGAN
@@ -56,32 +52,34 @@ class GANSynth(object):
         # -----------------------------------------------------------------------------------------
         # generator
         # wasserstein loss
-        self.generator_losses = -self.fake_logits[:, 0]
+        generator_losses = -fake_logits[:, 0]
         # auxiliary classification loss
         if hyper_params.generator_auxiliary_classification_weight:
-            generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
-            self.generator_losses += hyper_params.generator_auxiliary_classification_weight * generator_auxiliary_classification_losses
+            generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(fake_labels, fake_logits[:, 1:])
+            generator_losses += hyper_params.generator_auxiliary_classification_weight * generator_auxiliary_classification_losses
         # -----------------------------------------------------------------------------------------
         # discriminator
         # wasserstein loss
-        self.discriminator_losses = self.fake_logits[:, 0] - self.real_logits[:, 0]
+        discriminator_losses = fake_logits[:, 0] - real_logits[:, 0]
         # one-centered gradient penalty
         if hyper_params.one_centered_gradient_penalty_weight:
-            coefficients = tf.random_uniform([tf.shape(self.real_images)[0], 1, 1, 1])
-            interpolated_images = lerp(self.real_images, self.fake_images, coefficients)
-            interpolated_logits = discriminator(interpolated_images, self.real_labels)
+            def lerp(a, b, t): return t * a + (1. - t) * b
+            coefficients = tf.random_uniform([tf.shape(real_images)[0], 1, 1, 1])
+            interpolated_images = lerp(real_images, fake_images, coefficients)
+            interpolated_logits = discriminator(interpolated_images, real_labels)
             interpolated_gradients = tf.gradients(interpolated_logits[:, 0], [interpolated_images])[0]
             interpolated_gradient_penalties = tf.square(tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8) - 1.)
-            self.discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
+            discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
         # auxiliary classification loss
         if hyper_params.discriminator_auxiliary_classification_weight:
-            discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.real_labels, self.real_logits[:, 1:])
-            discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
-            self.discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
+            discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(real_labels, real_logits[:, 1:])
+            discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(fake_labels, fake_logits[:, 1:])
+            discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
+        '''
         # =========================================================================================
         # losss reduction
-        self.generator_loss = tf.reduce_mean(self.generator_losses)
-        self.discriminator_loss = tf.reduce_mean(self.discriminator_losses)
+        self.generator_loss = tf.reduce_mean(generator_losses)
+        self.discriminator_loss = tf.reduce_mean(discriminator_losses)
         # =========================================================================================
         generator_optimizer = tf.train.AdamOptimizer(
             learning_rate=hyper_params.generator_learning_rate,
@@ -114,64 +112,78 @@ class GANSynth(object):
         self.generator_train_op = tf.group([generator_train_op, generator_update_ops])
         self.discriminator_train_op = tf.group([discriminator_train_op, discriminator_update_ops])
         # =========================================================================================
-        # utilities
-        self.model_dir = model_dir
-        self.saver = tf.train.Saver()
-        self.summary = tf.summary.merge([
-            tf.summary.image("real_log_mel_magnitude_spectrograms", self.real_images[:, 0, ..., tf.newaxis], max_outputs=4),
-            tf.summary.image("real_mel_instantaneous_frequencies", self.real_images[:, 1, ..., tf.newaxis], max_outputs=4),
-            tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_images[:, 0, ..., tf.newaxis], max_outputs=4),
-            tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_images[:, 1, ..., tf.newaxis], max_outputs=4),
-            tf.summary.scalar("generator_loss", self.generator_loss),
-            tf.summary.scalar("discriminator_loss", self.discriminator_loss),
-        ])
+        # scaffold
+        self.scaffold = tf.train.Scaffold(
+            init_op=tf.global_variables_initializer(),
+            local_init_op=tf.group([
+                tf.local_variables_initializer(),
+                tf.tables_initializer()
+            ]),
+            saver=tf.train.Saver(
+                max_to_keep=10,
+                keep_checkpoint_every_n_hours=12,
+            ),
+            summary_op=tf.summary.merge([
+                tf.summary.image(
+                    name="real_log_mel_magnitude_spectrograms",
+                    tensor=real_images[:, 0, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.image(
+                    name="real_mel_instantaneous_frequencies",
+                    tensor=real_images[:, 1, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.image(
+                    name="fake_log_mel_magnitude_spectrograms",
+                    tensor=fake_images[:, 0, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.image(
+                    name="fake_mel_instantaneous_frequencies",
+                    tensor=fake_images[:, 1, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.scalar(
+                    name="generator_loss",
+                    tensor=self.generator_loss
+                ),
+                tf.summary.scalar(
+                    name="discriminator_loss",
+                    tensor=self.discriminator_loss
+                ),
+            ])
+        )
 
-    def initialize(self):
+    def train(self, total_steps, model_dir):
 
-        session = tf.get_default_session()
-        session.run(tf.tables_initializer())
-
-        checkpoint = tf.train.latest_checkpoint(self.model_dir)
-        if checkpoint:
-            self.saver.restore(session, checkpoint)
-            tf.logging.info("global variables in {} restored".format(self.model_dir))
-        else:
-            session.run(tf.global_variables_initializer())
-            tf.logging.info("global variables in {} initialized".format(self.model_dir))
-
-    def train(self, total_steps):
-
-        session = tf.get_default_session()
-        writer = tf.summary.FileWriter(self.model_dir, session.graph)
-
-        while True:
-
-            global_step = session.run(tf.train.get_global_step())
-
-            session.run(self.discriminator_train_op)
-            session.run(self.generator_train_op)
-
-            if global_step % 100 == 0:
-
-                discriminator_loss, generator_loss = session.run(
-                    [self.discriminator_loss, self.generator_loss]
+        with tf.train.SingularMonitoredSession(
+            checkpoint_dir=model_dir,
+            scaffold=self.scaffold,
+            hooks=[
+                tf.train.CheckpointSaverHook(
+                    checkpoint_dir=model_dir,
+                    save_steps=1000,
+                    scaffold=self.scaffold,
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=100,
+                    scaffold=self.scaffold
+                ),
+                tf.train.LoggingTensorHook(
+                    tensors=dict(
+                        generator_loss=self.generator_loss,
+                        discriminator_loss=self.discriminator_loss
+                    ),
+                    every_n_iter=100,
+                ),
+                tf.train.StopAtStepHook(
+                    last_step=total_steps
                 )
-                tf.logging.info("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
-                    global_step, discriminator_loss, generator_loss
-                ))
+            ]
+        ) as session:
 
-                writer.add_summary(
-                    summary=session.run(self.summary),
-                    global_step=global_step
-                )
-
-                if global_step % 1000 == 0:
-
-                    checkpoint = self.saver.save(
-                        sess=session,
-                        save_path=os.path.join(self.model_dir, "model.ckpt"),
-                        global_step=global_step
-                    )
-
-            if global_step == total_steps:
-                break
+            while not session.should_stop():
+                session.run(self.discriminator_train_op)
+                session.run(self.generator_train_op)
