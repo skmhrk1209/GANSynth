@@ -95,6 +95,7 @@ class NSynth(object):
 
         return images, labels
 
+    '''
     def postprocess(self, images):
         # =========================================================================================
         log_mel_magnitudes, mel_instantaneous_frequencies = tf.unstack(images, axis=1)
@@ -137,6 +138,7 @@ class NSynth(object):
         # =========================================================================================
 
         return waveforms
+    '''
 
     def input_fn(self, filenames, batch_size, num_epochs, shuffle):
 
