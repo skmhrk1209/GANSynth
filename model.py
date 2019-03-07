@@ -1,8 +1,4 @@
 import tensorflow as tf
-import numpy as np
-import itertools
-import functools
-import os
 
 
 class GANSynth(object):
