@@ -56,7 +56,7 @@ class GANSynth(object):
         generator_losses = -fake_logits[:, 0]
         # auxiliary classification loss
         if hyper_params.generator_auxiliary_classification_weight:
-            generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(fake_labels, fake_logits[:, 1:])
+            generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits(fake_labels, fake_logits[:, 1:])
             generator_losses += hyper_params.generator_auxiliary_classification_weight * generator_auxiliary_classification_losses
         # -----------------------------------------------------------------------------------------
         # discriminator
@@ -73,8 +73,8 @@ class GANSynth(object):
             discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
         # auxiliary classification loss
         if hyper_params.discriminator_auxiliary_classification_weight:
-            discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(real_labels, real_logits[:, 1:])
-            discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(fake_labels, fake_logits[:, 1:])
+            discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits(real_labels, real_logits[:, 1:])
+            discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits(fake_labels, fake_logits[:, 1:])
             discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
         # =========================================================================================
         # losss reduction
