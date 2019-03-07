@@ -70,7 +70,7 @@ with tf.Graph().as_default():
         ),
         fake_input_fn=lambda: (
             tf.random_normal([args.batch_size, 256]),
-            tf.one_hot(tf.reshape(tf.random.multinomial(
+            tf.one_hot(tf.reshape(tf.random_multinomial(
                 logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
                 num_samples=args.batch_size
             ), [args.batch_size]), len(pitch_counts))
