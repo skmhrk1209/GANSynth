@@ -155,7 +155,7 @@ class NSynth(object):
             map_func=self.parse_example,
             num_parallel_calls=os.cpu_count()
         )
-        # filter just acoustic instruments (as in the paper) and just pitches 24-84
+        # filter just acoustic instruments and just pitches 24-84 (as in the paper)
         dataset = dataset.filter(lambda wave, label, pitch, source: tf.logical_and(
             x=tf.equal(source, 0),
             y=tf.logical_and(
