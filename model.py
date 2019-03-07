@@ -61,7 +61,7 @@ class GANSynth(object):
         # -----------------------------------------------------------------------------------------
         # discriminator
         # wasserstein loss
-        discriminator_losses = fake_logits[:, 0] - real_logits[:, 0]
+        discriminator_losses = -real_logits[:, 0] + fake_logits[:, 0]
         # one-centered gradient penalty
         if hyper_params.one_centered_gradient_penalty_weight:
             def lerp(a, b, t): return t * a + (1. - t) * b
