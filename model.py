@@ -17,6 +17,7 @@ class GANSynth(object):
         # =========================================================================================
         real_logits = discriminator(real_images, real_labels)
         fake_logits = discriminator(fake_images, fake_labels)
+        '''
         # =========================================================================================
         # Non-Saturating + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
@@ -75,7 +76,6 @@ class GANSynth(object):
             discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(real_labels, real_logits[:, 1:])
             discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(fake_labels, fake_logits[:, 1:])
             discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
-        '''
         # =========================================================================================
         # losss reduction
         self.generator_loss = tf.reduce_mean(generator_losses)
