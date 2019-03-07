@@ -165,6 +165,7 @@ class GANSynth(object):
                 ),
                 tf.train.LoggingTensorHook(
                     tensors=dict(
+                        global_step=tf.train.get_global_step(),
                         generator_loss=self.generator_loss,
                         discriminator_loss=self.discriminator_loss
                     ),
