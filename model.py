@@ -95,22 +95,15 @@ class GANSynth(object):
         generator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="generator")
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
         # =========================================================================================
-        generator_train_op = generator_optimizer.minimize(
+        self.generator_train_op = generator_optimizer.minimize(
             loss=self.generator_loss,
             var_list=generator_variables,
             global_step=tf.train.get_or_create_global_step()
         )
-        discriminator_train_op = discriminator_optimizer.minimize(
+        self.discriminator_train_op = discriminator_optimizer.minimize(
             loss=self.discriminator_loss,
             var_list=discriminator_variables
         )
-        # -----------------------------------------------------------------------------------------
-        # NOTE: tf.control_dependencies doesn't work
-        generator_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope="generator")
-        discriminator_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope="discriminator")
-        # -----------------------------------------------------------------------------------------
-        self.generator_train_op = tf.group(generator_train_op, generator_update_ops)
-        self.discriminator_train_op = tf.group(discriminator_train_op, discriminator_update_ops)
         # =========================================================================================
         # scaffold
         self.scaffold = tf.train.Scaffold(
