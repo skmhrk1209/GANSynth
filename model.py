@@ -69,7 +69,7 @@ class GANSynth(object):
             interpolated_images = lerp(real_images, fake_images, coefficients)
             interpolated_logits = discriminator(interpolated_images, real_labels)
             interpolated_gradients = tf.gradients(interpolated_logits[:, 0], [interpolated_images])[0]
-            interpolated_gradient_penalties = tf.square(tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8) - 1.)
+            interpolated_gradient_penalties = tf.square(1. - tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8))
             discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
         # auxiliary classification loss
         if hyper_params.discriminator_auxiliary_classification_weight:
