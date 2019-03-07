@@ -73,7 +73,7 @@ with tf.Graph().as_default():
             tf.one_hot(tf.reshape(tf.multinomial(
                 logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
                 num_samples=args.batch_size
-            ), [args.batch_size]), len(pitch_counts), dtype=tf.int32)
+            ), [args.batch_size]), len(pitch_counts))
         ),
         hyper_params=Param(
             generator_learning_rate=8e-4,
