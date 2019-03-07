@@ -122,17 +122,17 @@ def embedding(inputs, units, variance_scale=2, scale_weight=False):
 
 
 def pixel_norm(inputs, epsilon=1e-8):
-    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
+    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keep_dims=True) + epsilon)
     return inputs
 
 
 def batch_stddev(inputs, group_size=4, epsilon=1e-8):
     shape = inputs.shape
     inputs = tf.reshape(inputs, [group_size, -1, *shape[1:]])
-    inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
+    inputs -= tf.reduce_mean(inputs, axis=0, keep_dims=True)
     inputs = tf.square(inputs)
     inputs = tf.reduce_mean(inputs, axis=0)
     inputs = tf.sqrt(inputs + epsilon)
-    inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
+    inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keep_dims=True)
     inputs = tf.tile(inputs, [group_size, 1, *shape[2:]])
     return inputs
