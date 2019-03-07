@@ -13,16 +13,14 @@ class GANSynth(object):
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params, model_dir):
 
         # =========================================================================================
-        # input_fn for real data and fake data
         self.real_images, self.real_labels = real_input_fn()
-        self.latents, self.fake_labels = fake_input_fn()
+        self.fake_latents, self.fake_labels = fake_input_fn()
         # =========================================================================================
-        # generated fake data
-        self.fake_images = generator(self.latents, self.fake_labels)
+        self.fake_images = generator(self.fake_latents, self.fake_labels)
         # =========================================================================================
-        # logits for real data and fake data
         self.real_logits = discriminator(self.real_images, self.real_labels)
         self.fake_logits = discriminator(self.fake_images, self.fake_labels)
+        '''
         # =========================================================================================
         # Non-Saturating + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
@@ -38,16 +36,16 @@ class GANSynth(object):
         # non-saturating loss
         self.discriminator_losses = tf.nn.softplus(-self.real_logits)
         self.discriminator_losses += tf.nn.softplus(self.fake_logits)
-        # zero-centerd gradient penalty
-        if hyper_params.real_zero_centered_gp_weight:
-            gradients = tf.gradients(self.real_logits, [self.real_images])[0]
-            real_gradient_penalty = tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3])
-            self.discriminator_losses += 0.5 * hyper_params.real_zero_centered_gp_weight * real_gradient_penalty
-        # zero-centerd gradient penalty
-        if hyper_params.fake_zero_centered_gp_weight:
-            gradients = tf.gradients(self.fake_logits, [self.fake_images])[0]
-            fake_gradient_penalty = tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3])
-            self.discriminator_losses += 0.5 * hyper_params.fake_zero_centered_gp_weight * fake_gradient_penalty
+        # zero-centerd gradient penalty on data distribution
+        if hyper_params.real_zero_centered_gradient_penalty_weight:
+            real_gradients = tf.gradients(self.real_logits, [self.real_images])[0]
+            real_gradient_penalties = tf.reduce_sum(tf.square(real_gradients), axis=[1, 2, 3])
+            self.discriminator_losses += 0.5 * hyper_params.real_zero_centered_gradient_penalty_weight * real_gradient_penalties
+        # zero-centerd gradient penalty on generator distribution
+        if hyper_params.fake_zero_centered_gradient_penalty_weight:
+            fake_gradients = tf.gradients(self.fake_logits, [self.fake_images])[0]
+            fake_gradient_penalties = tf.reduce_sum(tf.square(fake_gradients), axis=[1, 2, 3])
+            self.discriminator_losses += 0.5 * hyper_params.fake_zero_centered_gradient_penalty_weight * fake_gradient_penalties
         '''
         # =========================================================================================
         # WGAN-GP + ACGAN
@@ -60,29 +58,31 @@ class GANSynth(object):
         # wasserstein loss
         self.generator_losses = -self.fake_logits[:, 0]
         # auxiliary classification loss
-        if hyper_params.generator_ac_weight:
-            generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
-            self.generator_losses += hyper_params.generator_ac_weight * generator_classification_losses
+        if hyper_params.generator_auxiliary_classification_weight:
+            generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
+            self.generator_losses += hyper_params.generator_auxiliary_classification_weight * generator_auxiliary_classification_losses
         # -----------------------------------------------------------------------------------------
         # discriminator
         # wasserstein loss
         self.discriminator_losses = self.fake_logits[:, 0] - self.real_logits[:, 0]
         # one-centered gradient penalty
-        if hyper_params.one_centered_gp_weight:
+        if hyper_params.one_centered_gradient_penalty_weight:
             coefficients = tf.random_uniform([tf.shape(self.real_images)[0], 1, 1, 1])
             interpolated_images = lerp(self.real_images, self.fake_images, coefficients)
             interpolated_logits = discriminator(interpolated_images, self.real_labels)
-            gradients = tf.gradients(interpolated_logits[:, 0], [interpolated_images])[0]
-            gradient_penalties = tf.square(tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]) + 1e-8) - 1.)
-            self.discriminator_losses += hyper_params.one_centered_gp_weight * gradient_penalties
+            interpolated_gradients = tf.gradients(interpolated_logits[:, 0], [interpolated_images])[0]
+            interpolated_gradient_penalties = tf.square(tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8) - 1.)
+            self.discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
         # auxiliary classification loss
-        if hyper_params.discriminator_ac_weight:
-            discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.real_labels, self.real_logits[:, 1:])
-            discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
-            self.discriminator_losses += hyper_params.discriminator_ac_weight * discriminator_classification_losses
-        '''
+        if hyper_params.discriminator_auxiliary_classification_weight:
+            discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(self.real_labels, self.real_logits[:, 1:])
+            discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(self.fake_labels, self.fake_logits[:, 1:])
+            self.discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
         # =========================================================================================
-        # training op for generator and discriminator
+        # losss reduction
+        self.generator_loss = tf.reduce_mean(self.generator_losses)
+        self.discriminator_loss = tf.reduce_mean(self.discriminator_losses)
+        # =========================================================================================
         generator_optimizer = tf.train.AdamOptimizer(
             learning_rate=hyper_params.generator_learning_rate,
             beta1=hyper_params.generator_beta1,
@@ -96,19 +96,23 @@ class GANSynth(object):
         # -----------------------------------------------------------------------------------------
         generator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="generator")
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
-        # -----------------------------------------------------------------------------------------
-        with tf.variable_scope("", reuse=True):
-            self.global_step = tf.get_variable(name="global_step", dtype=tf.int32)
-        # -----------------------------------------------------------------------------------------
-        self.discriminator_train_op = discriminator_optimizer.minimize(
-            loss=tf.reduce_mean(self.discriminator_losses),
+        # =========================================================================================
+        generator_train_op = generator_optimizer.minimize(
+            loss=self.generator_loss,
+            var_list=generator_variables,
+            global_step=tf.train.get_or_create_global_step()
+        )
+        discriminator_train_op = discriminator_optimizer.minimize(
+            loss=self.discriminator_loss,
             var_list=discriminator_variables
         )
-        self.generator_train_op = generator_optimizer.minimize(
-            loss=tf.reduce_mean(self.generator_losses),
-            var_list=generator_variables,
-            global_step=self.global_step
-        )
+        # -----------------------------------------------------------------------------------------
+        # NOTE: tf.control_dependencies doesn't work
+        generator_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope="generator")
+        discriminator_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope="discriminator")
+        # -----------------------------------------------------------------------------------------
+        self.generator_train_op = tf.group([generator_train_op, generator_update_ops])
+        self.discriminator_train_op = tf.group([discriminator_train_op, discriminator_update_ops])
         # =========================================================================================
         # utilities
         self.model_dir = model_dir
@@ -118,8 +122,8 @@ class GANSynth(object):
             tf.summary.image("real_mel_instantaneous_frequencies", self.real_images[:, 1, ..., tf.newaxis], max_outputs=4),
             tf.summary.image("fake_log_mel_magnitude_spectrograms", self.fake_images[:, 0, ..., tf.newaxis], max_outputs=4),
             tf.summary.image("fake_mel_instantaneous_frequencies", self.fake_images[:, 1, ..., tf.newaxis], max_outputs=4),
-            tf.summary.scalar("discriminator_loss", tf.reduce_mean(self.discriminator_losses)),
-            tf.summary.scalar("generator_loss", tf.reduce_mean(self.generator_losses))
+            tf.summary.scalar("generator_loss", self.generator_loss),
+            tf.summary.scalar("discriminator_loss", self.discriminator_loss),
         ])
 
     def initialize(self):
@@ -142,7 +146,7 @@ class GANSynth(object):
 
         while True:
 
-            global_step = session.run(self.global_step)
+            global_step = session.run(tf.train.get_global_step())
 
             session.run(self.discriminator_train_op)
             session.run(self.generator_train_op)
@@ -153,7 +157,7 @@ class GANSynth(object):
                     [self.discriminator_loss, self.generator_loss]
                 )
                 tf.logging.info("global_step: {}, discriminator_loss: {:.2f}, generator_loss: {:.2f}".format(
-                    self.global_step, self.discriminator_loss, self.generator_loss
+                    global_step, discriminator_loss, generator_loss
                 ))
 
                 writer.add_summary(

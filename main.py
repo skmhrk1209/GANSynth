@@ -44,11 +44,10 @@ with tf.Graph().as_default():
         max_resolution=[128, 1024],
         min_channels=32,
         max_channels=256,
-        growing_level=tf.cast(tf.get_variable(
-            name="global_step",
-            initializer=0,
-            trainable=False
-        ) / args.total_steps, tf.float32)
+        growing_level=tf.cast(tf.divide(
+            x=tf.train.create_global_step(),
+            y=args.total_steps
+        ), tf.float32)
     )
 
     nsynth = NSynth(
@@ -83,11 +82,11 @@ with tf.Graph().as_default():
             discriminator_learning_rate=8e-4,
             discriminator_beta1=0.0,
             discriminator_beta2=0.99,
-            real_zero_centered_gp_weight=10.0,
-            fake_zero_centered_gp_weight=0.0,
-            one_centered_gp_weight=10.0,
-            generator_ac_weight=10.0,
-            discriminator_ac_weight=10.0,
+            real_zero_centered_gradient_penalty_weight=10.0,
+            fake_zero_centered_gradient_penalty_weight=0.0,
+            one_centered_gradient_penalty_weight=10.0,
+            generator_auxiliary_classification_weight=10.0,
+            discriminator_auxiliary_classification_weight=10.0,
         ),
         model_dir=args.model_dir
     )
