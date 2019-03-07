@@ -98,7 +98,7 @@ with tf.Graph().as_default():
             save_checkpoint_steps=1000,
             save_summary_steps=100,
             log_step_count_steps=100,
-            condig=tf.ConfigProto(
+            config=tf.ConfigProto(
                 gpu_options=tf.GPUOptions(
                     visible_device_list=args.gpu,
                     allow_growth=True
