@@ -7,7 +7,7 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
+def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
 
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
