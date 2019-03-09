@@ -22,10 +22,11 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
+parser.add_argument("--sample_dir", type=str, default="samples")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
-parser.add_argument("--out_dir", type=str, default="outputs")
+parser.add_argument("--steps", type=int, default=1)
 parser.add_argument("--train", action="store_true")
 parser.add_argument("--generate", action="store_true")
 parser.add_argument("--gpu", type=str, default="0")
@@ -104,8 +105,8 @@ with tf.Graph().as_default():
 
         gan_synth.generate(
             model_dir=args.model_dir,
-            out_dir=args.out_dir,
-            total_steps=args.total_steps,
+            sample_dir=args.sample_dir,
+            steps=args.steps,
             config=tf.ConfigProto(
                 gpu_options=tf.GPUOptions(
                     visible_device_list=args.gpu,

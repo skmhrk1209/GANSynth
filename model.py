@@ -199,24 +199,19 @@ class GANSynth(object):
                 session.run(self.operations.discriminator_train_op)
                 session.run(self.operations.generator_train_op)
 
-    def generate(self, model_dir, out_dir, total_steps, config):
+    def generate(self, model_dir, sample_dir, steps, config):
 
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+        if not os.path.exists(sample_dir):
+            os.makedirs(sample_dir)
 
         with tf.train.SingularMonitoredSession(
             scaffold=self.scaffold,
             checkpoint_dir=model_dir,
-            config=config,
-            hooks=[
-                tf.train.StopAtStepHook(
-                    last_step=total_steps
-                )
-            ]
+            config=config
         ) as session:
 
             i = 0
-            while not session.should_stop():
+            while True:
                 for fake_image in session.run(self.tensors.fake_images):
-                    skimage.io.imsave(os.path.join(out_dir, "{}.jpg".format(i)), fake_image)
+                    skimage.io.imsave(os.path.join(sample_dir, "{}.jpg".format(i)), fake_image)
                     i += 1
