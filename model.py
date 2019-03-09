@@ -1,7 +1,7 @@
 import tensorflow as tf
 import skimage
 import os
-from param import Param
+from param import Struct
 
 
 class GANSynth(object):
@@ -105,11 +105,11 @@ class GANSynth(object):
         )
         # =========================================================================================
         # tensors and operations used later
-        self.operations = Param(
+        self.operations = Struct(
             generator_train_op=generator_train_op,
             discriminator_train_op=discriminator_train_op
         )
-        self.tensors = Param(
+        self.tensors = Struct(
             real_images=real_images,
             real_labels=real_labels,
             fake_latents=fake_latents,

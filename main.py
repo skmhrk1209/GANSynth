@@ -18,7 +18,7 @@ import pickle
 from dataset import nsynth_input_fn
 from model import GANSynth
 from network import PGGAN
-from param import Param
+from param import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
@@ -69,7 +69,7 @@ with tf.Graph().as_default():
                 num_samples=args.batch_size
             ), [args.batch_size]), len(pitch_counts))
         ),
-        hyper_params=Param(
+        hyper_params=Struct(
             generator_learning_rate=8e-4,
             generator_beta1=0.0,
             generator_beta2=0.99,

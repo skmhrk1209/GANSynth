@@ -2,12 +2,13 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 import numpy as np
 import skimage
-import spectral_ops
 import functools
 import itertools
 import pickle
 import sys
 import os
+import spectral_ops
+from struct import Struct
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -25,28 +26,18 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches,
     num_samples = frame_step * (time_steps - 1) + frame_length
 
     def parse_example(example):
-        # =========================================================================================
-        # reference: https://magenta.tensorflow.org/datasets/nsynth
-        features = tf.parse_single_example(
+
+        features = Struct(tf.parse_single_example(
             serialized=example,
             features=dict(
+                # reference: https://magenta.tensorflow.org/datasets/nsynth
                 audio=tf.FixedLenFeature([audio_length], dtype=tf.float32),
                 pitch=tf.FixedLenFeature([], dtype=tf.int64),
                 instrument_source=tf.FixedLenFeature([], dtype=tf.int64)
             )
-        )
-        # =========================================================================================
-        # waveform
-        waveform = features["audio"]
-        # =========================================================================================
-        # pitch
-        pitch = features["pitch"]
-        # =========================================================================================
-        # source
-        source = features["instrument_source"]
-        # =========================================================================================
+        ))
 
-        return waveform, pitch, source
+        return features.audio, features.pitch, features.instrument_source
 
     def preprocess(waveforms, pitches, sources):
         # =========================================================================================
@@ -86,7 +77,6 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches,
         # =========================================================================================
         images = tf.stack([log_mel_magnitudes, mel_instantaneous_frequencies], axis=1)
         # =========================================================================================
-
         return images, pitches, sources
 
     def postprocess(images):
@@ -130,7 +120,6 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches,
         # This causes edge effects in the tail
         waveforms = waveforms[:, num_samples - audio_length:]
         # =========================================================================================
-
         return waveforms
 
     dataset = tf.data.TFRecordDataset(filenames)
@@ -215,7 +204,7 @@ def main(filename, directory):
                             image2 = linear_map(image[1], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
                             skimage.io.imsave(path1, image1)
                             skimage.io.imsave(path2, image2)
-                            file.write("{} {} {}\n".format(path1, path2, pitch))
+                            file.write("{} {} {} {}\n".format(path1, path2, pitch, source))
                             i += 1
 
                 except tf.errors.OutOfRangeError:

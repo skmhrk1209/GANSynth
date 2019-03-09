@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+from struct import Struct
 
 
 def linear_map(inputs, in_min, in_max, out_min, out_max):
@@ -11,7 +12,8 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
     def parse_example(example):
-        features = tf.parse_single_example(
+
+        features = Struct(tf.parse_single_example(
             serialized=example,
             features=dict(
                 path1=tf.FixedLenFeature([], dtype=tf.string),
@@ -19,11 +21,11 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
                 pitch=tf.FixedLenFeature([], dtype=tf.int64),
                 source=tf.FixedLenFeature([], dtype=tf.int64)
             )
-        )
+        ))
 
-        image1 = tf.read_file(features["path1"])
+        image1 = tf.read_file(features.path1)
         image1 = tf.image.decode_jpeg(image1)
-        image2 = tf.read_file(features["path2"])
+        image2 = tf.read_file(features.path2)
         image2 = tf.image.decode_jpeg(image2)
 
         image = tf.concat([image1, image2], axis=0)
@@ -31,7 +33,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         image = tf.transpose(image, [2, 0, 1])
         image = linear_map(image, 0., 1., -1., 1.)
 
-        label = index_table.lookup(features["pitch"])
+        label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
 
         return image, label
