@@ -15,7 +15,7 @@ import tensorflow as tf
 import argparse
 import functools
 import pickle
-from dataset import NSynth
+from dataset import nsynth_input_fn
 from model import GANSynth
 from network import PGGAN
 from param import Param
@@ -25,7 +25,9 @@ parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
+parser.add_argument("--out_dir", type=str, default="outputs")
 parser.add_argument("--train", action="store_true")
+parser.add_argument("--generate", action="store_true")
 parser.add_argument("--gpu", type=str, default="0")
 args = parser.parse_args()
 
@@ -49,23 +51,16 @@ with tf.Graph().as_default():
         ), tf.float32)
     )
 
-    nsynth = NSynth(
-        pitch_counts=pitch_counts,
-        audio_length=64000,
-        sample_rate=16000,
-        spectrogram_shape=[128, 1024],
-        overlap=0.75
-    )
-
     gan_synth = GANSynth(
         generator=pggan.generator,
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
-            nsynth.input_fn,
+            nsynth_input_fn,
             filenames=args.filenames,
             batch_size=args.batch_size,
             num_epochs=None,
-            shuffle=True
+            shuffle=True,
+            pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
             tf.random_normal([args.batch_size, 256]),
@@ -92,11 +87,25 @@ with tf.Graph().as_default():
     if args.train:
 
         gan_synth.train(
-            total_steps=args.total_steps,
             model_dir=args.model_dir,
+            total_steps=args.total_steps,
             save_checkpoint_steps=1000,
             save_summary_steps=100,
             log_step_count_steps=100,
+            config=tf.ConfigProto(
+                gpu_options=tf.GPUOptions(
+                    visible_device_list=args.gpu,
+                    allow_growth=True
+                )
+            )
+        )
+
+    if args.generate:
+
+        gan_synth.generate(
+            model_dir=args.model_dir,
+            out_dir=args.out_dir,
+            total_steps=args.total_steps,
             config=tf.ConfigProto(
                 gpu_options=tf.GPUOptions(
                     visible_device_list=args.gpu,

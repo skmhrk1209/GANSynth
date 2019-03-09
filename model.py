@@ -1,4 +1,7 @@
 import tensorflow as tf
+import skimage
+import os
+from param import Param
 
 
 class GANSynth(object):
@@ -74,8 +77,8 @@ class GANSynth(object):
             discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
         # =========================================================================================
         # losss reduction
-        self.generator_loss = tf.reduce_mean(generator_losses)
-        self.discriminator_loss = tf.reduce_mean(discriminator_losses)
+        generator_loss = tf.reduce_mean(generator_losses)
+        discriminator_loss = tf.reduce_mean(discriminator_losses)
         # =========================================================================================
         generator_optimizer = tf.train.AdamOptimizer(
             learning_rate=hyper_params.generator_learning_rate,
@@ -91,14 +94,29 @@ class GANSynth(object):
         generator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="generator")
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
         # =========================================================================================
-        self.generator_train_op = generator_optimizer.minimize(
-            loss=self.generator_loss,
+        generator_train_op = generator_optimizer.minimize(
+            loss=generator_loss,
             var_list=generator_variables,
             global_step=tf.train.get_or_create_global_step()
         )
-        self.discriminator_train_op = discriminator_optimizer.minimize(
-            loss=self.discriminator_loss,
+        discriminator_train_op = discriminator_optimizer.minimize(
+            loss=discriminator_loss,
             var_list=discriminator_variables
+        )
+        # =========================================================================================
+        # tensors and operations used later
+        self.operations = Param(
+            generator_train_op=generator_train_op,
+            discriminator_train_op=discriminator_train_op
+        )
+        self.tensors = Param(
+            real_images=real_images,
+            real_labels=real_labels,
+            fake_latents=fake_latents,
+            fake_labels=fake_labels,
+            fake_images=fake_images,
+            generator_loss=generator_loss,
+            discriminator_loss=discriminator_loss
         )
         # =========================================================================================
         # scaffold
@@ -141,7 +159,7 @@ class GANSynth(object):
             ])
         )
 
-    def train(self, total_steps, model_dir, save_checkpoint_steps,
+    def train(self, model_dir, total_steps, save_checkpoint_steps,
               save_summary_steps, log_step_count_steps, config):
 
         with tf.train.SingularMonitoredSession(
@@ -162,8 +180,8 @@ class GANSynth(object):
                 tf.train.LoggingTensorHook(
                     tensors=dict(
                         global_step=tf.train.get_global_step(),
-                        generator_loss=self.generator_loss,
-                        discriminator_loss=self.discriminator_loss
+                        generator_loss=self.tensors.generator_loss,
+                        discriminator_loss=self.tensors.discriminator_loss
                     ),
                     every_n_iter=log_step_count_steps,
                 ),
@@ -178,5 +196,27 @@ class GANSynth(object):
         ) as session:
 
             while not session.should_stop():
-                session.run(self.discriminator_train_op)
-                session.run(self.generator_train_op)
+                session.run(self.operations.discriminator_train_op)
+                session.run(self.operations.generator_train_op)
+
+    def generate(self, model_dir, out_dir, total_steps, config):
+
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=self.scaffold,
+            checkpoint_dir=model_dir,
+            config=config,
+            hooks=[
+                tf.train.StopAtStepHook(
+                    last_step=total_steps
+                )
+            ]
+        ) as session:
+
+            i = 0
+            while not session.should_stop():
+                for fake_image in session.run(self.tensors.fake_images):
+                    skimage.io.imsave(os.path.join(out_dir, "{}.jpg".format(i)), fake_image)
+                    i += 1
