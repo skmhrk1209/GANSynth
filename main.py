@@ -22,7 +22,7 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument("--sample_dir", type=str, default="samples")
+parser.add_argument("--sample_dir", type=str, default="gan_synth_samples")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
