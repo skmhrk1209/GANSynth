@@ -55,6 +55,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
     dataset = dataset.batch(batch_size=batch_size)
     dataset = dataset.prefetch(buffer_size=1)
 
-    iterator = dataset.make_one_shot_iterator()
+    iterator = dataset.make_initializable_iterator()
+    tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
     return iterator.get_next()
