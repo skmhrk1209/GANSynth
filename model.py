@@ -1,7 +1,7 @@
 import tensorflow as tf
 import skimage
 import os
-from param import Struct
+from utils import Struct
 
 
 class GANSynth(object):

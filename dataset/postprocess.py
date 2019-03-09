@@ -8,7 +8,7 @@ import pickle
 import sys
 import os
 import spectral_ops
-from struct import Struct
+from utils import Struct
 
 tf.logging.set_verbosity(tf.logging.INFO)
 

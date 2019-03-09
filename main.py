@@ -18,7 +18,7 @@ import pickle
 import nsynth
 from model import GANSynth
 from network import PGGAN
-from param import Struct
+from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
