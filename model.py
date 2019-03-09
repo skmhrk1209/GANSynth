@@ -155,11 +155,11 @@ class GANSynth(object):
                 ),
                 tf.summary.scalar(
                     name="generator_loss",
-                    tensor=self.generator_loss
+                    tensor=generator_loss
                 ),
                 tf.summary.scalar(
                     name="discriminator_loss",
-                    tensor=self.discriminator_loss
+                    tensor=discriminator_loss
                 ),
             ])
         )
