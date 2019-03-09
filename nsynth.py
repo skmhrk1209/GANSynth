@@ -32,6 +32,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.transpose(image, [2, 0, 1])
         image = linear_map(image, 0., 1., -1., 1.)
+        image.set_shape([2, 128, 1024])
 
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
