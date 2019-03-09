@@ -26,7 +26,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         image1 = tf.read_file(features.path1)
         image1 = tf.image.decode_jpeg(image1, channels=1)
         print("----------")
-        image1.shape
+        print(image1.shape)
         image1 = tf.reshape(image1, [1, 128, 1024])
 
         image2 = tf.read_file(features.path2)
