@@ -26,7 +26,7 @@ parser.add_argument("--sample_dir", type=str, default="samples")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
-parser.add_argument("--steps", type=int, default=1)
+parser.add_argument("--steps", type=int, default=10)
 parser.add_argument("--train", action="store_true")
 parser.add_argument("--generate", action="store_true")
 parser.add_argument("--gpu", type=str, default="0")
@@ -47,7 +47,12 @@ with tf.Graph().as_default():
         min_channels=32,
         max_channels=256,
         growing_level=tf.cast(tf.divide(
-            x=tf.train.create_global_step(),
+            # x=tf.train.create_global_step(),
+            x=tf.get_variable(
+                name="global_step",
+                initializer=0,
+                trainable=False
+            ),
             y=args.total_steps
         ), tf.float32)
     )
