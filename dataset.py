@@ -16,7 +16,8 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
             features=dict(
                 path1=tf.FixedLenFeature([], dtype=tf.string),
                 path2=tf.FixedLenFeature([], dtype=tf.string),
-                pitch=tf.FixedLenFeature([], dtype=tf.int64)
+                pitch=tf.FixedLenFeature([], dtype=tf.int64),
+                source=tf.FixedLenFeature([], dtype=tf.int64)
             )
         )
 
@@ -30,8 +31,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         image = tf.transpose(image, [2, 0, 1])
         image = linear_map(image, 0., 1., -1., 1.)
 
-        pitch = tf.cast(features["pitch"], tf.int32)
-        label = index_table.lookup(pitch)
+        label = index_table.lookup(features["pitch"])
         label = tf.one_hot(label, len(pitches))
 
         return image, label

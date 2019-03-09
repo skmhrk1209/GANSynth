@@ -87,7 +87,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches,
         images = tf.stack([log_mel_magnitudes, mel_instantaneous_frequencies], axis=1)
         # =========================================================================================
 
-        return images, pitches
+        return images, pitches, sources
 
     def postprocess(images):
         # =========================================================================================
@@ -186,7 +186,7 @@ def main(filename, directory):
         with open("pitch_counts.pickle", "rb") as file:
             pitch_counts = pickle.load(file)
 
-        images, pitches = nsynth_input_fn(
+        images, pitches, sources = nsynth_input_fn(
             filenames=[filename],
             batch_size=128,
             num_epochs=1,
@@ -208,7 +208,7 @@ def main(filename, directory):
                     tf.logging.info("preprocessing started")
                     i = 0
                     while True:
-                        for image, pitch in zip(*session.run([images, pitches])):
+                        for image, pitch, source in zip(*session.run([images, pitches, sources])):
                             path1 = os.path.join(directory1, "{}.jpg".format(i))
                             path2 = os.path.join(directory2, "{}.jpg".format(i))
                             image1 = linear_map(image[0], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
