@@ -24,15 +24,17 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         ))
 
         image1 = tf.read_file(features.path1)
-        image1 = tf.image.decode_jpeg(image1)
+        image1 = tf.image.decode_jpeg(image1, channels=1)
+        image1 = tf.reshape(image1, [128, 1024])
+
         image2 = tf.read_file(features.path2)
-        image2 = tf.image.decode_jpeg(image2)
+        image2 = tf.image.decode_jpeg(image2, channels=1)
+        image2 = tf.reshape(image2, [128, 1024])
 
         image = tf.concat([image1, image2], axis=0)
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.transpose(image, [2, 0, 1])
         image = linear_map(image, 0., 1., -1., 1.)
-        image.set_shape([2, 128, 1024])
 
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))

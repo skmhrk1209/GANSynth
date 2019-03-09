@@ -207,8 +207,13 @@ class GANSynth(object):
 
     def generate(self, model_dir, sample_dir, steps, config):
 
-        if not os.path.exists(sample_dir):
-            os.makedirs(sample_dir)
+        sample_dir1 = os.path.join(sample_dir, "log_mel_magnitudes")
+        sample_dir2 = os.path.join(sample_dir, "mel_instantaneous_frequencies")
+
+        if not os.path.exists(sample_dir1):
+            os.makedirs(sample_dir1)
+        if not os.path.exists(sample_dir2):
+            os.makedirs(sample_dir2)
 
         with tf.train.SingularMonitoredSession(
             scaffold=self.scaffold,
@@ -219,5 +224,6 @@ class GANSynth(object):
             i = 0
             while True:
                 for fake_image in session.run(self.tensors.fake_images):
-                    skimage.io.imsave(os.path.join(sample_dir, "{}.jpg".format(i)), fake_image)
+                    skimage.io.imsave(os.path.join(sample_dir1, "{}.jpg".format(i)), fake_image[0])
+                    skimage.io.imsave(os.path.join(sample_dir2, "{}.jpg".format(i)), fake_image[1])
                     i += 1
