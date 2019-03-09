@@ -1,7 +1,12 @@
 import tensorflow as tf
+import numpy as np
 import skimage
 import os
 from utils import Struct
+
+
+def linear_map(inputs, in_min, in_max, out_min, out_max):
+    return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
 class GANSynth(object):
@@ -222,8 +227,12 @@ class GANSynth(object):
         ) as session:
 
             i = 0
-            while True:
-                for fake_image in session.run(self.tensors.fake_images):
-                    skimage.io.imsave(os.path.join(sample_dir1, "{}.jpg".format(i)), fake_image[0])
-                    skimage.io.imsave(os.path.join(sample_dir2, "{}.jpg".format(i)), fake_image[1])
+            for i in range(steps):
+                for image in session.run(self.tensors.fake_images):
+                    path1 = os.path.join(sample_dir1, "{}.jpg".format(i))
+                    path2 = os.path.join(sample_dir2, "{}.jpg".format(i))
+                    image1 = linear_map(image[0], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
+                    image2 = linear_map(image[1], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
+                    skimage.io.imsave(path1, image1)
+                    skimage.io.imsave(path2, image2)
                     i += 1
