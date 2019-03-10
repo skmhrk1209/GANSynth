@@ -63,6 +63,7 @@ def convert_to_spectrograms(waveform_generator, audio_length, sample_rate, spect
         generator=waveform_generator,
         output_types=tf.float32
     )
+    print(dataset)
     dataset = dataset.batch(
         batch_size=100,
         drop_remainder=False
