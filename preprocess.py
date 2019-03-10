@@ -93,7 +93,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
 
     with tf.Graph().as_default():
 
-        filenames = sorted(waveform_dir.glob("*"))
+        filenames = sorted(waveform_dir.glob("*.wav"))
 
         def waveform_generator():
             for filename in filenames:

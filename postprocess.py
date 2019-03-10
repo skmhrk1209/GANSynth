@@ -94,8 +94,8 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
     with tf.Graph().as_default():
 
         filenames = zip(
-            sorted(log_mel_magnitude_spectrogram_dir.glob("*")),
-            sorted(mel_instantaneous_frequency_dir.glob("*"))
+            sorted(log_mel_magnitude_spectrogram_dir.glob("*.jpg")),
+            sorted(mel_instantaneous_frequency_dir.glob("*.jpg"))
         )
 
         def spectrogram_generator():
