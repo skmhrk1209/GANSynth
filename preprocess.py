@@ -14,7 +14,7 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def convert_to_spectrograms(waveform_generator, audio_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
@@ -25,7 +25,7 @@ def convert_to_spectrograms(waveform_generator, audio_length, sample_rate, spect
         # =========================================================================================
         # For Nsynth dataset, we are putting all padding in the front
         # This causes edge effects in the tail
-        waveforms = tf.pad(waveforms, [[0, 0], [num_samples - audio_length, 0]])
+        waveforms = tf.pad(waveforms, [[0, 0], [num_samples - waveform_length, 0]])
         # =========================================================================================
         stfts = tf.contrib.signal.stft(
             signals=waveforms,
@@ -62,9 +62,8 @@ def convert_to_spectrograms(waveform_generator, audio_length, sample_rate, spect
     dataset = tf.data.Dataset.from_generator(
         generator=waveform_generator,
         output_types=tf.float32,
-        output_shapes=[audio_length]
+        output_shapes=[waveform_length]
     )
-    print(dataset)
     dataset = dataset.batch(
         batch_size=100,
         drop_remainder=False
@@ -99,7 +98,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
 
         log_mel_magnitude_spectrograms, mel_instantaneous_frequencies = convert_to_spectrograms(
             waveform_generator=waveform_generator,
-            audio_length=64000,
+            waveform_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],
             overlap=0.75
