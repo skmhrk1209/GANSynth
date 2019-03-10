@@ -40,7 +40,7 @@ with open("pitch_counts.pickle", "rb") as file:
 
 with tf.Graph().as_default():
 
-    tf.set_random_seed(100)
+    tf.set_random_seed(10)
 
     pggan = PGGAN(
         min_resolution=[2, 16],
