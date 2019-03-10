@@ -106,7 +106,7 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
         with tf.Session() as session:
 
             try:
-                tf.logging.info("preprocessing started")
+                tf.logging.info("postprocessing started")
 
                 while True:
                     for filename, waveform in zip(filenames, session.run(waveforms)):
@@ -116,7 +116,7 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
                         ), 16000, waveform)
 
             except tf.errors.OutOfRangeError:
-                tf.logging.info("preprocessing completed")
+                tf.logging.info("postprocessing completed")
 
 
 if __name__ == "__main__":
