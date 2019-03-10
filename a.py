@@ -26,7 +26,7 @@ parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument("--sample_dir1", type=str, default="samples/log_mel_magnitude_spectrograms")
 parser.add_argument("--sample_dir2", type=str, default="samples/mel_instantaneous_frequencies")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth-train/examples.tfrecord"])
-parser.add_argument("--batch_size", type=int, default=61)
+parser.add_argument("--batch_size", type=int, default=60)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--steps", type=int, default=10)
 parser.add_argument("--train", action="store_true")
@@ -72,7 +72,7 @@ with tf.Graph().as_default():
         ),
         fake_input_fn=lambda: (
             tf.cast(tf.tile(np.random.normal(size=[1, 512]), [args.batch_size, 1]), tf.float32),
-            tf.one_hot(np.arange(24, 85), len(pitch_counts))
+            tf.one_hot(np.arange(24, 84), len(pitch_counts)-1)
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
