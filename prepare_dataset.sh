@@ -21,6 +21,6 @@
 
 python main.py --generate --filenames nsynth-test/examples.tfrecord --total_steps 1
 
-python preprocess.py        samples/log_mel_magnitude_spectrograms \
+python postprocess.py       samples/log_mel_magnitude_spectrograms \
                             samples/mel_instantaneous_frequencies \
                             samples/waveforms
