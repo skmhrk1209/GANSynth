@@ -1,6 +1,6 @@
 # curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-train.jsonwav.tar.gz
 # curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-valid.jsonwav.tar.gz
-curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz
+# curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz
 
 # unzip nsynth-train.jsonwav.tar.gz
 # unzip nsynth-valid.jsonwav.tar.gz
