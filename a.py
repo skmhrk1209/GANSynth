@@ -12,7 +12,6 @@
 #=================================================================================================#
 
 import tensorflow as tf
-import numpy as np
 import argparse
 import functools
 import pickle
@@ -71,8 +70,8 @@ with tf.Graph().as_default():
             pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
-            tf.cast(tf.tile(np.random.normal(size=[1, 512]), [args.batch_size, 1]), tf.float32),
-            tf.one_hot(np.arange(24, 84), len(pitch_counts))
+            tf.tile(tf.random_normal([1, 256]), [args.batch_size, 1]),
+            tf.one_hot(tf.range(24, 84), len(pitch_counts))
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
