@@ -22,7 +22,7 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
     frame_step = int((1 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
 
-    def postprocess(log_mel_magnitude_spectrograms, mel_instantaneous_frequencies):
+    def postprocess(filename, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies):
         # =========================================================================================
         log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, 0.0, 1.0, -14.0, 6.0)
         mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, 0.0, 1.0, -1.0, 1.0)
@@ -61,12 +61,12 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
         # This causes edge effects in the tail
         waveforms = waveforms[:, num_samples - waveform_length:]
         # =========================================================================================
-        return waveforms
+        return filename, waveforms
 
     dataset = tf.data.Dataset.from_generator(
         generator=spectrogram_generator,
-        output_types=(tf.float32, tf.float32),
-        output_shapes=(spectrogram_shape, spectrogram_shape)
+        output_types=(tf.string, tf.float32, tf.float32),
+        output_shapes=([], spectrogram_shape, spectrogram_shape)
     )
     dataset = dataset.batch(
         batch_size=100,
@@ -93,20 +93,16 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
 
     with tf.Graph().as_default():
 
-        filenames = list(zip(
-            sorted(log_mel_magnitude_spectrogram_dir.glob("*.jpg")),
-            sorted(mel_instantaneous_frequency_dir.glob("*.jpg"))
-        ))
-
         def spectrogram_generator():
-            for filename1, filename2 in filenames:
+            for filename1, filename2 in zip(sorted(log_mel_magnitude_spectrogram_dir.glob("*.jpg")), sorted(mel_instantaneous_frequency_dir.glob("*.jpg"))):
+                assert filename1.name == filename2.name
                 log_mel_magnitude_spectrogram = np.squeeze(skimage.io.imread(filename1))
                 log_mel_magnitude_spectrogram = linear_map(log_mel_magnitude_spectrogram.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
                 mel_instantaneous_frequency = np.squeeze(skimage.io.imread(filename2))
                 mel_instantaneous_frequency = linear_map(mel_instantaneous_frequency.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
-                yield (log_mel_magnitude_spectrogram, mel_instantaneous_frequency)
+                yield ((filename1 or filename2).stem, log_mel_magnitude_spectrogram, mel_instantaneous_frequency)
 
-        waveforms = convert_to_waveform(
+        filenames, waveforms = convert_to_waveform(
             spectrogram_generator=spectrogram_generator,
             waveform_length=64000,
             sample_rate=16000,
@@ -118,16 +114,13 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
 
             try:
                 tf.logging.info("postprocessing started")
-
                 while True:
-                    for (filename1, filename2), waveform in zip(filenames, session.run(waveforms)):
-
+                    for filename, waveform in zip(*session.run([filenames, waveforms])):
                         scipy.io.wavfile.write(
-                            filename=waveform_dir / (filename1 or filename2).with_suffix(".wav").name,
+                            filename=waveform_dir / Path(filename).with_suffix(".wav"),
                             rate=16000,
                             data=waveform
                         )
-
             except tf.errors.OutOfRangeError:
                 tf.logging.info("postprocessing completed")
 

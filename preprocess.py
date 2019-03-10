@@ -22,7 +22,7 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
     frame_step = int((1 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
 
-    def preprocess(waveforms):
+    def preprocess(filenames, waveforms):
         # =========================================================================================
         # For Nsynth dataset, we are putting all padding in the front
         # This causes edge effects in the tail
@@ -58,12 +58,12 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -14.0, 6.0, 0.0, 1.0)
         mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1.0, 1.0, 0.0, 1.0)
         # =========================================================================================
-        return log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
+        return filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
     dataset = tf.data.Dataset.from_generator(
         generator=waveform_generator,
-        output_types=tf.float32,
-        output_shapes=[waveform_length]
+        output_types=(tf.string, tf.float32),
+        output_shapes=([], [waveform_length])
     )
     dataset = dataset.batch(
         batch_size=100,
@@ -93,15 +93,13 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
 
     with tf.Graph().as_default():
 
-        filenames = sorted(waveform_dir.glob("*.wav"))
-
         def waveform_generator():
-            for filename in filenames:
+            for filename in sorted(waveform_dir.glob("*.wav")):
                 waveform = scipy.io.wavfile.read(filename)[1]
                 waveform = linear_map(waveform.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
-                yield waveform
+                yield (filename.stem, waveform)
 
-        log_mel_magnitude_spectrograms, mel_instantaneous_frequencies = convert_to_spectrograms(
+        filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies = convert_to_spectrograms(
             waveform_generator=waveform_generator,
             waveform_length=64000,
             sample_rate=16000,
@@ -113,22 +111,18 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
 
             try:
                 tf.logging.info("preprocessing started")
-
                 while True:
-                    for filename, (log_mel_magnitude_spectrogram, mel_instantaneous_frequency) in zip(
-                        filenames, zip(*session.run([log_mel_magnitude_spectrograms, mel_instantaneous_frequencies]))
+                    for filename, log_mel_magnitude_spectrogram, mel_instantaneous_frequency in zip(
+                        *session.run([filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies])
                     ):
                         skimage.io.imsave(
-                            fname=log_mel_magnitude_spectrogram_dir / filename.with_suffix(".jpg").name,
+                            fname=log_mel_magnitude_spectrogram_dir / Path(filename).with_suffix(".jpg"),
                             arr=log_mel_magnitude_spectrogram.clip(0.0, 1.0)
                         )
                         skimage.io.imsave(
-                            fname=mel_instantaneous_frequency_dir / filename.with_suffix(".jpg").name,
+                            fname=mel_instantaneous_frequency_dir / Path(filename).with_suffix(".jpg"),
                             arr=mel_instantaneous_frequency.clip(0.0, 1.0)
                         )
-
-                        print(filename)
-
             except tf.errors.OutOfRangeError:
                 tf.logging.info("preprocessing completed")
 
