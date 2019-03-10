@@ -40,7 +40,12 @@ with open("pitch_counts.pickle", "rb") as file:
 
 with tf.Graph().as_default():
 
-    tf.set_random_seed(1000)
+    tf.set_random_seed(0)
+
+    def lerp(a, b, t): return t * a + (1. - t) * b
+
+    latents1 = tf.random_normal([256])
+    latents2 = tf.random_normal([256])
 
     pggan = PGGAN(
         min_resolution=[2, 16],
@@ -70,7 +75,7 @@ with tf.Graph().as_default():
             pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
-            tf.tile(tf.random_normal([1, 256]), [args.batch_size, 1]),
+            tf.stack([lerp(latents1, latents2, i / 60) for i in range(60)], axis=0),
             tf.one_hot([60] * args.batch_size, len(pitch_counts))
         ),
         hyper_params=Struct(
