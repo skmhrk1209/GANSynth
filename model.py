@@ -210,10 +210,7 @@ class GANSynth(object):
                 session.run(self.operations.discriminator_train_op)
                 session.run(self.operations.generator_train_op)
 
-    def generate(self, model_dir, sample_dir, steps, config):
-
-        sample_dir1 = os.path.join(sample_dir, "log_mel_magnitudes")
-        sample_dir2 = os.path.join(sample_dir, "mel_instantaneous_frequencies")
+    def generate(self, model_dir, sample_dir1, sample_dir2, steps, config):
 
         if not os.path.exists(sample_dir1):
             os.makedirs(sample_dir1)
@@ -229,10 +226,8 @@ class GANSynth(object):
             i = 0
             for i in range(steps):
                 for image in session.run(self.tensors.fake_images):
-                    path1 = os.path.join(sample_dir1, "{}.jpg".format(i))
-                    path2 = os.path.join(sample_dir2, "{}.jpg".format(i))
-                    image1 = linear_map(image[0], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
-                    image2 = linear_map(image[1], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
-                    skimage.io.imsave(path1, image1)
-                    skimage.io.imsave(path2, image2)
+                    image1 = linear_map(image[0], -1.0, 1.0, 0.0, 1.0)
+                    image2 = linear_map(image[1], -1.0, 1.0, 0.0, 1.0)
+                    skimage.io.imsave(os.path.join(sample_dir1, "{}.jpg".format(i)), image1)
+                    skimage.io.imsave(os.path.join(sample_dir2, "{}.jpg".format(i)), image2)
                     i += 1

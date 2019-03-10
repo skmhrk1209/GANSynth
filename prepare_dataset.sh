@@ -4,7 +4,7 @@ curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.json
 
 # unzip nsynth-train.jsonwav.tar.gz
 # unzip nsynth-valid.jsonwav.tar.gz
-unzip nsynth-test.jsonwav.tar.gz
+tar -xvf nsynth-test.jsonwav.tar.gz
 
 # python preprocess.py nsynth-train/audio nsynth-train/log_mel_magnitude_spectrograms nsynth-train/mel_instantaneous_frequencies
 # python preprocess.py nsynth-valid/audio nsynth-valid/log_mel_magnitude_spectrograms nsynth-valid/mel_instantaneous_frequencies

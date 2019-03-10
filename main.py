@@ -22,8 +22,9 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument("--sample_dir", type=str, default="gan_synth_samples")
-parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
+parser.add_argument("--sample_dir1", type=str, default="samples/log_mel_magnitude_spectrograms")
+parser.add_argument("--sample_dir2", type=str, default="samples/mel_instantaneous_frequencies")
+parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth-train/examples.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--steps", type=int, default=10)
@@ -110,7 +111,8 @@ with tf.Graph().as_default():
 
         gan_synth.generate(
             model_dir=args.model_dir,
-            sample_dir=args.sample_dir,
+            sample_dir1=args.sample_dir1,
+            sample_dir2=args.sample_dir2,
             steps=args.steps,
             config=tf.ConfigProto(
                 gpu_options=tf.GPUOptions(
