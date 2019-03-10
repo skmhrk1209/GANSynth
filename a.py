@@ -76,7 +76,7 @@ with tf.Graph().as_default():
         ),
         fake_input_fn=lambda: (
             tf.stack([lerp(latents1, latents2, i / 60) for i in range(60)], axis=0),
-            tf.one_hot([60] * args.batch_size, len(pitch_counts))
+            tf.one_hot([48] * args.batch_size, len(pitch_counts))
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
