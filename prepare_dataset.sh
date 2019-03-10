@@ -19,7 +19,7 @@ python make_tfrecord.py     nsynth-test/log_mel_magnitude_spectrograms \
                             nsynth-test/examples.json \
                             nsynth-test/examples.tfrecord
 
-python main.py --train --filenames nsynth-test/examples.tfrecord --total_steps 1
+python main.py --generate --filenames nsynth-test/examples.tfrecord --total_steps 1
 
 python preprocess.py        samples/log_mel_magnitude_spectrograms \
                             samples/mel_instantaneous_frequencies \
