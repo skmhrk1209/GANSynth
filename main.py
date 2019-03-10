@@ -15,7 +15,7 @@ import tensorflow as tf
 import argparse
 import functools
 import pickle
-import nsynth
+from dataset import nsynth_input_fn
 from model import GANSynth
 from network import PGGAN
 from utils import Struct
@@ -57,7 +57,7 @@ with tf.Graph().as_default():
         generator=pggan.generator,
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
-            nsynth.input_fn,
+            nsynth_input_fn,
             filenames=args.filenames,
             batch_size=args.batch_size,
             num_epochs=None,

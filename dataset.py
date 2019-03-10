@@ -7,7 +7,7 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
+def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
 
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
@@ -70,6 +70,8 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
     dataset = dataset.prefetch(buffer_size=1)
 
     iterator = dataset.make_initializable_iterator()
+
+    tf.add_to_collection(tf.GraphKeys.SAVEABLE_OBJECTS, tf.data.experimental.make_saveable_from_iterator(iterator))
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
     return iterator.get_next()
