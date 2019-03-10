@@ -46,6 +46,7 @@ with tf.Graph().as_default():
 
     latents1 = tf.random_normal([256])
     latents2 = tf.random_normal([256])
+    latents = tf.stack([lerp(latents1, latents2, i / 60) for i in range(60)], axis=0)
 
     pggan = PGGAN(
         min_resolution=[2, 16],
@@ -75,7 +76,7 @@ with tf.Graph().as_default():
             pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
-            tf.stack([lerp(latents1, latents2, i / 60) for i in range(60)], axis=0),
+            tf.random_normal([args.batch_size, 256]),
             tf.one_hot([36] * args.batch_size, len(pitch_counts))
         ),
         hyper_params=Struct(
