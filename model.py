@@ -228,6 +228,6 @@ class GANSynth(object):
                 for image in session.run(self.tensors.fake_images):
                     image1 = linear_map(image[0], -1.0, 1.0, 0.0, 1.0)
                     image2 = linear_map(image[1], -1.0, 1.0, 0.0, 1.0)
-                    skimage.io.imsave(os.path.join(sample_dir1, "{}.jpg".format(i)), image1)
-                    skimage.io.imsave(os.path.join(sample_dir2, "{}.jpg".format(i)), image2)
+                    skimage.io.imsave(os.path.join(sample_dir1, "{}.jpg".format(i)), image1.clip(0.0, 1.0))
+                    skimage.io.imsave(os.path.join(sample_dir2, "{}.jpg".format(i)), image2.clip(0.0, 1.0))
                     i += 1

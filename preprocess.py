@@ -108,12 +108,12 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                         skimage.io.imsave(os.path.join(
                             log_mel_magnitude_spectrogram_dir,
                             "{}.jpg".format(os.path.splitext(os.path.basename(filename))[0])
-                        ), log_mel_magnitude_spectrogram)
+                        ), log_mel_magnitude_spectrogram.clip(0.0, 1.0))
 
                         skimage.io.imsave(os.path.join(
                             mel_instantaneous_frequency_dir,
                             "{}.jpg".format(os.path.splitext(os.path.basename(filename))[0])
-                        ), mel_instantaneous_frequency)
+                        ), mel_instantaneous_frequency.clip(0.0, 1.0))
 
             except tf.errors.OutOfRangeError:
                 tf.logging.info("preprocessing completed")
