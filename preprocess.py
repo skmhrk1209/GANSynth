@@ -116,11 +116,11 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                         *session.run([filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies])
                     ):
                         skimage.io.imsave(
-                            fname=log_mel_magnitude_spectrogram_dir / Path(filename.decode()).with_suffix(".jpg"),
+                            fname=log_mel_magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
                             arr=log_mel_magnitude_spectrogram.clip(0.0, 1.0)
                         )
                         skimage.io.imsave(
-                            fname=mel_instantaneous_frequency_dir / Path(filename.decode()).with_suffix(".jpg"),
+                            fname=mel_instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
                             arr=mel_instantaneous_frequency.clip(0.0, 1.0)
                         )
             except tf.errors.OutOfRangeError:

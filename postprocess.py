@@ -117,7 +117,7 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
                 while True:
                     for filename, waveform in zip(*session.run([filenames, waveforms])):
                         scipy.io.wavfile.write(
-                            filename=waveform_dir / Path(filename.decode()).with_suffix(".wav"),
+                            filename=waveform_dir / "{}.wav".format(filename.decode()),
                             rate=16000,
                             data=waveform
                         )
