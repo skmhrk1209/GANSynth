@@ -38,7 +38,7 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
 
-        return image, label
+        return image, label, features.pitch, features.source
 
     dataset = tf.data.TFRecordDataset(filenames)
     if shuffle:
@@ -52,6 +52,18 @@ def input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
     dataset = dataset.repeat(count=num_epochs)
     dataset = dataset.map(
         map_func=parse_example,
+        num_parallel_calls=os.cpu_count()
+    )
+    # filter just acoustic instruments and just pitches 24-84 (as in the paper)
+    dataset = dataset.filter(lambda image, label, pitch, source: tf.logical_and(
+        x=tf.equal(source, 0),
+        y=tf.logical_and(
+            x=tf.greater_equal(pitch, min(pitches)),
+            y=tf.less_equal(pitch, max(pitches))
+        )
+    ))
+    dataset = dataset.map(
+        map_func=lambda image, label, pitch, source: (image, label),
         num_parallel_calls=os.cpu_count()
     )
     dataset = dataset.batch(batch_size=batch_size)

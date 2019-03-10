@@ -1,14 +1,11 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 import numpy as np
 import skimage
-import functools
-import itertools
-import pickle
+import glob
 import sys
 import os
 import spectral_ops
-from utils import Struct
+import scipy.io.wavfile
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -17,29 +14,14 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches,
-                    audio_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_spectrograms(waveforms, audio_length, sample_rate, spectrogram_shape, overlap):
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
     frame_step = int((1 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
 
-    def parse_example(example):
-
-        features = Struct(tf.parse_single_example(
-            serialized=example,
-            features=dict(
-                # reference: https://magenta.tensorflow.org/datasets/nsynth
-                audio=tf.FixedLenFeature([audio_length], dtype=tf.float32),
-                pitch=tf.FixedLenFeature([], dtype=tf.int64),
-                instrument_source=tf.FixedLenFeature([], dtype=tf.int64)
-            )
-        ))
-
-        return features.audio, features.pitch, features.instrument_source
-
-    def preprocess(waveforms, pitches, sources):
+    def preprocess(waveforms):
         # =========================================================================================
         # For Nsynth dataset, we are putting all padding in the front
         # This causes edge effects in the tail
@@ -54,133 +36,60 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches,
         # discard_dc
         stfts = stfts[:, :, 1:]
         # =========================================================================================
-        magnitudes = tf.abs(stfts)
-        phases = tf.angle(stfts)
+        magnitude_spectrograms = tf.abs(stfts)
+        phase_spectrograms = tf.angle(stfts)
         # =========================================================================================
         linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
             num_mel_bins=num_freq_bins,
             num_spectrogram_bins=num_freq_bins,
             sample_rate=sample_rate,
-            lower_edge_hertz=0.,
-            upper_edge_hertz=sample_rate / 2.
+            lower_edge_hertz=0.0,
+            upper_edge_hertz=sample_rate / 2.0
         )
-        mel_magnitudes = tf.tensordot(magnitudes, linear_to_mel_weight_matrix, axes=1)
-        mel_magnitudes.set_shape(magnitudes.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
-        mel_phases = tf.tensordot(phases, linear_to_mel_weight_matrix, axes=1)
-        mel_phases.set_shape(phases.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
+        mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, linear_to_mel_weight_matrix, axes=1)
+        mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
+        mel_phase_spectrograms = tf.tensordot(phase_spectrograms, linear_to_mel_weight_matrix, axes=1)
+        mel_phase_spectrograms.set_shape(phase_spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
         # =========================================================================================
-        log_mel_magnitudes = tf.log(mel_magnitudes + 1e-6)
-        mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phases)
+        log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
+        mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_spectrograms)
         # =========================================================================================
-        log_mel_magnitudes = linear_map(log_mel_magnitudes, -14., 6., -1., 1.)
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1., 1., -1., 1.)
+        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -14.0, 6.0, 0.0, 1.0)
+        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1.0, 1.0, 0.0, 1.0)
         # =========================================================================================
-        images = tf.stack([log_mel_magnitudes, mel_instantaneous_frequencies], axis=1)
-        # =========================================================================================
-        return images, pitches, sources
+        return log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
-    def postprocess(images):
-        # =========================================================================================
-        log_mel_magnitudes, mel_instantaneous_frequencies = tf.unstack(images, axis=1)
-        # =========================================================================================
-        log_mel_magnitudes = linear_map(log_mel_magnitudes, -1., 1., -14., 6.)
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1., 1., -1., 1.)
-        # =========================================================================================
-        mel_magnitudes = tf.exp(log_mel_magnitudes)
-        mel_phases = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
-        # =========================================================================================
-        linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
-            num_mel_bins=num_freq_bins,
-            num_spectrogram_bins=num_freq_bins,
-            sample_rate=sample_rate,
-            lower_edge_hertz=0.,
-            upper_edge_hertz=sample_rate / 2.
-        )
-        mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix)
-        magnitudes = tf.tensordot(mel_magnitudes, mel_to_linear_weight_matrix, axes=1)
-        magnitudes.set_shape(mel_magnitudes.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
-        phases = tf.tensordot(mel_phases, mel_to_linear_weight_matrix, axes=1)
-        phases.set_shape(mel_phases.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
-        # =========================================================================================
-        stfts = tf.complex(magnitudes, 0.) * tf.complex(tf.cos(phases), tf.sin(phases))
-        # =========================================================================================
-        # discard_dc
-        stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])
-        # =========================================================================================
-        waveforms = tf.contrib.signal.inverse_stft(
-            stfts=stfts,
-            frame_length=frame_length,
-            frame_step=frame_step,
-            window_fn=tf.contrib.signal.inverse_stft_window_fn(
-                frame_step=frame_step
-            )
-        )
-        # =========================================================================================
-        # For Nsynth dataset, we are putting all padding in the front
-        # This causes edge effects in the tail
-        waveforms = waveforms[:, num_samples - audio_length:]
-        # =========================================================================================
-        return waveforms
-
-    dataset = tf.data.TFRecordDataset(filenames)
-    if shuffle:
-        dataset = dataset.shuffle(
-            buffer_size=sum([
-                len(list(tf.io.tf_record_iterator(filename)))
-                for filename in filenames
-            ]),
-            reshuffle_each_iteration=True
-        )
-    dataset = dataset.repeat(count=num_epochs)
-    dataset = dataset.map(
-        map_func=parse_example,
-        num_parallel_calls=os.cpu_count()
+    dataset = tf.data.Dataset.from_tensor_slices(waveforms)
+    dataset = dataset.batch(
+        batch_size=100,
+        drop_remainder=False
     )
-    # filter just acoustic instruments and just pitches 24-84 (as in the paper)
-    dataset = dataset.filter(lambda waveform, pitch, source: tf.logical_and(
-        x=tf.equal(source, 0),
-        y=tf.logical_and(
-            x=tf.greater_equal(pitch, min(pitches)),
-            y=tf.less_equal(pitch, max(pitches))
-        )
-    ))
-    dataset = dataset.batch(batch_size=batch_size)
     dataset = dataset.map(
         map_func=preprocess,
         num_parallel_calls=os.cpu_count()
     )
     dataset = dataset.prefetch(buffer_size=1)
-
-    iterator = dataset.make_initializable_iterator()
-    tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
+    iterator = dataset.make_one_shot_iterator()
 
     return iterator.get_next()
 
 
-def main(filename, directory):
+def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir):
 
-    directory1 = os.path.join(directory, "log_mel_magnitudes")
-    directory2 = os.path.join(directory, "mel_instantaneous_frequencies")
+    if not os.path.exists(log_mel_magnitude_spectrogram_dir):
+        os.makedirs(log_mel_magnitude_spectrogram_dir)
 
-    if not os.path.exists(directory1):
-        os.makedirs(directory1)
-
-    if not os.path.exists(directory2):
-        os.makedirs(directory2)
+    if not os.path.exists(mel_instantaneous_frequency_dir):
+        os.makedirs(mel_instantaneous_frequency_dir)
 
     with tf.Graph().as_default():
 
-        tf.set_random_seed(0)
+        filenames = sorted(glob.glob(os.path.join(waveform_dir, "*")))
+        waveforms = np.array([scipy.io.wavfile.read(filename)[1] for filename in filenames])
+        waveforms = linear_map(waveforms.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
 
-        with open("pitch_counts.pickle", "rb") as file:
-            pitch_counts = pickle.load(file)
-
-        images, pitches, sources = nsynth_input_fn(
-            filenames=[filename],
-            batch_size=128,
-            num_epochs=1,
-            shuffle=False,
-            pitches=pitch_counts.keys(),
+        log_mel_magnitude_spectrograms, mel_instantaneous_frequencies = convert_to_spectrograms(
+            waveforms=waveforms,
             audio_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],
@@ -189,26 +98,25 @@ def main(filename, directory):
 
         with tf.Session() as session:
 
-            session.run(tf.tables_initializer())
+            try:
+                tf.logging.info("preprocessing started")
 
-            with open(os.path.join(directory, "gt.txt"), "w") as file:
+                while True:
+                    for filename, (log_mel_magnitude_spectrogram, mel_instantaneous_frequency) in zip(
+                        filenames, zip(*session.run([log_mel_magnitude_spectrograms, mel_instantaneous_frequencies]))
+                    ):
+                        skimage.io.imsave(os.path.join(
+                            log_mel_magnitude_spectrogram_dir,
+                            "{}.jpg".format(os.path.splitext(os.path.basename(filename))[0])
+                        ), log_mel_magnitude_spectrogram)
 
-                try:
-                    tf.logging.info("preprocessing started")
-                    i = 0
-                    while True:
-                        for image, pitch, source in zip(*session.run([images, pitches, sources])):
-                            path1 = os.path.join(directory1, "{}.jpg".format(i))
-                            path2 = os.path.join(directory2, "{}.jpg".format(i))
-                            image1 = linear_map(image[0], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
-                            image2 = linear_map(image[1], -1., 1., 0., 255.).clip(0., 255.).astype(np.uint8)
-                            skimage.io.imsave(path1, image1)
-                            skimage.io.imsave(path2, image2)
-                            file.write("{} {} {} {}\n".format(path1, path2, pitch, source))
-                            i += 1
+                        skimage.io.imsave(os.path.join(
+                            mel_instantaneous_frequency_dir,
+                            "{}.jpg".format(os.path.splitext(os.path.basename(filename))[0])
+                        ), mel_instantaneous_frequency)
 
-                except tf.errors.OutOfRangeError:
-                    tf.logging.info("preprocessing completed")
+            except tf.errors.OutOfRangeError:
+                tf.logging.info("preprocessing completed")
 
 
 if __name__ == "__main__":
