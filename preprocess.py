@@ -109,8 +109,6 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
             overlap=0.75
         )
 
-        print(filenames)
-
         with tf.Session() as session:
 
             try:
@@ -129,7 +127,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                             arr=mel_instantaneous_frequency.clip(0.0, 1.0)
                         )
 
-                        print(log_mel_magnitude_spectrogram_dir / filename.with_suffix(".jpg").name)
+                        print(filename)
 
             except tf.errors.OutOfRangeError:
                 tf.logging.info("preprocessing completed")
