@@ -5,9 +5,12 @@ from pathlib import Path
 
 
 def main(in_dir1, in_dir2, in_file, out_file):
+
     with tf.io.TFRecordWriter(out_file) as writer:
+
         with open(in_file) as file:
             ground_truth = json.load(file)
+
         for key, value in ground_truth.items():
             writer.write(record=tf.train.Example(features=tf.train.Features(feature=dict(
                 path1=tf.train.Feature(bytes_list=tf.train.BytesList(value=[str(in_dir1 / Path(key).with_suffix(".jpg")).encode()])),

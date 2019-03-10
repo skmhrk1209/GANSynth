@@ -10,7 +10,7 @@
 * [The NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth)
 
 ### Usage
-The original tfrecord file is very large, so it takes so long time to shuffle after each epoch. 
+The original tfrecord file is very large, so it takes so long time to shuffle after each epoch.   
 For better peformance, convert waveforms to spectrograms in advance and make tfrecord which contains the path to spectrograms and label.
 ```bash
 > curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-train.jsonwav.tar.gz
