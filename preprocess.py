@@ -6,6 +6,7 @@ import sys
 import os
 import spectral_ops
 import scipy.io.wavfile
+from pathlib import Path
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -80,15 +81,19 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
 
 def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir):
 
-    if not os.path.exists(log_mel_magnitude_spectrogram_dir):
-        os.makedirs(log_mel_magnitude_spectrogram_dir)
+    waveform_dir = Path(waveform_dir)
+    log_mel_magnitude_spectrogram_dir = Path(log_mel_magnitude_spectrogram_dir)
+    mel_instantaneous_frequency_dir = Path(mel_instantaneous_frequency_dir)
 
-    if not os.path.exists(mel_instantaneous_frequency_dir):
-        os.makedirs(mel_instantaneous_frequency_dir)
+    if not log_mel_magnitude_spectrogram_dir.exists():
+        log_mel_magnitude_spectrogram_dir.mkdir()
+
+    if not mel_instantaneous_frequency_dir.exists():
+        mel_instantaneous_frequency_dir.mkdir()
 
     with tf.Graph().as_default():
 
-        filenames = sorted(glob.glob(os.path.join(waveform_dir, "*")))
+        filenames = sorted(waveform_dir.glob("*"))
 
         def waveform_generator():
             for filename in filenames:
@@ -113,15 +118,14 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                     for filename, (log_mel_magnitude_spectrogram, mel_instantaneous_frequency) in zip(
                         filenames, zip(*session.run([log_mel_magnitude_spectrograms, mel_instantaneous_frequencies]))
                     ):
-                        skimage.io.imsave(os.path.join(
-                            log_mel_magnitude_spectrogram_dir,
-                            "{}.jpg".format(os.path.splitext(os.path.basename(filename))[0])
-                        ), log_mel_magnitude_spectrogram.clip(0.0, 1.0))
-
-                        skimage.io.imsave(os.path.join(
-                            mel_instantaneous_frequency_dir,
-                            "{}.jpg".format(os.path.splitext(os.path.basename(filename))[0])
-                        ), mel_instantaneous_frequency.clip(0.0, 1.0))
+                        skimage.io.imsave(
+                            fname=log_mel_magnitude_spectrogram_dir / filename.name.with_suffix(".jpg"),
+                            arr=log_mel_magnitude_spectrogram.clip(0.0, 1.0)
+                        )
+                        skimage.io.imsave(
+                            fname=mel_instantaneous_frequency_dir / filename.name.with_suffix(".jpg"),
+                            arr=mel_instantaneous_frequency.clip(0.0, 1.0)
+                        )
 
             except tf.errors.OutOfRangeError:
                 tf.logging.info("preprocessing completed")

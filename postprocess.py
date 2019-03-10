@@ -1,12 +1,12 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 import numpy as np
-import glob
 import sys
 import os
 import skimage
 import scipy.io.wavfile
 import spectral_ops
+from pathlib import Path
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -15,8 +15,7 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_frequencies,
-                        audio_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
@@ -60,11 +59,15 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
         # =========================================================================================
         # For Nsynth dataset, we are putting all padding in the front
         # This causes edge effects in the tail
-        waveforms = waveforms[:, num_samples - audio_length:]
+        waveforms = waveforms[:, num_samples - waveform_length:]
         # =========================================================================================
         return waveforms
 
-    dataset = tf.data.Dataset.from_tensor_slices((log_mel_magnitude_spectrograms, mel_instantaneous_frequencies))
+    dataset = tf.data.Dataset.from_generator(
+        generator=spectrogram_generator,
+        output_types=(tf.float32, tf.float32),
+        output_shapes=(spectrogram_shape, spectrogram_shape)
+    )
     dataset = dataset.batch(
         batch_size=100,
         drop_remainder=False
@@ -81,23 +84,31 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
 
 def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, waveform_dir):
 
-    if not os.path.exists(waveform_dir):
-        os.makedirs(waveform_dir)
+    log_mel_magnitude_spectrogram_dir = Path(log_mel_magnitude_spectrogram_dir)
+    mel_instantaneous_frequency_dir = Path(mel_instantaneous_frequency_dir)
+    waveform_dir = Path(waveform_dir)
+
+    if not waveform_dir.exists():
+        waveform_dir.mkdir()
 
     with tf.Graph().as_default():
 
-        filenames = sorted(glob.glob(os.path.join(log_mel_magnitude_spectrogram_dir, "*")))
-        log_mel_magnitude_spectrograms = np.array([np.squeeze(skimage.io.imread(filename)) for filename in filenames])
-        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
+        filenames = zip(
+            sorted(log_mel_magnitude_spectrogram_dir.glob("*")),
+            sorted(mel_instantaneous_frequency_dir.glob("*"))
+        )
 
-        filenames = sorted(glob.glob(os.path.join(mel_instantaneous_frequency_dir, "*")))
-        mel_instantaneous_frequencies = np.array([np.squeeze(skimage.io.imread(filename)) for filename in filenames])
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
+        def spectrogram_generator():
+            for filename1, filename2 in filenames:
+                log_mel_magnitude_spectrogram = np.squeeze(skimage.io.imread(filename1))
+                log_mel_magnitude_spectrogram = linear_map(log_mel_magnitude_spectrogram.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
+                mel_instantaneous_frequency = np.squeeze(skimage.io.imread(filename2))
+                mel_instantaneous_frequency = linear_map(mel_instantaneous_frequency.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
+                yield (log_mel_magnitude_spectrogram, mel_instantaneous_frequency)
 
         waveforms = convert_to_waveform(
-            log_mel_magnitude_spectrograms=log_mel_magnitude_spectrograms,
-            mel_instantaneous_frequencies=mel_instantaneous_frequencies,
-            audio_length=64000,
+            spectrogram_generator=spectrogram_generator,
+            waveform_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],
             overlap=0.75
@@ -109,11 +120,12 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
                 tf.logging.info("postprocessing started")
 
                 while True:
-                    for filename, waveform in zip(filenames, session.run(waveforms)):
-                        scipy.io.wavfile.write(os.path.join(
-                            waveform_dir,
-                            "{}.wav".format(os.path.splitext(os.path.basename(filename))[0])
-                        ), 16000, waveform)
+                    for (filename1, filename2), waveform in zip(filenames, session.run(waveforms)):
+                        scipy.io.wavfile.write(
+                            filename=waveform_dir / (filename1 or filename2).name.with_suffix(".wav"),
+                            rate=16000,
+                            data=waveform
+                        )
 
             except tf.errors.OutOfRangeError:
                 tf.logging.info("postprocessing completed")

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import skimage
-import os
+from pathlib import Path
 from utils import Struct
 
 
@@ -206,10 +206,13 @@ class GANSynth(object):
 
     def generate(self, model_dir, sample_dir1, sample_dir2, steps, config):
 
-        if not os.path.exists(sample_dir1):
-            os.makedirs(sample_dir1)
-        if not os.path.exists(sample_dir2):
-            os.makedirs(sample_dir2)
+        sample_dir1 = Path(sample_dir1)
+        sample_dir2 = Path(sample_dir2)
+
+        if not sample_dir1.exists():
+            sample_dir1.mkdir()
+        if not sample_dir2.exists():
+            sample_dir2.mkdir()
 
         with tf.train.SingularMonitoredSession(
             scaffold=self.scaffold,
@@ -220,8 +223,12 @@ class GANSynth(object):
             i = 0
             for i in range(steps):
                 for image in session.run(self.tensors.fake_images):
-                    image1 = linear_map(image[0], -1.0, 1.0, 0.0, 1.0)
-                    image2 = linear_map(image[1], -1.0, 1.0, 0.0, 1.0)
-                    skimage.io.imsave(os.path.join(sample_dir1, "{}.jpg".format(i)), image1.clip(0.0, 1.0))
-                    skimage.io.imsave(os.path.join(sample_dir2, "{}.jpg".format(i)), image2.clip(0.0, 1.0))
+                    skimage.io.imsave(
+                        fname=sample_dir1 / Path(str(i)).with_suffix(".jpg"),
+                        arr=linear_map(image[0], -1.0, 1.0, 0.0, 1.0).clip(0.0, 1.0)
+                    )
+                    skimage.io.imsave(
+                        fname=sample_dir2 / Path(str(i)).with_suffix(".jpg"),
+                        arr=linear_map(image[1], -1.0, 1.0, 0.0, 1.0).clip(0.0, 1.0)
+                    )
                     i += 1
