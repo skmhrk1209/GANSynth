@@ -14,7 +14,7 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def convert_to_spectrograms(waveforms, audio_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_spectrograms(waveform_generator, audio_length, sample_rate, spectrogram_shape, overlap):
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
@@ -59,7 +59,10 @@ def convert_to_spectrograms(waveforms, audio_length, sample_rate, spectrogram_sh
         # =========================================================================================
         return log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
-    dataset = tf.data.Dataset.from_tensor_slices(waveforms)
+    dataset = tf.data.Dataset.from_generator(
+        generator=waveform_generator,
+        output_types=tf.float32
+    )
     dataset = dataset.batch(
         batch_size=100,
         drop_remainder=False
@@ -85,11 +88,15 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
     with tf.Graph().as_default():
 
         filenames = sorted(glob.glob(os.path.join(waveform_dir, "*")))
-        waveforms = np.array([scipy.io.wavfile.read(filename)[1] for filename in filenames])
-        waveforms = linear_map(waveforms.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
+
+        def waveform_generator():
+            for filename in filenames:
+                waveform = scipy.io.wavfile.read(filename)[1]
+                waveform = linear_map(waveform.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
+                yield waveform
 
         log_mel_magnitude_spectrograms, mel_instantaneous_frequencies = convert_to_spectrograms(
-            waveforms=waveforms,
+            waveform_generator=waveform_generator,
             audio_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],
