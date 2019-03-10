@@ -48,12 +48,7 @@ with tf.Graph().as_default():
         min_channels=32,
         max_channels=256,
         growing_level=tf.cast(tf.divide(
-            # x=tf.train.create_global_step(),
-            x=tf.get_variable(
-                name="global_step",
-                initializer=0,
-                trainable=False
-            ),
+            x=tf.train.create_global_step(),
             y=args.total_steps
         ), tf.float32)
     )

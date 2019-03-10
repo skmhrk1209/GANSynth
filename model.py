@@ -21,6 +21,7 @@ class GANSynth(object):
         # =========================================================================================
         real_logits = discriminator(real_images, real_labels)
         fake_logits = discriminator(fake_images, fake_labels)
+        '''
         # =========================================================================================
         # Non-Saturating + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
@@ -79,7 +80,6 @@ class GANSynth(object):
             discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=real_labels, logits=real_logits[:, 1:])
             discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(labels=fake_labels, logits=fake_logits[:, 1:])
             discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
-        '''
         # =========================================================================================
         # losss reduction
         generator_loss = tf.reduce_mean(generator_losses)
@@ -99,14 +99,10 @@ class GANSynth(object):
         generator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="generator")
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
         # =========================================================================================
-        with tf.variable_scope("", reuse=True):
-            global_step = tf.get_variable(name="global_step", dtype=tf.int32)
-
         generator_train_op = generator_optimizer.minimize(
             loss=generator_loss,
             var_list=generator_variables,
-            # global_step=tf.train.get_or_create_global_step()
-            global_step=global_step
+            global_step=tf.train.get_or_create_global_step()
         )
         discriminator_train_op = discriminator_optimizer.minimize(
             loss=discriminator_loss,
@@ -125,8 +121,7 @@ class GANSynth(object):
             fake_labels=fake_labels,
             fake_images=fake_images,
             generator_loss=generator_loss,
-            discriminator_loss=discriminator_loss,
-            global_step=global_step
+            discriminator_loss=discriminator_loss
         )
         # =========================================================================================
         # scaffold
@@ -189,8 +184,7 @@ class GANSynth(object):
                 ),
                 tf.train.LoggingTensorHook(
                     tensors=dict(
-                        # global_step=tf.train.get_global_step(),
-                        global_step=self.tensors.global_step,
+                        global_step=tf.train.get_global_step(),
                         generator_loss=self.tensors.generator_loss,
                         discriminator_loss=self.tensors.discriminator_loss
                     ),
