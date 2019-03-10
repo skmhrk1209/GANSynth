@@ -119,11 +119,11 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                         filenames, zip(*session.run([log_mel_magnitude_spectrograms, mel_instantaneous_frequencies]))
                     ):
                         skimage.io.imsave(
-                            fname=log_mel_magnitude_spectrogram_dir / filename.name.with_suffix(".jpg"),
+                            fname=log_mel_magnitude_spectrogram_dir / filename.with_suffix(".jpg").name,
                             arr=log_mel_magnitude_spectrogram.clip(0.0, 1.0)
                         )
                         skimage.io.imsave(
-                            fname=mel_instantaneous_frequency_dir / filename.name.with_suffix(".jpg"),
+                            fname=mel_instantaneous_frequency_dir / filename.with_suffix(".jpg").name,
                             arr=mel_instantaneous_frequency.clip(0.0, 1.0)
                         )
 
