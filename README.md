@@ -11,7 +11,8 @@
 
 ### Usage
 [](
-    The original tfrecord file is very large, so it takes so long time to shuffle after each epoch. For better peformance, it's better to convert waveforms to spectrograms in advance and make tfrecord which contains the path to spectrograms and label.
+    The original tfrecord file is very large, so it takes so long time to shuffle after each epoch. For better peformance, \
+    it's better to convert waveforms to spectrograms in advance and make tfrecord which contains the path to spectrograms and label. \
 )
 
 ```bash
