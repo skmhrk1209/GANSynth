@@ -224,9 +224,9 @@ class GANSynth(object):
                 for image in session.run(self.tensors.fake_images):
                     skimage.io.imsave(
                         fname=sample_dir1 / "{}.jpg".format(len(list(sample_dir1.glob("*.jpg")))),
-                        arr=linear_map(image[0], -1.0, 1.0, 0.0, 1.0).clip(0.0, 1.0)
+                        arr=linear_map(image[0], -1., 1., 0., 1.).clip(0., 1.)
                     )
                     skimage.io.imsave(
                         fname=sample_dir2 / "{}.jpg".format(len(list(sample_dir2.glob("*.jpg")))),
-                        arr=linear_map(image[1], -1.0, 1.0, 0.0, 1.0).clip(0.0, 1.0)
+                        arr=linear_map(image[1], -1., 1., 0., 1.).clip(0., 1.)
                     )
