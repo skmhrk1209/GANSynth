@@ -1,4 +1,6 @@
-curl -LO http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-train.jsonwav.tar.gz
+#!/bin/bash
+
+wget http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-train.jsonwav.tar.gz
 
 tar -xvf nsynth-train.jsonwav.tar.gz
 
