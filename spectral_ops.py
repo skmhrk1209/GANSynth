@@ -20,7 +20,7 @@ def diff(inputs, axis=-1):
 def unwrap(phases, discont=np.pi, axis=-1):
 
     diffs = diff(phases, axis=axis)
-    diff_mods = tf.mod(diffs + np.pi, 2. * np.pi) - np.pi
+    diff_mods = tf.mod(diffs + np.pi, 2.0 * np.pi) - np.pi
     indices = tf.logical_and(tf.equal(diff_mods, -np.pi), tf.greater(diffs, 0))
     diff_mods = tf.where(indices, tf.ones_like(diff_mods) * np.pi, diff_mods)
     corrects = diff_mods - diffs

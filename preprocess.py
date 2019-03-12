@@ -49,8 +49,8 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
             num_mel_bins=num_freq_bins,
             num_spectrogram_bins=num_freq_bins,
             sample_rate=sample_rate,
-            lower_edge_hertz=0.,
-            upper_edge_hertz=sample_rate / 2.
+            lower_edge_hertz=0.0,
+            upper_edge_hertz=sample_rate / 2.0
         )
         mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, linear_to_mel_weight_matrix, axes=1)
         mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
@@ -60,8 +60,8 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
         mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_spectrograms)
         # =========================================================================================
-        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -14., 6., 0., 1.)
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1., 1., 0., 1.)
+        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -14.0, 6.0, -1.0, 1.0)
+        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1.0, 1.0, -1.0, 1.0)
         # =========================================================================================
         return filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
@@ -101,7 +101,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
         def waveform_generator():
             for filename in sorted(waveform_dir.glob("*.wav")):
                 waveform = scipy.io.wavfile.read(filename)[1]
-                waveform = linear_map(waveform.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1., 1.)
+                waveform = linear_map(waveform.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
                 yield (filename.stem, waveform)
 
         spectrograms = convert_to_spectrograms(
@@ -120,11 +120,11 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                     for filename, log_mel_magnitude_spectrogram, mel_instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
                             fname=log_mel_magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
-                            arr=log_mel_magnitude_spectrogram.clip(0., 1.)
+                            arr=linear_map(log_mel_magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                         )
                         skimage.io.imsave(
                             fname=mel_instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
-                            arr=mel_instantaneous_frequency.clip(0., 1.)
+                            arr=linear_map(mel_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                         )
             except tf.errors.OutOfRangeError:
                 tf.logging.info("preprocessing completed")

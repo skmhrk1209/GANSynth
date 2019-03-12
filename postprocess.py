@@ -25,8 +25,8 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
 
     def postprocess(filename, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies):
         # =========================================================================================
-        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, 0., 1., -14., 6.)
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, 0., 1., -1., 1.)
+        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -1.0, 1.0, -14.0, 6.0)
+        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1.0, 1.0, -1.0, 1.0)
         # =========================================================================================
         mel_magnitude_spectrograms = tf.exp(log_mel_magnitude_spectrograms)
         mel_phase_spectrograms = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
@@ -35,8 +35,8 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
             num_mel_bins=num_freq_bins,
             num_spectrogram_bins=num_freq_bins,
             sample_rate=sample_rate,
-            lower_edge_hertz=0.,
-            upper_edge_hertz=sample_rate / 2.
+            lower_edge_hertz=0.0,
+            upper_edge_hertz=sample_rate / 2.0
         )
         mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix)
         magnitudes = tf.tensordot(mel_magnitude_spectrograms, mel_to_linear_weight_matrix, axes=1)
@@ -44,7 +44,7 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
         phase_spectrograms = tf.tensordot(mel_phase_spectrograms, mel_to_linear_weight_matrix, axes=1)
         phase_spectrograms.set_shape(mel_phase_spectrograms.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
         # =========================================================================================
-        stfts = tf.complex(magnitudes, 0.) * tf.complex(tf.cos(phase_spectrograms), tf.sin(phase_spectrograms))
+        stfts = tf.complex(magnitudes, 0.0) * tf.complex(tf.cos(phase_spectrograms), tf.sin(phase_spectrograms))
         # =========================================================================================
         # discard_dc
         stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])
@@ -102,9 +102,9 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
             for filename1, filename2 in zip(sorted(log_mel_magnitude_spectrogram_dir.glob("*.jpg")), sorted(mel_instantaneous_frequency_dir.glob("*.jpg"))):
                 assert filename1.name == filename2.name
                 log_mel_magnitude_spectrogram = np.squeeze(skimage.io.imread(filename1))
-                log_mel_magnitude_spectrogram = linear_map(log_mel_magnitude_spectrogram.astype(np.float32), 0., 255., 0., 1.)
+                log_mel_magnitude_spectrogram = linear_map(log_mel_magnitude_spectrogram.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
                 mel_instantaneous_frequency = np.squeeze(skimage.io.imread(filename2))
-                mel_instantaneous_frequency = linear_map(mel_instantaneous_frequency.astype(np.float32), 0., 255., 0., 1.)
+                mel_instantaneous_frequency = linear_map(mel_instantaneous_frequency.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
                 yield ((filename1 or filename2).stem, log_mel_magnitude_spectrogram, mel_instantaneous_frequency)
 
         waveforms = convert_to_waveform(

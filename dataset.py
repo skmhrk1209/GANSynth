@@ -33,7 +33,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
 
         image = tf.concat([image1, image2], axis=0)
         image = tf.image.convert_image_dtype(image, tf.float32)
-        image = linear_map(image, 0., 1., -1., 1.)
+        image = linear_map(image, 0.0, 1.0, -1.0, 1.0)
 
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
