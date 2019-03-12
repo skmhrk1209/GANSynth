@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 import numpy as np
+import functools
 import sys
 import os
 import skimage
@@ -53,7 +54,11 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
             frame_length=frame_length,
             frame_step=frame_step,
             window_fn=tf.contrib.signal.inverse_stft_window_fn(
-                frame_step=frame_step
+                frame_step=frame_step,
+                forward_window_fn=functools.partial(
+                    tf.contrib.signal.hann_window,
+                    periodic=True
+                )
             )
         )
         # =========================================================================================
@@ -102,7 +107,7 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
                 mel_instantaneous_frequency = linear_map(mel_instantaneous_frequency.astype(np.float32), 0.0, 255.0, 0.0, 1.0)
                 yield ((filename1 or filename2).stem, log_mel_magnitude_spectrogram, mel_instantaneous_frequency)
 
-        filenames, waveforms = convert_to_waveform(
+        waveforms = convert_to_waveform(
             spectrogram_generator=spectrogram_generator,
             waveform_length=64000,
             sample_rate=16000,
@@ -115,7 +120,7 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
             try:
                 tf.logging.info("postprocessing started")
                 while True:
-                    for filename, waveform in zip(*session.run([filenames, waveforms])):
+                    for filename, waveform in zip(*session.run(waveforms)):
                         scipy.io.wavfile.write(
                             filename=waveform_dir / "{}.wav".format(filename.decode()),
                             rate=16000,

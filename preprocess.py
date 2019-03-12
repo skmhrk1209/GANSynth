@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import functools
 import skimage
 import glob
 import sys
@@ -31,7 +32,11 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         stfts = tf.contrib.signal.stft(
             signals=waveforms,
             frame_length=frame_length,
-            frame_step=frame_step
+            frame_step=frame_step,
+            window_fn=functools.partial(
+                tf.contrib.signal.hann_window,
+                periodic=True
+            )
         )
         # =========================================================================================
         # discard_dc
@@ -99,7 +104,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                 waveform = linear_map(waveform.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
                 yield (filename.stem, waveform)
 
-        filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies = convert_to_spectrograms(
+        spectrograms = convert_to_spectrograms(
             waveform_generator=waveform_generator,
             waveform_length=64000,
             sample_rate=16000,
@@ -112,9 +117,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
             try:
                 tf.logging.info("preprocessing started")
                 while True:
-                    for filename, log_mel_magnitude_spectrogram, mel_instantaneous_frequency in zip(
-                        *session.run([filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies])
-                    ):
+                    for filename, log_mel_magnitude_spectrogram, mel_instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
                             fname=log_mel_magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
                             arr=log_mel_magnitude_spectrogram.clip(0.0, 1.0)
