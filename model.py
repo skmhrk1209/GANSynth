@@ -15,9 +15,9 @@ class GANSynth(object):
 
         # =========================================================================================
         real_images, real_labels = real_input_fn()
-        fake_latents, fake_labels = fake_input_fn()
+        latents, fake_labels = fake_input_fn()
         # =========================================================================================
-        fake_images = generator(fake_latents, fake_labels)
+        fake_images = generator(latents, fake_labels)
         # =========================================================================================
         real_logits = discriminator(real_images, real_labels)
         fake_logits = discriminator(fake_images, fake_labels)
@@ -117,7 +117,7 @@ class GANSynth(object):
         self.tensors = Struct(
             real_images=real_images,
             real_labels=real_labels,
-            fake_latents=fake_latents,
+            fake_latents=latents,
             fake_labels=fake_labels,
             fake_images=fake_images,
             generator_loss=generator_loss,
