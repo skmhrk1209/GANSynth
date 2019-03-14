@@ -246,8 +246,7 @@ class GANSynth(object):
                 fake_mean = np.mean(fake_features, axis=0)
                 real_cov = np.cov(real_features, rowvar=False)
                 fake_cov = np.cov(fake_features, rowvar=False)
-                mean_cov = sp.linalg.sqrtm(np.dot(real_cov, fake_cov))
-                return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * mean_cov)
+                return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
 
             tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance(real_features, fake_features)))
 
