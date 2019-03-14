@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import scipy as sp
 import skimage
 from pathlib import Path
 from utils import Struct
@@ -238,11 +239,16 @@ class GANSynth(object):
             except tf.errors.OutOfRangeError:
                 pass
 
-            frechet_classifier_distance = session.run(tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
-                real_activations=tf.convert_to_tensor(np.array(real_features)),
-                generated_activations=tf.convert_to_tensor(np.array(fake_features))
-            ))
-            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance))
+            def frechet_classifier_distance(real_features, fake_features):
+                real_features = np.asanyarray(real_features)
+                fake_features = np.asanyarray(fake_features)
+                real_mean = np.mean(real_features, axis=0)
+                fake_mean = np.mean(fake_features, axis=0)
+                real_cov = np.cov(real_features, rowvar=True)
+                fake_cov = np.cov(fake_features, rowvar=True)
+                return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
+
+            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance(real_features, fake_features)))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
