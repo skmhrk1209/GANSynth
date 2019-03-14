@@ -40,10 +40,11 @@ class GANSynth(object):
         # wasserstein loss
         train_generator_losses = -train_fake_adversarial_logits
         # auxiliary classification loss
-        if hyper_params.generator_classification_weight:
-            train_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=train_fake_labels, logits=train_fake_classification_logits)
-            train_generator_losses += hyper_params.generator_classification_weight * train_generator_classification_losses
+        train_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=train_fake_labels,
+            logits=train_fake_classification_logits
+        )
+        train_generator_losses += hyper_params.generator_classification_weight * train_generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
         train_discriminator_losses = -train_real_adversarial_logits + train_fake_adversarial_logits
@@ -56,16 +57,15 @@ class GANSynth(object):
         train_interpolated_gradient_penalties = tf.square(1.0 - train_interpolated_gradient_norms)
         train_discriminator_losses += hyper_params.gradient_penalty_weight * train_interpolated_gradient_penalties
         # auxiliary classification loss
-        if hyper_params.discriminator_classification_weight:
-            train_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=train_real_labels,
-                logits=train_real_classification_logits
-            )
-            train_discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=train_fake_labels,
-                logits=train_fake_classification_logits
-            )
-            train_discriminator_losses += hyper_params.discriminator_classification_weight * train_discriminator_classification_losses
+        train_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=train_real_labels,
+            logits=train_real_classification_logits
+        )
+        train_discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=train_fake_labels,
+            logits=train_fake_classification_logits
+        )
+        train_discriminator_losses += hyper_params.discriminator_classification_weight * train_discriminator_classification_losses
         # -----------------------------------------------------------------------------------------
         # losss reduction
         train_generator_loss = tf.reduce_mean(train_generator_losses)
@@ -74,10 +74,11 @@ class GANSynth(object):
         # wasserstein loss
         valid_generator_losses = -valid_fake_adversarial_logits
         # auxiliary classification loss
-        if hyper_params.generator_classification_weight:
-            valid_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=valid_fake_labels, logits=valid_fake_classification_logits)
-            valid_generator_losses += hyper_params.generator_classification_weight * valid_generator_classification_losses
+        valid_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=valid_fake_labels,
+            logits=valid_fake_classification_logits
+        )
+        valid_generator_losses += hyper_params.generator_classification_weight * valid_generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
         valid_discriminator_losses = -valid_real_adversarial_logits + valid_fake_adversarial_logits
@@ -90,16 +91,15 @@ class GANSynth(object):
         valid_interpolated_gradient_penalties = tf.square(1.0 - valid_interpolated_gradient_norms)
         valid_discriminator_losses += hyper_params.gradient_penalty_weight * valid_interpolated_gradient_penalties
         # auxiliary classification loss
-        if hyper_params.discriminator_classification_weight:
-            valid_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=valid_real_labels,
-                logits=valid_real_classification_logits
-            )
-            valid_discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=valid_fake_labels,
-                logits=valid_fake_classification_logits
-            )
-            valid_discriminator_losses += hyper_params.discriminator_classification_weight * valid_discriminator_classification_losses
+        valid_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=valid_real_labels,
+            logits=valid_real_classification_logits
+        )
+        valid_discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=valid_fake_labels,
+            logits=valid_fake_classification_logits
+        )
+        valid_discriminator_losses += hyper_params.discriminator_classification_weight * valid_discriminator_classification_losses
         # -----------------------------------------------------------------------------------------
         # losss reduction
         valid_generator_loss = tf.reduce_mean(valid_generator_losses)
