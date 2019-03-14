@@ -65,8 +65,7 @@ with tf.Graph().as_default():
             pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
-            # tf.random_normal([args.batch_size, 256]),
-            tf.tile(tf.random_normal([1, 256]), [len(pitch_counts) - 1, 1]),
+            tf.random_normal([len(pitch_counts) - 1, 256]),
             tf.one_hot(tf.range(min(pitch_counts), max(pitch_counts)), len(pitch_counts))
         ),
         hyper_params=Struct(
