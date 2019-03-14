@@ -236,7 +236,7 @@ class GANSynth(object):
                 fake_logits=[]
             )
 
-            while True:
+            for i in range(100):
                 try:
                     real_features, real_logits, fake_features, fake_logits = session.run([
                         self.tensors.real_features,
@@ -268,7 +268,7 @@ class GANSynth(object):
 
             tf.logging.info("inception_score: {}, frechet_classifier_distance: {}".format(
                 inception_score(
-                    logits=np.asanyarray(predictions.real_logits)[:, 1:]
+                    logits=np.asanyarray(predictions.fake_logits)[:, 1:]
                 ),
                 frechet_classifier_distance(
                     real_features=np.asanyarray(predictions.real_features),
