@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import scipy as sp
 import skimage
+import metrics
 from pathlib import Path
 from utils import Struct
 
@@ -251,27 +252,11 @@ class GANSynth(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-            def inception_score(logits, eps=1e-6):
-                def softmax(logits):
-                    exp = np.exp(logits - np.max(logits, axis=1, keepdims=True))
-                    return exp / np.sum(exp, axis=1, keepdims=True)
-                probabilities = softmax(logits)
-                log = np.log(probabilities + eps) - np.log(np.mean(probabilities, axis=0, keepdims=True) + eps)
-                kl_divergence = np.sum(probabilities * log, axis=1)
-                return np.exp(np.mean(kl_divergence))
-
-            def frechet_classifier_distance(real_features, fake_features):
-                real_mean = np.mean(real_features, axis=0)
-                fake_mean = np.mean(fake_features, axis=0)
-                real_cov = np.cov(real_features, rowvar=False)
-                fake_cov = np.cov(fake_features, rowvar=False)
-                return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
-
             tf.logging.info("inception_score: {}, frechet_classifier_distance: {}".format(
-                inception_score(
+                metrics.inception_score(
                     logits=np.asanyarray(predictions.fake_logits)[:, 1:]
                 ),
-                frechet_classifier_distance(
+                metrics.frechet_classifier_distance(
                     real_features=np.asanyarray(predictions.real_features),
                     fake_features=np.asanyarray(predictions.fake_features)
                 )
