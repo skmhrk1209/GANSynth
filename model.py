@@ -279,5 +279,5 @@ class GANSynth(object):
         ) as session:
 
             while not session.should_stop():
-                session.run(self.operations.discriminator_train_op)
-                session.run(self.operations.generator_train_op)
+                for operation in self.operations.items():
+                    session.run(operation)
