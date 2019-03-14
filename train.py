@@ -91,9 +91,9 @@ with tf.Graph().as_default():
             discriminator_learning_rate=8e-4,
             discriminator_beta1=0.0,
             discriminator_beta2=0.99,
-            one_centered_gradient_penalty_weight=10.0,
-            generator_auxiliary_classification_weight=10.0,
-            discriminator_auxiliary_classification_weight=10.0,
+            gradient_penalty_weight=10.0,
+            generator_classification_weight=10.0,
+            discriminator_classification_weight=10.0,
         )
     )
     gan_synth.train(

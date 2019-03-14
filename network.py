@@ -184,14 +184,21 @@ class PGGAN(object):
                         # label conditioning from
                         # [Conditional Image Synthesis With Auxiliary Classifier GANs]
                         # (https://arxiv.org/pdf/1610.09585.pdf)
-                        logits = dense(
+                        adversarial_logits = dense(
                             inputs=features,
                             units=labels.shape[1] + 1,
                             use_bias=True,
                             variance_scale=1,
                             scale_weight=True
                         )
-                    return features, logits
+                        classification_logits = dense(
+                            inputs=features,
+                            units=labels.shape[1] + 1,
+                            use_bias=True,
+                            variance_scale=1,
+                            scale_weight=True
+                        )
+                    return features, adversarial_logits, classification_logits
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
