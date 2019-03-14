@@ -285,5 +285,5 @@ class GANSynth(object):
         ) as session:
 
             while not session.should_stop():
-                for operation in self.operations.items():
+                for operation in self.operations.values():
                     session.run(operation)
