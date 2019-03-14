@@ -135,7 +135,10 @@ class GANSynth(object):
         # scaffold
         self.scaffold = tf.train.Scaffold(
             init_op=tf.global_variables_initializer(),
-            local_init_op=tf.tables_initializer(),
+            local_init_op=tf.group(
+                tf.local_variables_initializer(),
+                tf.tables_initializer()
+            ),
             saver=tf.train.Saver(
                 max_to_keep=10,
                 keep_checkpoint_every_n_hours=12,
@@ -225,15 +228,15 @@ class GANSynth(object):
             config=config
         ) as session:
 
+            real_features = []
+            fake_features = []
             try:
-                real_features = []
-                fake_features = []
                 while True:
                     real_features += list(session.run(self.tensors.real_features))
                     fake_features += list(session.run(self.tensors.fake_features))
             except tf.errors.OutOfRangeError:
                 tf.logging.info("frechet_classifier_distance: {}".format(session.run(
-                    tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features)
+                    tf.contrib.gan.eval.frechet_classifier_distance_from_activations(np.array(real_features), np.array(fake_features))
                 )))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
