@@ -114,9 +114,10 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
 
         with tf.Session() as session:
 
-            try:
-                tf.logging.info("preprocessing started")
-                while True:
+            tf.logging.info("preprocessing started")
+
+            while True:
+                try:
                     for filename, log_mel_magnitude_spectrogram, mel_instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
                             fname=log_mel_magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
@@ -126,8 +127,10 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                             fname=mel_instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
                             arr=linear_map(mel_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                         )
-            except tf.errors.OutOfRangeError:
-                tf.logging.info("preprocessing completed")
+                except tf.errors.OutOfRangeError:
+                    pass
+
+            tf.logging.info("preprocessing completed")
 
 
 if __name__ == "__main__":

@@ -117,17 +117,20 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
 
         with tf.Session() as session:
 
-            try:
-                tf.logging.info("postprocessing started")
-                while True:
+            tf.logging.info("postprocessing started")
+
+            while True:
+                try:
                     for filename, waveform in zip(*session.run(waveforms)):
                         scipy.io.wavfile.write(
                             filename=waveform_dir / "{}.wav".format(filename.decode()),
                             rate=16000,
                             data=waveform
                         )
-            except tf.errors.OutOfRangeError:
-                tf.logging.info("postprocessing completed")
+                except tf.errors.OutOfRangeError:
+                    pass
+
+            tf.logging.info("postprocessing completed")
 
 
 if __name__ == "__main__":

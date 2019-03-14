@@ -14,7 +14,7 @@ def inception_score(logits, eps=1e-6):
     return np.exp(np.mean(kl_divergence))
 
 
-def frechet_classifier_distance(real_features, fake_features):
+def frechet_inception_distance(real_features, fake_features):
     real_mean = np.mean(real_features, axis=0)
     fake_mean = np.mean(fake_features, axis=0)
     real_cov = np.cov(real_features, rowvar=False)

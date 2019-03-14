@@ -111,8 +111,8 @@ class GANSynth(object):
             var_list=discriminator_variables
         )
         # =========================================================================================
-        # frechet_classifier_distance
-        frechet_classifier_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features)
+        # frechet_inception_distance
+        frechet_inception_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features)
         # =========================================================================================
         # tensors and operations used later
         self.operations = Struct(
@@ -131,7 +131,7 @@ class GANSynth(object):
             fake_logits=fake_logits,
             generator_loss=generator_loss,
             discriminator_loss=discriminator_loss,
-            frechet_classifier_distance=frechet_classifier_distance
+            frechet_inception_distance=frechet_inception_distance
         )
         # =========================================================================================
         # scaffold
@@ -204,7 +204,7 @@ class GANSynth(object):
                         global_step=tf.train.get_global_step(),
                         generator_loss=self.tensors.generator_loss,
                         discriminator_loss=self.tensors.discriminator_loss,
-                        frechet_classifier_distance=self.tensors.frechet_classifier_distance
+                        frechet_inception_distance=self.tensors.frechet_inception_distance
                     ),
                     every_n_iter=log_step_count_steps,
                 ),
@@ -252,11 +252,11 @@ class GANSynth(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-            tf.logging.info("inception_score: {}, frechet_classifier_distance: {}".format(
+            tf.logging.info("inception_score: {}, frechet_inception_distance: {}".format(
                 metrics.inception_score(
                     logits=np.asanyarray(predictions.fake_logits)[:, 1:]
                 ),
-                metrics.frechet_classifier_distance(
+                metrics.frechet_inception_distance(
                     real_features=np.asanyarray(predictions.real_features),
                     fake_features=np.asanyarray(predictions.fake_features)
                 )
