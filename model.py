@@ -253,7 +253,6 @@ class GANSynth(object):
 
             def inception_score(logits):
                 def softmax(logits):
-                    logits = np.asanyarray(logits)
                     exp = np.exp(logits - np.max(logits, axis=1, keepdims=True))
                     return exp / np.sum(exp, axis=1, keepdims=True)
                 probabilities = softmax(logits)
@@ -261,8 +260,6 @@ class GANSynth(object):
                 return np.exp(np.mean(kl_divergence))
 
             def frechet_classifier_distance(real_features, fake_features):
-                real_features = np.asanyarray(real_features)
-                fake_features = np.asanyarray(fake_features)
                 real_mean = np.mean(real_features, axis=0)
                 fake_mean = np.mean(fake_features, axis=0)
                 real_cov = np.cov(real_features, rowvar=False)
@@ -270,8 +267,13 @@ class GANSynth(object):
                 return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
 
             tf.logging.info("inception_score: {}, frechet_classifier_distance: {}".format(
-                inception_score(predictions.fake_logits),
-                frechet_classifier_distance(predictions.real_features, predictions.real_features)
+                inception_score(
+                    logits=np.asanyarray(predictions.fake_logits)[:, 1:]
+                ),
+                frechet_classifier_distance(
+                    real_features=np.asanyarray(predictions.real_features),
+                    fake_features=np.asanyarray(predictions.fake_features)
+                )
             ))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
