@@ -254,6 +254,7 @@ class GANSynth(object):
             def inception_score(logits):
                 def softmax(logits):
                     exp = np.exp(logits)
+                    print(logits.min())
                     print(np.any(exp == 0))
                     return exp / np.sum(exp, axis=1, keepdims=True)
                 probabilities = softmax(logits)
