@@ -240,10 +240,10 @@ class GANSynth(object):
 
             print(tf.convert_to_tensor(real_features).shape)
             frechet_classifier_distance = session.run(tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
-                real_activations=tf.convert_to_tensor(real_features),
-                generated_activations=tf.convert_to_tensor(fake_features)
+                real_activations=tf.convert_to_tensor(np.array(real_features)),
+                generated_activations=tf.convert_to_tensor(np.array(fake_features))
             ))
-            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance.shape))
+            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
