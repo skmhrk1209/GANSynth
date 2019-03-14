@@ -239,8 +239,8 @@ class GANSynth(object):
                 pass
 
             frechet_classifier_distance = session.run(tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
-                real_activations=np.array(real_features),
-                generated_activations=np.array(fake_features)
+                real_activations=tf.convert_to_tensor(real_features),
+                generated_activations=tf.convert_to_tensor(fake_features)
             ))
             tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance))
 
