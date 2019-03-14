@@ -246,7 +246,18 @@ class GANSynth(object):
                 fake_mean = np.mean(fake_features, axis=0)
                 real_cov = np.cov(real_features, rowvar=True)
                 fake_cov = np.cov(fake_features, rowvar=True)
-                return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
+                mean_cov = sp.linalg.sqrtm(np.dot(real_cov, fake_cov))
+                if not np.isfinite(mean_cov).all():
+                    real_offset = np.eye(real_cov.shape) * 1e-6
+                    fake_offset = np.eye(fake_cov.shape) * 1e-6
+                    mean_cov = sp.linalg.sqrtm(np.dot(real_cov + real_offset, fake_cov + fake_offset))
+
+                # numerical error might give slight imaginary component
+                if np.iscomplexobj(mean_cov):
+                    if not np.allclose(np.diagonal(mean_cov).imag, 0, atol=1e-3):
+                        raise ValueError("Imaginary component {}".format(np.max(np.abs(mean_cov.imag))))
+                    mean_cov = mean_cov.real
+                return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * mean_cov)
 
             tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance(real_features, fake_features)))
 
