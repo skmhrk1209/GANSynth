@@ -251,14 +251,12 @@ class GANSynth(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-            def inception_score(logits):
+            def inception_score(logits, eps=1e-6):
                 def softmax(logits):
-                    exp = np.exp(logits)
-                    print(logits.min())
-                    print(np.any(exp == 0))
+                    exp = np.exp(logits - np.max(logits, axis=1, keepdims=True))
                     return exp / np.sum(exp, axis=1, keepdims=True)
                 probabilities = softmax(logits)
-                log = np.log(probabilities) - np.log(np.mean(probabilities, axis=0, keepdims=True))
+                log = np.log(probabilities + eps) - np.log(np.mean(probabilities, axis=0, keepdims=True) + eps)
                 kl_divergence = np.sum(probabilities * log, axis=1)
                 return np.exp(np.mean(kl_divergence))
 
