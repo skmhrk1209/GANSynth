@@ -277,13 +277,15 @@ class GANSynth(object):
                 )
             ))
 
+        logits = tf.contrib.gan.eval.classifier_score_from_logits(np.asanyarray(predictions.fake_logits)[:, 1:])
+
         with tf.train.SingularMonitoredSession(
             scaffold=self.scaffold,
             checkpoint_dir=model_dir,
             config=config
         ) as session:
 
-            print(session.run(tf.contrib.gan.eval.classifier_score_from_logits(np.asanyarray(predictions.fake_logits)[:, 1:])))
+            print(session.run(logits))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
