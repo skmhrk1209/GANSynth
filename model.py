@@ -250,7 +250,7 @@ class GANSynth(object):
 
             tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance(real_features, fake_features)))
 
-        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(tf.convert_to_tensor(real_features), tf.convert_to_tensor(fake_features))
+        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(tf.convert_to_tensor(np.array(real_features)), tf.convert_to_tensor(np.array(fake_features)))
 
         with tf.train.SingularMonitoredSession(
             scaffold=self.scaffold,
