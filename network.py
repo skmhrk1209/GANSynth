@@ -180,10 +180,7 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         features = tf.nn.leaky_relu(features)
-                    with tf.variable_scope("logits"):
-                        # label conditioning from
-                        # [Conditional Image Synthesis With Auxiliary Classifier GANs]
-                        # (https://arxiv.org/pdf/1610.09585.pdf)
+                    with tf.variable_scope("adversarial_logits"):
                         adversarial_logits = dense(
                             inputs=features,
                             units=1,
@@ -191,6 +188,10 @@ class PGGAN(object):
                             variance_scale=1,
                             scale_weight=True
                         )
+                    with tf.variable_scope("classification_logits"):
+                        # label conditioning from
+                        # [Conditional Image Synthesis With Auxiliary Classifier GANs]
+                        # (https://arxiv.org/pdf/1610.09585.pdf)
                         classification_logits = dense(
                             inputs=features,
                             units=labels.shape[1],
