@@ -134,8 +134,8 @@ class GANSynth(object):
         # =========================================================================================
         # tensors and operations used later
         self.operations = Struct(
-            generator_train_op=generator_train_op,
-            discriminator_train_op=discriminator_train_op
+            discriminator_train_op=discriminator_train_op,
+            generator_train_op=generator_train_op
         )
         self.tensors = Struct(
             global_step=tf.train.get_global_step(),
