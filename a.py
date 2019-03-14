@@ -40,8 +40,6 @@ with open("pitch_counts.pickle", "rb") as file:
 
 with tf.Graph().as_default():
 
-    tf.set_random_seed(0)
-
     pggan = PGGAN(
         min_resolution=[2, 16],
         max_resolution=[128, 1024],
@@ -59,14 +57,17 @@ with tf.Graph().as_default():
         real_input_fn=functools.partial(
             nsynth_input_fn,
             filenames=args.filenames,
-            batch_size=len(pitch_counts) - 1,
+            batch_size=args.batch_size,
             num_epochs=None,
             shuffle=True,
             pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
-            tf.random_normal([len(pitch_counts) - 1, 256]),
-            tf.one_hot(tf.range(min(pitch_counts), max(pitch_counts)), len(pitch_counts))
+            tf.random_normal([args.batch_size, 256]),
+            tf.one_hot(tf.reshape(tf.multinomial(
+                logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
+                num_samples=args.batch_size
+            ), [args.batch_size]), len(pitch_counts))
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
