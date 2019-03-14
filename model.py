@@ -252,7 +252,10 @@ class GANSynth(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-            tf.logging.info("inception_score: {}, frechet_inception_distance: {}".format(
+            tf.logging.info("real_inception_score: {}, fake_inception_score: {}, frechet_inception_distance: {}".format(
+                metrics.inception_score(
+                    logits=np.asanyarray(predictions.real_logits)[:, 1:]
+                ),
                 metrics.inception_score(
                     logits=np.asanyarray(predictions.fake_logits)[:, 1:]
                 ),
