@@ -250,16 +250,6 @@ class GANSynth(object):
 
             tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance(real_features, fake_features)))
 
-        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(tf.convert_to_tensor(np.array(real_features)), tf.convert_to_tensor(np.array(fake_features)))
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=self.scaffold,
-            checkpoint_dir=model_dir,
-            config=config
-        ) as session:
-
-            tf.logging.info("frechet_classifier_distance: {}".format(session.run(fid)))
-
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
         sample_dir1 = Path(sample_dir1)
