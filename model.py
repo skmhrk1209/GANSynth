@@ -238,7 +238,8 @@ class GANSynth(object):
             except tf.errors.OutOfRangeError:
                 pass
 
-            print(tf.convert_to_tensor(real_features).shape)
+            print(tf.convert_to_tensor(np.array(real_features)).shape)
+            return
             frechet_classifier_distance = session.run(tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
                 real_activations=tf.convert_to_tensor(np.array(real_features)),
                 generated_activations=tf.convert_to_tensor(np.array(fake_features))
