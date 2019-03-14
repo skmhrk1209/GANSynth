@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth-test/examples.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
+parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--gpu", type=str, default="0")
 args = parser.parse_args()
 
