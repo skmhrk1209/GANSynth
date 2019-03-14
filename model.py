@@ -277,7 +277,7 @@ class GANSynth(object):
                 )
             ))
 
-        logits = tf.contrib.gan.eval.classifier_score_from_logits(np.asanyarray(predictions.fake_logits)[:, 1:])
+        logits = tf.contrib.gan.eval.classifier_score_from_logits(tf.convert_to_tensor(predictions.fake_logits)[:, 1:])
 
         with tf.train.SingularMonitoredSession(
             scaffold=self.scaffold,
