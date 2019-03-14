@@ -25,7 +25,7 @@ parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument("--sample_dir1", type=str, default="samples/log_mel_magnitude_spectrograms")
 parser.add_argument("--sample_dir2", type=str, default="samples/mel_instantaneous_frequencies")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth-train/examples.tfrecord"])
-parser.add_argument("--batch_size", type=int, default=len(pitch_counts))
+parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--steps", type=int, default=10)
 parser.add_argument("--train", action="store_true")
@@ -59,7 +59,7 @@ with tf.Graph().as_default():
         real_input_fn=functools.partial(
             nsynth_input_fn,
             filenames=args.filenames,
-            batch_size=args.batch_size,
+            batch_size=len(pitch_counts),
             num_epochs=None,
             shuffle=True,
             pitches=pitch_counts.keys()
