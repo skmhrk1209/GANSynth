@@ -230,14 +230,30 @@ class GANSynth(object):
         ) as session:
 
             real_features = []
+            real_logits = []
             fake_features = []
+            fake_logits = []
 
             try:
                 while True:
-                    real_features += list(session.run(self.tensors.real_features))
-                    fake_features += list(session.run(self.tensors.fake_features))
+                    real_feature, real_logit, fake_feature, fake_logit = session.run([
+                        self.tensors.real_features,
+                        self.tensors.real_logits,
+                        self.tensors.fake_features,
+                        self.tensors.fake_logits
+                    ])
+                    real_features += list(real_feature)
+                    real_logits += list(real_logit)
+                    fake_features += list(fake_feature)
+                    fake_logits += list(fake_logit)
             except tf.errors.OutOfRangeError:
                 pass
+
+            def inception_score(logits):
+                logits = np.asanyarray(logits)
+                probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
+                kl_divergence = np.sum(probabilities * np.log(probabilities / np.mean(probabilities, axis=0)), axis=1)
+                return np.exp(np.mean(kl_divergence))
 
             def frechet_classifier_distance(real_features, fake_features):
                 real_features = np.asanyarray(real_features)
@@ -248,7 +264,10 @@ class GANSynth(object):
                 fake_cov = np.cov(fake_features, rowvar=False)
                 return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
 
-            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance(real_features, fake_features)))
+            tf.logging.info("inception_score: {}, frechet_classifier_distance: {}".format(
+                inception_score(fake_logits),
+                frechet_classifier_distance(real_features, fake_features)
+            ))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
