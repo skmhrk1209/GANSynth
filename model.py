@@ -236,9 +236,9 @@ class GANSynth(object):
                     fake_features += list(session.run(self.tensors.fake_features))
             except tf.errors.OutOfRangeError:
                 print("comp")
-                tf.logging.info("frechet_classifier_distance: {}".format(session.run(
-                    tf.contrib.gan.eval.frechet_classifier_distance_from_activations(np.array(real_features), np.array(fake_features))
-                )))
+            tf.logging.info("frechet_classifier_distance: {}".format(session.run(
+                tf.contrib.gan.eval.frechet_classifier_distance_from_activations(np.array(real_features), np.array(fake_features))
+            )))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
