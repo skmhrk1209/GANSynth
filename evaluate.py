@@ -65,8 +65,8 @@ with tf.Graph().as_default():
     )
 
     fake_images = pggan.generator(fake_latents, fake_labels)
-    real_features, real_logits = pggan.discriminator(real_images, real_labels)
-    fake_features, fake_logits = pggan.discriminator(fake_images, fake_labels)
+    real_features, _, real_classification_logits = pggan.discriminator(real_images, real_labels)
+    fake_features, _, fake_classification_logits = pggan.discriminator(fake_images, fake_labels)
 
     with tf.train.SingularMonitoredSession(
         scaffold=tf.train.Scaffold(
@@ -95,7 +95,7 @@ with tf.Graph().as_default():
         real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
 
         tf.logging.info("real_inception_score: {}, fake_inception_score: {}, frechet_inception_distance: {}".format(
-            metrics.inception_score(real_logits[:, 1:]),
-            metrics.inception_score(fake_logits[:, 1:]),
+            metrics.inception_score(real_classification_logits),
+            metrics.inception_score(fake_classification_logits),
             metrics.frechet_inception_distance(real_features, fake_features)
         ))
