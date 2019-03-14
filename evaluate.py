@@ -69,13 +69,6 @@ with tf.Graph().as_default():
     fake_features, fake_logits = pggan.discriminator(fake_images, fake_labels)
 
     with tf.train.SingularMonitoredSession(
-        scaffold=tf.train.Scaffold(
-            init_op=tf.global_variables_initializer(),
-            local_init_op=tf.group(
-                tf.local_variables_initializer(),
-                tf.tables_initializer()
-            )
-        ),
         checkpoint_dir=args.model_dir,
         config=tf.ConfigProto(
             gpu_options=tf.GPUOptions(
