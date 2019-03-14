@@ -87,6 +87,7 @@ with tf.Graph().as_default():
             return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
         for image in enumerate(session.run(images)):
+            print(image)
             skimage.io.imsave(
                 fname=sample_dir1 / "{}.jpg".format(len(list(sample_dir1.glob("*.jpg")))),
                 arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
