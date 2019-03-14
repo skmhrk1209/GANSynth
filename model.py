@@ -270,8 +270,8 @@ class GANSynth(object):
                 return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - 2 * sp.linalg.sqrtm(np.dot(real_cov, fake_cov)))
 
             tf.logging.info("inception_score: {}, frechet_classifier_distance: {}".format(
-                inception_score(predictions.real_logits),
-                frechet_classifier_distance(predictions.real_features, predictions.fake_features)
+                inception_score(predictions.fake_logits),
+                frechet_classifier_distance(predictions.real_features, predictions.real_features)
             ))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
