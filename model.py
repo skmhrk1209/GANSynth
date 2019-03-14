@@ -236,7 +236,7 @@ class GANSynth(object):
                 fake_logits=[]
             )
 
-            for i in range(10):
+            while True:
                 try:
                     real_features, real_logits, fake_features, fake_logits = session.run([
                         self.tensors.real_features,
