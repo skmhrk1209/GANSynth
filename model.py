@@ -138,29 +138,12 @@ class GANSynth(object):
             discriminator_train_op=discriminator_train_op
         )
         self.tensors = Struct(
-            train_real_images=train_real_images,
-            train_real_labels=train_real_labels,
-            train_real_features=train_real_features,
-            train_real_logits=train_real_logits,
-            train_fake_latents=train_fake_latents,
-            train_fake_labels=train_fake_labels,
-            train_fake_images=train_fake_images,
-            train_fake_features=train_fake_features,
-            train_fake_logits=train_fake_logits,
+            global_step=tf.train.get_global_step(),
             train_generator_loss=train_generator_loss,
             train_discriminator_loss=train_discriminator_loss,
             train_real_inception_score=train_real_inception_score,
             train_fake_inception_score=train_fake_inception_score,
             train_frechet_inception_distance=train_frechet_inception_distance,
-            valid_real_images=valid_real_images,
-            valid_real_labels=valid_real_labels,
-            valid_real_features=valid_real_features,
-            valid_real_logits=valid_real_logits,
-            valid_fake_latents=valid_fake_latents,
-            valid_fake_labels=valid_fake_labels,
-            valid_fake_images=valid_fake_images,
-            valid_fake_features=valid_fake_features,
-            valid_fake_logits=valid_fake_logits,
             valid_generator_loss=valid_generator_loss,
             valid_discriminator_loss=valid_discriminator_loss,
             valid_real_inception_score=valid_real_inception_score,
@@ -282,19 +265,7 @@ class GANSynth(object):
                     scaffold=self.scaffold
                 ),
                 tf.train.LoggingTensorHook(
-                    tensors=dict(
-                        global_step=tf.train.get_global_step(),
-                        train_generator_loss=self.tensors.train_generator_loss,
-                        train_discriminator_loss=self.tensors.train_discriminator_loss,
-                        train_real_inception_score=self.tensors.train_real_inception_score,
-                        train_fake_inception_score=self.tensors.train_fake_inception_score,
-                        train_frechet_inception_distance=self.tensors.train_frechet_inception_distance,
-                        valid_generator_loss=self.tensors.valid_generator_loss,
-                        valid_discriminator_loss=self.tensors.valid_discriminator_loss,
-                        valid_real_inception_score=self.tensors.valid_real_inception_score,
-                        valid_fake_inception_score=self.tensors.valid_fake_inception_score,
-                        valid_frechet_inception_distance=self.tensors.valid_frechet_inception_distance
-                    ),
+                    tensors=self.tensors,
                     every_n_iter=log_step_count_steps,
                 ),
                 tf.train.StepCounterHook(
