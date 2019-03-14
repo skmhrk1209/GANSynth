@@ -175,8 +175,8 @@ class GANSynth(object):
                     tensor=discriminator_loss
                 ),
                 tf.summary.scalar(
-                    name="frechet_classifier_distance",
-                    tensor=frechet_classifier_distance
+                    name="frechet_inception_distance",
+                    tensor=frechet_inception_distance
                 )
             ])
         )
