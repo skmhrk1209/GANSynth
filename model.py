@@ -19,8 +19,8 @@ class GANSynth(object):
         # =========================================================================================
         fake_images = generator(fake_latents, fake_labels)
         # =========================================================================================
-        real_logits = discriminator(real_images, real_labels)
-        fake_logits = discriminator(fake_images, fake_labels)
+        real_features, real_logits = discriminator(real_images, real_labels)
+        fake_features, fake_logits = discriminator(fake_images, fake_labels)
         '''
         # =========================================================================================
         # Non-Saturating + Zero-Centered Gradient Penalty
@@ -71,7 +71,7 @@ class GANSynth(object):
             def lerp(a, b, t): return t * a + (1. - t) * b
             coefficients = tf.random_uniform([tf.shape(real_images)[0], 1, 1, 1])
             interpolated_images = lerp(real_images, fake_images, coefficients)
-            interpolated_logits = discriminator(interpolated_images, real_labels)
+            interpolated_features, interpolated_logits = discriminator(interpolated_images, real_labels)
             interpolated_gradients = tf.gradients(interpolated_logits[:, 0], [interpolated_images])[0]
             interpolated_gradient_penalties = tf.square(1. - tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8))
             discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
@@ -109,6 +109,9 @@ class GANSynth(object):
             var_list=discriminator_variables
         )
         # =========================================================================================
+        # frechet_classifier_distance
+        frechet_classifier_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features)
+        # =========================================================================================
         # tensors and operations used later
         self.operations = Struct(
             generator_train_op=generator_train_op,
@@ -117,11 +120,16 @@ class GANSynth(object):
         self.tensors = Struct(
             real_images=real_images,
             real_labels=real_labels,
+            real_features=real_features,
+            real_logits=real_logits,
             fake_latents=fake_latents,
             fake_labels=fake_labels,
             fake_images=fake_images,
+            fake_features=fake_features,
+            fake_logits=fake_logits,
             generator_loss=generator_loss,
-            discriminator_loss=discriminator_loss
+            discriminator_loss=discriminator_loss,
+            frechet_classifier_distance=frechet_classifier_distance
         )
         # =========================================================================================
         # scaffold
@@ -161,6 +169,10 @@ class GANSynth(object):
                     name="discriminator_loss",
                     tensor=discriminator_loss
                 ),
+                tf.summary.scalar(
+                    name="frechet_classifier_distance",
+                    tensor=frechet_classifier_distance
+                )
             ])
         )
 
@@ -186,7 +198,8 @@ class GANSynth(object):
                     tensors=dict(
                         global_step=tf.train.get_global_step(),
                         generator_loss=self.tensors.generator_loss,
-                        discriminator_loss=self.tensors.discriminator_loss
+                        discriminator_loss=self.tensors.discriminator_loss,
+                        frechet_classifier_distance=self.tensors.frechet_classifier_distance
                     ),
                     every_n_iter=log_step_count_steps,
                 ),
@@ -204,7 +217,27 @@ class GANSynth(object):
                 session.run(self.operations.discriminator_train_op)
                 session.run(self.operations.generator_train_op)
 
-    def generate(self, model_dir, sample_dir1, sample_dir2, steps, config):
+    def evaluate(self, model_dir, config):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=self.scaffold,
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            real_features = []
+            fake_features = []
+
+            try:
+                while True:
+                    real_features += list(session.run(self.tensor.real_features))
+                    fake_features += list(session.run(self.tensor.fake_features))
+            except tf.errors.OutOfRangeError:
+                frechet_classifier_distance = session.run(
+                    tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features))
+                tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance))
+
+    def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
         sample_dir1 = Path(sample_dir1)
         sample_dir2 = Path(sample_dir2)
@@ -220,13 +253,12 @@ class GANSynth(object):
             config=config
         ) as session:
 
-            for i in range(steps):
-                for image in session.run(self.tensors.fake_images):
-                    skimage.io.imsave(
-                        fname=sample_dir1 / "{}.jpg".format(len(list(sample_dir1.glob("*.jpg")))),
-                        arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
-                    )
-                    skimage.io.imsave(
-                        fname=sample_dir2 / "{}.jpg".format(len(list(sample_dir2.glob("*.jpg")))),
-                        arr=linear_map(image[1], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
-                    )
+            for image in enumerate(session.run(self.tensors.fake_images)):
+                skimage.io.imsave(
+                    fname=sample_dir1 / "{}.jpg".format(len(list(sample_dir1.glob("*.jpg")))),
+                    arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                )
+                skimage.io.imsave(
+                    fname=sample_dir2 / "{}.jpg".format(len(list(sample_dir2.glob("*.jpg")))),
+                    arr=linear_map(image[1], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                )

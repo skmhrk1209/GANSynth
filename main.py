@@ -27,8 +27,8 @@ parser.add_argument("--sample_dir2", type=str, default="samples/mel_instantaneou
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth-train/examples.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
-parser.add_argument("--steps", type=int, default=10)
 parser.add_argument("--train", action="store_true")
+parser.add_argument("--evaluate", action="store_true")
 parser.add_argument("--generate", action="store_true")
 parser.add_argument("--gpu", type=str, default="0")
 args = parser.parse_args()
@@ -85,9 +85,7 @@ with tf.Graph().as_default():
             discriminator_auxiliary_classification_weight=10.0,
         )
     )
-
     if args.train:
-
         gan_synth.train(
             model_dir=args.model_dir,
             total_steps=args.total_steps,
@@ -101,14 +99,21 @@ with tf.Graph().as_default():
                 )
             )
         )
-
+    if args.evaluate:
+        gan_synth.evaluate(
+            model_dir=args.model_dir,
+            config=tf.ConfigProto(
+                gpu_options=tf.GPUOptions(
+                    visible_device_list=args.gpu,
+                    allow_growth=True
+                )
+            )
+        )
     if args.generate:
-
         gan_synth.generate(
             model_dir=args.model_dir,
             sample_dir1=args.sample_dir1,
             sample_dir2=args.sample_dir2,
-            steps=args.steps,
             config=tf.ConfigProto(
                 gpu_options=tf.GPUOptions(
                     visible_device_list=args.gpu,

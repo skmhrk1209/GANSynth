@@ -61,6 +61,7 @@ class PGGAN(object):
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
+                    return inputs
                 else:
                     with tf.variable_scope("upscale_conv"):
                         inputs = conv2d_transpose(
@@ -85,7 +86,7 @@ class PGGAN(object):
                         )
                         inputs = tf.nn.leaky_relu(inputs)
                         inputs = pixel_norm(inputs)
-                return inputs
+                    return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
@@ -171,41 +172,42 @@ class PGGAN(object):
                         inputs = tf.nn.leaky_relu(inputs)
                     with tf.variable_scope("dense"):
                         inputs = tf.layers.flatten(inputs)
-                        inputs = dense(
+                        features = dense(
                             inputs=inputs,
                             units=channels(depth - 1),
                             use_bias=True,
                             variance_scale=2,
                             scale_weight=True
                         )
-                        inputs = tf.nn.leaky_relu(inputs)
+                        features = tf.nn.leaky_relu(features)
                     with tf.variable_scope("logits"):
                         '''
                         # label conditioning from
                         # [Which Training Methods for GANs do actually Converge?]
                         # (https://arxiv.org/pdf/1801.04406.pdf)
-                        inputs = dense(
-                            inputs=inputs,
+                        logits = dense(
+                            inputs=features,
                             units=labels.shape[1],
                             use_bias=True,
                             variance_scale=1,
                             scale_weight=True
                         )
-                        inputs = tf.gather_nd(
-                            params=inputs,
+                        logits = tf.gather_nd(
+                            params=logits,
                             indices=tf.where(tf.equal(labels, 1))
                         )
                         '''
                         # label conditioning from
                         # [Conditional Image Synthesis With Auxiliary Classifier GANs]
                         # (https://arxiv.org/pdf/1610.09585.pdf)
-                        inputs = dense(
-                            inputs=inputs,
+                        logits = dense(
+                            inputs=features,
                             units=labels.shape[1] + 1,
                             use_bias=True,
                             variance_scale=1,
                             scale_weight=True
                         )
+                    return features, logits
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
@@ -228,7 +230,7 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                return inputs
+                    return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
