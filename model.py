@@ -236,8 +236,8 @@ class GANSynth(object):
                 fake_logits=[]
             )
 
-            try:
-                while True:
+            while True:
+                try:
                     real_features, real_logits, fake_features, fake_logits = session.run([
                         self.tensors.real_features,
                         self.tensors.real_logits,
@@ -248,12 +248,15 @@ class GANSynth(object):
                     predictions.real_logits += list(real_logits)
                     predictions.fake_features += list(fake_features)
                     predictions.fake_logits += list(fake_logits)
-            except tf.errors.OutOfRangeError:
-                pass
+                except tf.errors.OutOfRangeError:
+                    break
 
             def inception_score(logits):
+                def softmax(logits):
+                    logits -= logits.max()
+                    return np.exp(logits) / np.exp(logits).sum(axis=1, keepdims=True)
                 logits = np.asanyarray(logits)
-                probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
+                probabilities = softmax(logits)
                 kl_divergence = np.sum(probabilities * np.log(probabilities / np.mean(probabilities, axis=0)), axis=1)
                 return np.exp(np.mean(kl_divergence))
 
