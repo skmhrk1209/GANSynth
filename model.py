@@ -255,9 +255,13 @@ class GANSynth(object):
                 def softmax(logits):
                     exp = np.exp(logits - np.max(logits, axis=1, keepdims=True))
                     return exp / np.sum(exp, axis=1, keepdims=True)
+                print(np.any(np.isnan(logits)))
                 probabilities = softmax(logits)
+                print(np.any(np.isnan(probabilities)))
                 log = np.log(probabilities) - np.log(np.mean(probabilities, axis=0, keepdims=True))
+                print(np.any(np.isnan(log)))
                 kl_divergence = np.sum(probabilities * log, axis=1)
+                print(np.any(np.isnan(kl_divergence)))
                 return np.exp(np.mean(kl_divergence))
 
             def frechet_classifier_distance(real_features, fake_features):
