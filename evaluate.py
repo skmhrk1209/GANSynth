@@ -88,11 +88,11 @@ with tf.Graph().as_default():
         def generator():
             while True:
                 try:
-                    yield session.run([real_features, real_logits, fake_features, fake_logits])
+                    yield session.run([real_features, real_classification_logits, fake_features, fake_classification_logits])
                 except tf.errors.OutOfRangeError:
                     break
 
-        real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
+        real_features, real_classification_logits, fake_features, fake_classification_logits = map(np.concatenate, zip(*generator()))
 
         tf.logging.info("real_inception_score: {}, fake_inception_score: {}, frechet_inception_distance: {}".format(
             metrics.inception_score(real_classification_logits),
