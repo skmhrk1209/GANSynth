@@ -37,9 +37,6 @@ with tf.Graph().as_default():
 
     tf.set_random_seed(0)
 
-    with open("pitch_counts.pickle", "rb") as file:
-        pitch_counts = pickle.load(file)
-
     pggan = PGGAN(
         min_resolution=[2, 16],
         max_resolution=[128, 1024],
@@ -50,6 +47,9 @@ with tf.Graph().as_default():
             y=args.total_steps
         ), tf.float32)
     )
+
+    with open("pitch_counts.pickle", "rb") as file:
+        pitch_counts = pickle.load(file)
 
     gan_synth = GANSynth(
         generator=pggan.generator,
