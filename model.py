@@ -243,7 +243,7 @@ class GANSynth(object):
                 real_activations=tf.convert_to_tensor(real_features),
                 generated_activations=tf.convert_to_tensor(fake_features)
             ))
-            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance))
+            tf.logging.info("frechet_classifier_distance: {}".format(frechet_classifier_distance.shape))
 
     def generate(self, model_dir, sample_dir1, sample_dir2, config):
 
