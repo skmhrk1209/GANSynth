@@ -186,14 +186,14 @@ class PGGAN(object):
                         # (https://arxiv.org/pdf/1610.09585.pdf)
                         adversarial_logits = dense(
                             inputs=features,
-                            units=labels.shape[1] + 1,
+                            units=1,
                             use_bias=True,
                             variance_scale=1,
                             scale_weight=True
                         )
                         classification_logits = dense(
                             inputs=features,
-                            units=labels.shape[1] + 1,
+                            units=labels.shape[1],
                             use_bias=True,
                             variance_scale=1,
                             scale_weight=True
