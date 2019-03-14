@@ -7,49 +7,26 @@ from pathlib import Path
 from utils import Struct
 
 
-def linear_map(inputs, in_min, in_max, out_min, out_max):
-    return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-
-
 class GANSynth(object):
 
-    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
-
+    def __init__(self, generator, discriminator, train_real_input_fn, train_fake_input_fn,
+                 valid_real_input_fn, valid_fake_input_fn, hyper_params):
         # =========================================================================================
-        real_images, real_labels = real_input_fn()
-        fake_latents, fake_labels = fake_input_fn()
-        # =========================================================================================
-        fake_images = generator(fake_latents, fake_labels)
-        # =========================================================================================
-        real_features, real_logits = discriminator(real_images, real_labels)
-        fake_features, fake_logits = discriminator(fake_images, fake_labels)
-        '''
-        # =========================================================================================
-        # Non-Saturating + Zero-Centered Gradient Penalty
-        # [Generative Adversarial Networks]
-        # (https://arxiv.org/abs/1406.2661)
-        # [Which Training Methods for GANs do actually Converge?]
-        # (https://arxiv.org/pdf/1801.04406.pdf)
+        train_real_images, train_real_labels = train_real_input_fn()
+        train_fake_latents, train_fake_labels = train_fake_input_fn()
         # -----------------------------------------------------------------------------------------
-        # generator
-        # non-saturating loss
-        generator_losses = tf.nn.softplus(-fake_logits)
+        valid_real_images, valid_real_labels = valid_real_input_fn()
+        valid_fake_latents, valid_fake_labels = valid_fake_input_fn()
+        # =========================================================================================
+        train_fake_images = generator(train_fake_latents, train_fake_labels)
         # -----------------------------------------------------------------------------------------
-        # discriminator
-        # non-saturating loss
-        discriminator_losses = tf.nn.softplus(-real_logits)
-        discriminator_losses += tf.nn.softplus(fake_logits)
-        # zero-centerd gradient penalty on data distribution
-        if hyper_params.real_zero_centered_gradient_penalty_weight:
-            real_gradients = tf.gradients(real_logits, [real_images])[0]
-            real_gradient_penalties = tf.reduce_sum(tf.square(real_gradients), axis=[1, 2, 3])
-            discriminator_losses += 0.5 * hyper_params.real_zero_centered_gradient_penalty_weight * real_gradient_penalties
-        # zero-centerd gradient penalty on generator distribution
-        if hyper_params.fake_zero_centered_gradient_penalty_weight:
-            fake_gradients = tf.gradients(fake_logits, [fake_images])[0]
-            fake_gradient_penalties = tf.reduce_sum(tf.square(fake_gradients), axis=[1, 2, 3])
-            discriminator_losses += 0.5 * hyper_params.fake_zero_centered_gradient_penalty_weight * fake_gradient_penalties
-        '''
+        valid_fake_images = generator(valid_fake_latents, valid_fake_labels)
+        # =========================================================================================
+        train_real_features, train_real_logits = discriminator(train_real_images, train_real_labels)
+        train_fake_features, train_fake_logits = discriminator(train_fake_images, train_fake_labels)
+        # -----------------------------------------------------------------------------------------
+        valid_real_features, valid_real_logits = discriminator(valid_real_images, valid_real_labels)
+        valid_fake_features, valid_fake_logits = discriminator(valid_fake_images, valid_fake_labels)
         # =========================================================================================
         # WGAN-GP + ACGAN
         # [Improved Training of Wasserstein GANs]
@@ -57,35 +34,69 @@ class GANSynth(object):
         # [Conditional Image Synthesis With Auxiliary Classifier GANs]
         # (https://arxiv.org/pdf/1610.09585.pdf)
         # -----------------------------------------------------------------------------------------
-        # generator
         # wasserstein loss
-        generator_losses = -fake_logits[:, 0]
+        train_generator_losses = -train_fake_logits[:, 0]
         # auxiliary classification loss
         if hyper_params.generator_auxiliary_classification_weight:
-            generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=fake_labels, logits=fake_logits[:, 1:])
-            generator_losses += hyper_params.generator_auxiliary_classification_weight * generator_auxiliary_classification_losses
+            train_generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=train_fake_labels, logits=train_fake_logits[:, 1:])
+            train_generator_losses += hyper_params.generator_auxiliary_classification_weight * train_generator_auxiliary_classification_losses
         # -----------------------------------------------------------------------------------------
-        # discriminator
         # wasserstein loss
-        discriminator_losses = -real_logits[:, 0] + fake_logits[:, 0]
+        valid_generator_losses = -valid_fake_logits[:, 0]
+        # auxiliary classification loss
+        if hyper_params.generator_auxiliary_classification_weight:
+            valid_generator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=valid_fake_labels, logits=valid_fake_logits[:, 1:])
+            valid_generator_losses += hyper_params.generator_auxiliary_classification_weight * valid_generator_auxiliary_classification_losses
+        # -----------------------------------------------------------------------------------------
+        # wasserstein loss
+        train_discriminator_losses = -train_real_logits[:, 0] + train_fake_logits[:, 0]
         # one-centered gradient penalty
         if hyper_params.one_centered_gradient_penalty_weight:
             def lerp(a, b, t): return t * a + (1. - t) * b
-            coefficients = tf.random_uniform([tf.shape(real_images)[0], 1, 1, 1])
-            interpolated_images = lerp(real_images, fake_images, coefficients)
-            interpolated_features, interpolated_logits = discriminator(interpolated_images, real_labels)
-            interpolated_gradients = tf.gradients(interpolated_logits[:, 0], [interpolated_images])[0]
-            interpolated_gradient_penalties = tf.square(1. - tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8))
-            discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * interpolated_gradient_penalties
+            coefficients = tf.random_uniform([tf.shape(train_real_images)[0], 1, 1, 1])
+            train_interpolated_images = lerp(train_real_images, train_fake_images, coefficients)
+            train_interpolated_features, train_interpolated_logits = discriminator(train_interpolated_images, train_real_labels)
+            train_interpolated_gradients = tf.gradients(train_interpolated_logits[:, 0], [train_interpolated_images])[0]
+            train_interpolated_gradient_penalties = tf.square(
+                1. - tf.sqrt(tf.reduce_sum(tf.square(train_interpolated_gradients), axis=[1, 2, 3]) + 1e-8))
+            train_discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * train_interpolated_gradient_penalties
         # auxiliary classification loss
         if hyper_params.discriminator_auxiliary_classification_weight:
-            discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=real_labels, logits=real_logits[:, 1:])
-            discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(labels=fake_labels, logits=fake_logits[:, 1:])
-            discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * discriminator_auxiliary_classification_losses
+            train_discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=train_real_labels, logits=train_real_logits[:, 1:])
+            train_discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=train_fake_labels, logits=train_fake_logits[:, 1:])
+            train_discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * train_discriminator_auxiliary_classification_losses
+        # -----------------------------------------------------------------------------------------
+        # wasserstein loss
+        valid_discriminator_losses = -valid_real_logits[:, 0] + valid_fake_logits[:, 0]
+        # one-centered gradient penalty
+        if hyper_params.one_centered_gradient_penalty_weight:
+            def lerp(a, b, t): return t * a + (1. - t) * b
+            coefficients = tf.random_uniform([tf.shape(valid_real_images)[0], 1, 1, 1])
+            valid_interpolated_images = lerp(valid_real_images, valid_fake_images, coefficients)
+            valid_interpolated_features, valid_interpolated_logits = discriminator(valid_interpolated_images, valid_real_labels)
+            valid_interpolated_gradients = tf.gradients(valid_interpolated_logits[:, 0], [valid_interpolated_images])[0]
+            valid_interpolated_gradient_penalties = tf.square(
+                1. - tf.sqrt(tf.reduce_sum(tf.square(valid_interpolated_gradients), axis=[1, 2, 3]) + 1e-8))
+            valid_discriminator_losses += hyper_params.one_centered_gradient_penalty_weight * valid_interpolated_gradient_penalties
+        # auxiliary classification loss
+        if hyper_params.discriminator_auxiliary_classification_weight:
+            valid_discriminator_auxiliary_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=valid_real_labels, logits=valid_real_logits[:, 1:])
+            valid_discriminator_auxiliary_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=valid_fake_labels, logits=valid_fake_logits[:, 1:])
+            valid_discriminator_losses += hyper_params.discriminator_auxiliary_classification_weight * valid_discriminator_auxiliary_classification_losses
         # =========================================================================================
         # losss reduction
-        generator_loss = tf.reduce_mean(generator_losses)
-        discriminator_loss = tf.reduce_mean(discriminator_losses)
+        train_generator_loss = tf.reduce_mean(train_generator_losses)
+        train_discriminator_loss = tf.reduce_mean(train_discriminator_losses)
+        # -----------------------------------------------------------------------------------------
+        # losss reduction
+        valid_generator_loss = tf.reduce_mean(valid_generator_losses)
+        valid_discriminator_loss = tf.reduce_mean(valid_discriminator_losses)
         # =========================================================================================
         generator_optimizer = tf.train.AdamOptimizer(
             learning_rate=hyper_params.generator_learning_rate,
@@ -102,17 +113,24 @@ class GANSynth(object):
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
         # =========================================================================================
         generator_train_op = generator_optimizer.minimize(
-            loss=generator_loss,
+            loss=train_generator_loss,
             var_list=generator_variables,
             global_step=tf.train.get_or_create_global_step()
         )
         discriminator_train_op = discriminator_optimizer.minimize(
-            loss=discriminator_loss,
+            loss=train_discriminator_loss,
             var_list=discriminator_variables
         )
         # =========================================================================================
         # frechet_inception_distance
-        frechet_inception_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features)
+        train_real_inception_score = tf.contrib.gan.eval.classifier_score_from_logits(train_real_logits)
+        train_fake_inception_score = tf.contrib.gan.eval.classifier_score_from_logits(train_fake_logits)
+        train_frechet_inception_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(train_real_features, train_fake_features)
+        # -----------------------------------------------------------------------------------------
+        # frechet_inception_distance
+        valid_real_inception_score = tf.contrib.gan.eval.classifier_score_from_logits(valid_real_logits)
+        valid_fake_inception_score = tf.contrib.gan.eval.classifier_score_from_logits(valid_fake_logits)
+        valid_frechet_inception_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(valid_real_features, valid_fake_features)
         # =========================================================================================
         # tensors and operations used later
         self.operations = Struct(
@@ -120,18 +138,34 @@ class GANSynth(object):
             discriminator_train_op=discriminator_train_op
         )
         self.tensors = Struct(
-            real_images=real_images,
-            real_labels=real_labels,
-            real_features=real_features,
-            real_logits=real_logits,
-            fake_latents=fake_latents,
-            fake_labels=fake_labels,
-            fake_images=fake_images,
-            fake_features=fake_features,
-            fake_logits=fake_logits,
-            generator_loss=generator_loss,
-            discriminator_loss=discriminator_loss,
-            frechet_inception_distance=frechet_inception_distance
+            train_real_images=train_real_images,
+            train_real_labels=train_real_labels,
+            train_real_features=train_real_features,
+            train_real_logits=train_real_logits,
+            train_fake_latents=train_fake_latents,
+            train_fake_labels=train_fake_labels,
+            train_fake_images=train_fake_images,
+            train_fake_features=train_fake_features,
+            train_fake_logits=train_fake_logits,
+            train_generator_loss=train_generator_loss,
+            train_discriminator_loss=train_discriminator_loss,
+            train_real_inception_score=train_real_inception_score,
+            train_fake_inception_score=train_fake_inception_score,
+            train_frechet_inception_distance=train_frechet_inception_distance,
+            valid_real_images=valid_real_images,
+            valid_real_labels=valid_real_labels,
+            valid_real_features=valid_real_features,
+            valid_real_logits=valid_real_logits,
+            valid_fake_latents=valid_fake_latents,
+            valid_fake_labels=valid_fake_labels,
+            valid_fake_images=valid_fake_images,
+            valid_fake_features=valid_fake_features,
+            valid_fake_logits=valid_fake_logits,
+            valid_generator_loss=valid_generator_loss,
+            valid_discriminator_loss=valid_discriminator_loss,
+            valid_real_inception_score=valid_real_inception_score,
+            valid_fake_inception_score=valid_fake_inception_score,
+            valid_frechet_inception_distance=valid_frechet_inception_distance
         )
         # =========================================================================================
         # scaffold
@@ -147,37 +181,85 @@ class GANSynth(object):
             ),
             summary_op=tf.summary.merge([
                 tf.summary.image(
-                    name="real_log_mel_magnitude_spectrograms",
-                    tensor=real_images[:, 0, ..., tf.newaxis],
+                    name="train_real_log_mel_magnitude_spectrograms",
+                    tensor=train_real_images[:, 0, ..., tf.newaxis],
                     max_outputs=4
                 ),
                 tf.summary.image(
-                    name="real_mel_instantaneous_frequencies",
-                    tensor=real_images[:, 1, ..., tf.newaxis],
+                    name="train_real_mel_instantaneous_frequencies",
+                    tensor=train_real_images[:, 1, ..., tf.newaxis],
                     max_outputs=4
                 ),
                 tf.summary.image(
-                    name="fake_log_mel_magnitude_spectrograms",
-                    tensor=fake_images[:, 0, ..., tf.newaxis],
+                    name="train_fake_log_mel_magnitude_spectrograms",
+                    tensor=train_fake_images[:, 0, ..., tf.newaxis],
                     max_outputs=4
                 ),
                 tf.summary.image(
-                    name="fake_mel_instantaneous_frequencies",
-                    tensor=fake_images[:, 1, ..., tf.newaxis],
+                    name="train_fake_mel_instantaneous_frequencies",
+                    tensor=train_fake_images[:, 1, ..., tf.newaxis],
                     max_outputs=4
                 ),
                 tf.summary.scalar(
-                    name="generator_loss",
-                    tensor=generator_loss
+                    name="train_generator_loss",
+                    tensor=train_generator_loss
                 ),
                 tf.summary.scalar(
-                    name="discriminator_loss",
-                    tensor=discriminator_loss
+                    name="train_discriminator_loss",
+                    tensor=train_discriminator_loss
                 ),
                 tf.summary.scalar(
-                    name="frechet_inception_distance",
-                    tensor=frechet_inception_distance
-                )
+                    name="train_real_inception_score",
+                    tensor=train_real_inception_score
+                ),
+                tf.summary.scalar(
+                    name="train_fake_inception_score",
+                    tensor=train_fake_inception_score
+                ),
+                tf.summary.scalar(
+                    name="train_frechet_inception_distance",
+                    tensor=train_frechet_inception_distance
+                ),
+                tf.summary.image(
+                    name="valid_real_log_mel_magnitude_spectrograms",
+                    tensor=valid_real_images[:, 0, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.image(
+                    name="valid_real_mel_instantaneous_frequencies",
+                    tensor=valid_real_images[:, 1, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.image(
+                    name="valid_fake_log_mel_magnitude_spectrograms",
+                    tensor=valid_fake_images[:, 0, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.image(
+                    name="valid_fake_mel_instantaneous_frequencies",
+                    tensor=valid_fake_images[:, 1, ..., tf.newaxis],
+                    max_outputs=4
+                ),
+                tf.summary.scalar(
+                    name="valid_generator_loss",
+                    tensor=valid_generator_loss
+                ),
+                tf.summary.scalar(
+                    name="valid_discriminator_loss",
+                    tensor=valid_discriminator_loss
+                ),
+                tf.summary.scalar(
+                    name="valid_real_inception_score",
+                    tensor=valid_real_inception_score
+                ),
+                tf.summary.scalar(
+                    name="valid_fake_inception_score",
+                    tensor=valid_fake_inception_score
+                ),
+                tf.summary.scalar(
+                    name="valid_frechet_inception_distance",
+                    tensor=valid_frechet_inception_distance
+                ),
             ])
         )
 
@@ -202,9 +284,16 @@ class GANSynth(object):
                 tf.train.LoggingTensorHook(
                     tensors=dict(
                         global_step=tf.train.get_global_step(),
-                        generator_loss=self.tensors.generator_loss,
-                        discriminator_loss=self.tensors.discriminator_loss,
-                        frechet_inception_distance=self.tensors.frechet_inception_distance
+                        train_generator_loss=self.tensors.train_generator_loss,
+                        train_discriminator_loss=self.tensors.train_discriminator_loss,
+                        train_real_inception_score=self.tensors.train_real_inception_score,
+                        train_fake_inception_score=self.tensors.train_fake_inception_score,
+                        train_frechet_inception_distance=self.tensors.train_frechet_inception_distance,
+                        valid_generator_loss=self.tensors.valid_generator_loss,
+                        valid_discriminator_loss=self.tensors.valid_discriminator_loss,
+                        valid_real_inception_score=self.tensors.valid_real_inception_score,
+                        valid_fake_inception_score=self.tensors.valid_fake_inception_score,
+                        valid_frechet_inception_distance=self.tensors.valid_frechet_inception_distance
                     ),
                     every_n_iter=log_step_count_steps,
                 ),
@@ -221,72 +310,3 @@ class GANSynth(object):
             while not session.should_stop():
                 session.run(self.operations.discriminator_train_op)
                 session.run(self.operations.generator_train_op)
-
-    def evaluate(self, model_dir, config):
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=self.scaffold,
-            checkpoint_dir=model_dir,
-            config=config
-        ) as session:
-
-            predictions = Struct(
-                real_features=[],
-                real_logits=[],
-                fake_features=[],
-                fake_logits=[]
-            )
-
-            while True:
-                try:
-                    real_features, real_logits, fake_features, fake_logits = session.run([
-                        self.tensors.real_features,
-                        self.tensors.real_logits,
-                        self.tensors.fake_features,
-                        self.tensors.fake_logits
-                    ])
-                    predictions.real_features += list(real_features)
-                    predictions.real_logits += list(real_logits)
-                    predictions.fake_features += list(fake_features)
-                    predictions.fake_logits += list(fake_logits)
-                except tf.errors.OutOfRangeError:
-                    break
-
-            tf.logging.info("real_inception_score: {}, fake_inception_score: {}, frechet_inception_distance: {}".format(
-                metrics.inception_score(
-                    logits=np.asanyarray(predictions.real_logits)[:, 1:]
-                ),
-                metrics.inception_score(
-                    logits=np.asanyarray(predictions.fake_logits)[:, 1:]
-                ),
-                metrics.frechet_inception_distance(
-                    real_features=np.asanyarray(predictions.real_features),
-                    fake_features=np.asanyarray(predictions.fake_features)
-                )
-            ))
-
-    def generate(self, model_dir, sample_dir1, sample_dir2, config):
-
-        sample_dir1 = Path(sample_dir1)
-        sample_dir2 = Path(sample_dir2)
-
-        if not sample_dir1.exists():
-            sample_dir1.mkdir()
-        if not sample_dir2.exists():
-            sample_dir2.mkdir()
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=self.scaffold,
-            checkpoint_dir=model_dir,
-            config=config
-        ) as session:
-
-            for image in enumerate(session.run(self.tensors.fake_images)):
-                skimage.io.imsave(
-                    fname=sample_dir1 / "{}.jpg".format(len(list(sample_dir1.glob("*.jpg")))),
-                    arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
-                )
-                skimage.io.imsave(
-                    fname=sample_dir2 / "{}.jpg".format(len(list(sample_dir2.glob("*.jpg")))),
-                    arr=linear_map(image[1], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
-                )
