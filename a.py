@@ -67,7 +67,7 @@ with tf.Graph().as_default():
         fake_input_fn=lambda: (
             # tf.random_normal([args.batch_size, 256]),
             tf.tile(tf.random_normal([1, 256]), [len(pitch_counts), 1]),
-            tf.one_hot(tf.range(min(pitch_counts), max(pitch_counts)))
+            tf.one_hot(tf.range(min(pitch_counts), max(pitch_counts)), len(pitch_counts))
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
