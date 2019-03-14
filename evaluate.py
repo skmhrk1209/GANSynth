@@ -84,37 +84,17 @@ with tf.Graph().as_default():
         )
     ) as session:
 
-        real_feature_batches = []
-        real_logit_batches = [],
-        fake_feature_batches = [],
-        fake_logit_batches = []
+        def generator():
+            while True:
+                try:
+                    yield session.run([real_features, real_logits, fake_features, fake_logits])
+                except tf.errors.OutOfRangeError:
+                    break
 
-        while True:
-            try:
-                real_feature_batch, real_logit_batch, fake_feature_batch, fake_logit_batch = session.run([
-                    real_features, real_logits, fake_features, fake_logits
-                ])
-                real_feature_batches.append(real_feature_batch)
-                real_logit_batches.append(real_logit_batch)
-                fake_feature_batches.append(fake_feature_batch)
-                fake_logit_batches.append(fake_logit_batch)
-            except tf.errors.OutOfRangeError:
-                break
-
-        real_features = np.concatenate(real_feature_batches, axis=0)
-        real_logits = np.concatenate(real_logit_batches, axis=0)
-        fake_features = np.concatenate(fake_feature_batches, axis=0)
-        fake_logits = np.concatenate(fake_logit_batches, axis=0)
+        real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
 
         tf.logging.info("real_inception_score: {}, fake_inception_score: {}, frechet_inception_distance: {}".format(
-            metrics.inception_score(
-                logits=np.asanyarray(real_logits)[:, 1:]
-            ),
-            metrics.inception_score(
-                logits=np.asanyarray(fake_logits)[:, 1:]
-            ),
-            metrics.frechet_inception_distance(
-                real_features=np.asanyarray(real_features),
-                fake_features=np.asanyarray(fake_features)
-            )
+            metrics.inception_score(real_logits[:, 1:]),
+            metrics.inception_score(fake_logits[:, 1:]),
+            metrics.frechet_inception_distance(real_features, fake_features)
         ))

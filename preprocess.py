@@ -128,7 +128,7 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
                             arr=linear_map(mel_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                         )
                 except tf.errors.OutOfRangeError:
-                    pass
+                    break
 
             tf.logging.info("preprocessing completed")
 

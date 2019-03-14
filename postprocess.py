@@ -128,7 +128,7 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
                             data=waveform
                         )
                 except tf.errors.OutOfRangeError:
-                    pass
+                    break
 
             tf.logging.info("postprocessing completed")
 
