@@ -235,6 +235,7 @@ class GANSynth(object):
                     real_features += list(session.run(self.tensors.real_features))
                     fake_features += list(session.run(self.tensors.fake_features))
             except tf.errors.OutOfRangeError:
+                print(np.array(real_features).shape)
                 tf.logging.info("frechet_classifier_distance: {}".format(session.run(
                     tf.contrib.gan.eval.frechet_classifier_distance_from_activations(np.array(real_features), np.array(fake_features))
                 )))
