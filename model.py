@@ -236,7 +236,7 @@ class GANSynth(object):
                 fake_logits=[]
             )
 
-            for i in range(100):
+            while True:
                 try:
                     real_features, real_logits, fake_features, fake_logits = session.run([
                         self.tensors.real_features,
@@ -256,7 +256,8 @@ class GANSynth(object):
                     exp = np.exp(logits - np.max(logits, axis=1, keepdims=True))
                     return exp / np.sum(exp, axis=1, keepdims=True)
                 probabilities = softmax(logits)
-                kl_divergence = np.sum(probabilities * np.log(probabilities / np.mean(probabilities, axis=0)), axis=1)
+                kl_divergence = probabilities * (np.log(probabilities) - np.log(np.mean(probabilities, axis=0, keepdims=True)))
+                kl_divergence = np.sum(kl_divergence, axis=1)
                 return np.exp(np.mean(kl_divergence))
 
             def frechet_classifier_distance(real_features, fake_features):
