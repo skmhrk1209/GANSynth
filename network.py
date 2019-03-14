@@ -181,22 +181,6 @@ class PGGAN(object):
                         )
                         features = tf.nn.leaky_relu(features)
                     with tf.variable_scope("logits"):
-                        '''
-                        # label conditioning from
-                        # [Which Training Methods for GANs do actually Converge?]
-                        # (https://arxiv.org/pdf/1801.04406.pdf)
-                        logits = dense(
-                            inputs=features,
-                            units=labels.shape[1],
-                            use_bias=True,
-                            variance_scale=1,
-                            scale_weight=True
-                        )
-                        logits = tf.gather_nd(
-                            params=logits,
-                            indices=tf.where(tf.equal(labels, 1))
-                        )
-                        '''
                         # label conditioning from
                         # [Conditional Image Synthesis With Auxiliary Classifier GANs]
                         # (https://arxiv.org/pdf/1610.09585.pdf)
