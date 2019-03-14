@@ -230,8 +230,8 @@ class GANSynth(object):
 
             try:
                 while True:
-                    real_features += list(session.run(self.tensor.real_features))
-                    fake_features += list(session.run(self.tensor.fake_features))
+                    real_features += list(session.run(self.tensors.real_features))
+                    fake_features += list(session.run(self.tensors.fake_features))
             except tf.errors.OutOfRangeError:
                 frechet_classifier_distance = session.run(
                     tf.contrib.gan.eval.frechet_classifier_distance_from_activations(real_features, fake_features))
