@@ -24,6 +24,8 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
+parser.add_argument("--sample_dir1", type=str, default="samples/log_mel_magnitude_spectrograms")
+parser.add_argument("--sample_dir2", type=str, default="samples/mel_instantaneous_frequencies")
 parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth-test/examples.tfrecord"])
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
@@ -75,8 +77,8 @@ with tf.Graph().as_default():
         )
     ) as session:
 
-        sample_dir1 = Path("samples/log_mel_magnitude_spectrograms")
-        sample_dir2 = Path("samples/mel_instantaneous_frequencies")
+        sample_dir1 = Path(args.sample_dir1)
+        sample_dir2 = Path(args.sample_dir1)
 
         if not sample_dir1.exists():
             sample_dir1.mkdir()
