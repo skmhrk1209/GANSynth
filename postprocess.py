@@ -131,12 +131,8 @@ def main(magnitude_spectrogram_dir, instantaneous_frequency_dir, waveform_dir):
 
 if __name__ == "__main__":
 
-    tf.logging.info("postprocessing started")
-
     main(
         waveform_dir="samples/waveforms",
         magnitude_spectrogram_dir="samples/magnitude_spectrograms",
         instantaneous_frequency_dir="samples/instantaneous_frequencies"
     )
-
-    tf.logging.info("postprocessing completed")

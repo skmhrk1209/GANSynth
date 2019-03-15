@@ -131,8 +131,6 @@ def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
 
 if __name__ == "__main__":
 
-    tf.logging.info("preprocessing started")
-
     main(
         waveform_dir="nsynth-train/audio",
         magnitude_spectrogram_dir="nsynth-train/magnitude_spectrograms",
@@ -148,5 +146,3 @@ if __name__ == "__main__":
         magnitude_spectrogram_dir="nsynth-test/magnitude_spectrograms",
         instantaneous_frequency_dir="nsynth-test/instantaneous_frequencies"
     )
-
-    tf.logging.info("preprocessing completed")
