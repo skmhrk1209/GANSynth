@@ -192,7 +192,7 @@ class GANSynth(object):
                     output_dir=model_dir,
                     save_steps=save_train_summary_steps,
                     summary_op=tf.summary.merge([
-                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.rank == 0 else
+                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.ndims == 0 else
                         tf.summary.image(name=name, tensor=tensor, max_outputs=4)
                         for name, tensor in self.tensors.items() if "train" in name
                     ])
@@ -201,7 +201,7 @@ class GANSynth(object):
                     output_dir=model_dir,
                     save_steps=save_valid_summary_steps,
                     summary_op=tf.summary.merge([
-                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.rank == 0 else
+                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.ndims == 0 else
                         tf.summary.image(name=name, tensor=tensor, max_outputs=4)
                         for name, tensor in self.tensors.items() if "valid" in name
                     ])
@@ -209,14 +209,14 @@ class GANSynth(object):
                 tf.train.LoggingTensorHook(
                     tensors={
                         name: tensor for name, tensor in self.tensors.items()
-                        if "train" in name and tensor.shape.rank == 0
+                        if "train" in name and tensor.shape.ndims == 0
                     },
                     every_n_iter=log_train_tensor_steps,
                 ),
                 tf.train.LoggingTensorHook(
                     tensors={
                         name: tensor for name, tensor in self.tensors.items()
-                        if "valid" in name and tensor.shape.rank == 0
+                        if "valid" in name and tensor.shape.ndims == 0
                     },
                     every_n_iter=log_valid_tensor_steps,
                 ),
