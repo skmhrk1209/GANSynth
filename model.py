@@ -145,138 +145,80 @@ class GANSynth(object):
         )
         self.tensors = Struct(
             global_step=tf.train.get_global_step(),
+            train_real_magnitude_spectrograms=train_real_images[:, 0, ..., tf.newaxis],
+            train_real_instantaneous_frequencies=train_real_images[:, 1, ..., tf.newaxis],
+            train_fake_magnitude_spectrograms=train_fake_images[:, 0, ..., tf.newaxis],
+            train_fake_instantaneous_frequencies=train_fake_images[:, 1, ..., tf.newaxis],
             train_generator_loss=train_generator_loss,
             train_discriminator_loss=train_discriminator_loss,
             train_real_inception_score=train_real_inception_score,
             train_fake_inception_score=train_fake_inception_score,
             train_frechet_inception_distance=train_frechet_inception_distance,
+            valid_real_magnitude_spectrograms=valid_real_images[:, 0, ..., tf.newaxis],
+            valid_real_instantaneous_frequencies=valid_real_images[:, 1, ..., tf.newaxis],
+            valid_fake_magnitude_spectrograms=valid_fake_images[:, 0, ..., tf.newaxis],
+            valid_fake_instantaneous_frequencies=valid_fake_images[:, 1, ..., tf.newaxis],
             valid_generator_loss=valid_generator_loss,
             valid_discriminator_loss=valid_discriminator_loss,
             valid_real_inception_score=valid_real_inception_score,
             valid_fake_inception_score=valid_fake_inception_score,
             valid_frechet_inception_distance=valid_frechet_inception_distance
         )
-        # =========================================================================================
-        # scaffold
-        self.scaffold = tf.train.Scaffold(
-            init_op=tf.global_variables_initializer(),
-            local_init_op=tf.group(
-                tf.local_variables_initializer(),
-                tf.tables_initializer()
-            ),
-            saver=tf.train.Saver(
-                max_to_keep=10,
-                keep_checkpoint_every_n_hours=12,
-            ),
-            summary_op=tf.summary.merge([
-                tf.summary.image(
-                    name="train_real_log_mel_magnitude_spectrograms",
-                    tensor=train_real_images[:, 0, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.image(
-                    name="train_real_mel_instantaneous_frequencies",
-                    tensor=train_real_images[:, 1, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.image(
-                    name="train_fake_log_mel_magnitude_spectrograms",
-                    tensor=train_fake_images[:, 0, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.image(
-                    name="train_fake_mel_instantaneous_frequencies",
-                    tensor=train_fake_images[:, 1, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.scalar(
-                    name="train_generator_loss",
-                    tensor=train_generator_loss
-                ),
-                tf.summary.scalar(
-                    name="train_discriminator_loss",
-                    tensor=train_discriminator_loss
-                ),
-                tf.summary.scalar(
-                    name="train_real_inception_score",
-                    tensor=train_real_inception_score
-                ),
-                tf.summary.scalar(
-                    name="train_fake_inception_score",
-                    tensor=train_fake_inception_score
-                ),
-                tf.summary.scalar(
-                    name="train_frechet_inception_distance",
-                    tensor=train_frechet_inception_distance
-                ),
-                tf.summary.image(
-                    name="valid_real_log_mel_magnitude_spectrograms",
-                    tensor=valid_real_images[:, 0, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.image(
-                    name="valid_real_mel_instantaneous_frequencies",
-                    tensor=valid_real_images[:, 1, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.image(
-                    name="valid_fake_log_mel_magnitude_spectrograms",
-                    tensor=valid_fake_images[:, 0, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.image(
-                    name="valid_fake_mel_instantaneous_frequencies",
-                    tensor=valid_fake_images[:, 1, ..., tf.newaxis],
-                    max_outputs=4
-                ),
-                tf.summary.scalar(
-                    name="valid_generator_loss",
-                    tensor=valid_generator_loss
-                ),
-                tf.summary.scalar(
-                    name="valid_discriminator_loss",
-                    tensor=valid_discriminator_loss
-                ),
-                tf.summary.scalar(
-                    name="valid_real_inception_score",
-                    tensor=valid_real_inception_score
-                ),
-                tf.summary.scalar(
-                    name="valid_fake_inception_score",
-                    tensor=valid_fake_inception_score
-                ),
-                tf.summary.scalar(
-                    name="valid_frechet_inception_distance",
-                    tensor=valid_frechet_inception_distance
-                ),
-            ])
-        )
 
     def train(self, model_dir, total_steps, save_checkpoint_steps,
-              save_summary_steps, log_step_count_steps, config):
+              save_train_summary_steps, save_valid_summary_steps,
+              log_train_tensor_steps, log_valid_tensor_steps, config):
 
         with tf.train.SingularMonitoredSession(
-            scaffold=self.scaffold,
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
             checkpoint_dir=model_dir,
             config=config,
             hooks=[
                 tf.train.CheckpointSaverHook(
                     checkpoint_dir=model_dir,
                     save_steps=save_checkpoint_steps,
-                    scaffold=self.scaffold,
+                    saver=tf.train.Saver(
+                        max_to_keep=10,
+                        keep_checkpoint_every_n_hours=12,
+                    )
                 ),
                 tf.train.SummarySaverHook(
                     output_dir=model_dir,
-                    save_steps=save_summary_steps,
-                    scaffold=self.scaffold
+                    save_steps=save_train_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.rank == 0 else
+                        tf.summary.image(name=name, tensor=tensor, max_outputs=4)
+                        for name, tensor in self.tensors.items() if "train" in name
+                    ])
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=save_valid_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.rank == 0 else
+                        tf.summary.image(name=name, tensor=tensor, max_outputs=4)
+                        for name, tensor in self.tensors.items() if "valid" in name
+                    ])
                 ),
                 tf.train.LoggingTensorHook(
-                    tensors=self.tensors,
-                    every_n_iter=log_step_count_steps,
+                    tensors={
+                        name: tensor for name, tensor in self.tensors.items()
+                        if "train" in name and tensor.shape.rank == 0
+                    },
+                    every_n_iter=log_train_tensor_steps,
                 ),
-                tf.train.StepCounterHook(
-                    output_dir=model_dir,
-                    every_n_steps=log_step_count_steps,
+                tf.train.LoggingTensorHook(
+                    tensors={
+                        name: tensor for name, tensor in self.tensors.items()
+                        if "valid" in name and tensor.shape.rank == 0
+                    },
+                    every_n_iter=log_valid_tensor_steps,
                 ),
                 tf.train.StopAtStepHook(
                     last_step=total_steps
@@ -285,5 +227,5 @@ class GANSynth(object):
         ) as session:
 
             while not session.should_stop():
-                for operation in self.operations.values():
+                for name, operation in self.operations.items():
                     session.run(operation)

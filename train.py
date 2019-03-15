@@ -99,9 +99,11 @@ with tf.Graph().as_default():
     gan_synth.train(
         model_dir=args.model_dir,
         total_steps=args.total_steps,
-        save_checkpoint_steps=1000,
-        save_summary_steps=100,
-        log_step_count_steps=100,
+        save_checkpoint_steps=10000,
+        save_train_summary_steps=100,
+        save_valid_summary_steps=1000,
+        log_train_tensor_steps=100,
+        log_valid_tensor_steps=1000,
         config=tf.ConfigProto(
             gpu_options=tf.GPUOptions(
                 visible_device_list=args.gpu,
