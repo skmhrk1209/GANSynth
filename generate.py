@@ -24,8 +24,6 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument("--sample_dir1", type=str, default="samples/log_mel_magnitude_spectrograms")
-parser.add_argument("--sample_dir2", type=str, default="samples/mel_instantaneous_frequencies")
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--gpu", type=str, default="0")
@@ -76,23 +74,23 @@ with tf.Graph().as_default():
         )
     ) as session:
 
-        sample_dir1 = Path(args.sample_dir1)
-        sample_dir2 = Path(args.sample_dir1)
+        magnitude_spectrogram_dir = Path("samples/magnitude_spectrograms")
+        instantaneous_frequency_dir = Path("samples/instantaneous_frequencies")
 
-        if not sample_dir1.exists():
-            sample_dir1.mkdir()
-        if not sample_dir2.exists():
-            sample_dir2.mkdir()
+        if not magnitude_spectrogram_dir.exists():
+            magnitude_spectrogram_dir.mkdir(parents=True, exist_ok=True)
+        if not instantaneous_frequency_dir.exists():
+            instantaneous_frequency_dir.mkdir(parents=True, exist_ok=True)
 
         def linear_map(inputs, in_min, in_max, out_min, out_max):
             return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
         for image in session.run(images):
             skimage.io.imsave(
-                fname=sample_dir1 / "{}.jpg".format(len(list(sample_dir1.glob("*.jpg")))),
+                fname=magnitude_spectrogram_dir / "{}.jpg".format(len(list(magnitude_spectrogram_dir.glob("*.jpg")))),
                 arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
             )
             skimage.io.imsave(
-                fname=sample_dir2 / "{}.jpg".format(len(list(sample_dir2.glob("*.jpg")))),
+                fname=instantaneous_frequency_dir / "{}.jpg".format(len(list(instantaneous_frequency_dir.glob("*.jpg")))),
                 arr=linear_map(image[1], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
             )

@@ -91,11 +91,15 @@ if __name__ == "__main__":
         )
     ]
 
-    with open("train_examples.json", "w") as file:
+    with open("nsynth_train_examples.json", "w") as file:
         json.dump(dict(train_ground_truth), file, indent=4)
 
-    with open("valid_examples", "w") as file:
+    with open("nsynth_valid_examples", "w") as file:
         json.dump(dict(valid_ground_truth), file, indent=4)
 
-    with open("test_examples.json", "w") as file:
+    with open("nsynth_test_examples.json", "w") as file:
         json.dump(dict(test_ground_truth), file, indent=4)
+
+    main("nsynth_train_examples.json", "nsynth_train_examples.tfrecord")
+    main("nsynth_valid_examples.json", "nsynth_valid_examples.tfrecord")
+    main("nsynth_test_examples.json", "nsynth_test_examples.tfrecord")

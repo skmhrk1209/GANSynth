@@ -22,8 +22,8 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument('--train_filenames', type=str, nargs="+", default=["nsynth-train/examples.tfrecord"])
-parser.add_argument('--valid_filenames', type=str, nargs="+", default=["nsynth-valid/examples.tfrecord"])
+parser.add_argument('--train_filenames', type=str, nargs="+", default=["nsynth_train_examples.tfrecord"])
+parser.add_argument('--valid_filenames', type=str, nargs="+", default=["nsynth_valid_examples.tfrecord"])
 parser.add_argument("--train_batch_size", type=int, default=8)
 parser.add_argument("--valid_batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
