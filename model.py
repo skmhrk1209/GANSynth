@@ -144,7 +144,6 @@ class GANSynth(object):
             generator_train_op=generator_train_op
         )
         self.tensors = Struct(
-            global_step=tf.train.get_global_step(),
             train_real_magnitude_spectrograms=train_real_images[:, 0, ..., tf.newaxis],
             train_real_instantaneous_frequencies=train_real_images[:, 1, ..., tf.newaxis],
             train_fake_magnitude_spectrograms=train_fake_images[:, 0, ..., tf.newaxis],
@@ -216,7 +215,7 @@ class GANSynth(object):
                 tf.train.LoggingTensorHook(
                     tensors={
                         name: tensor for name, tensor in self.tensors.items()
-                        if "valid" in name and tensor.shape.ndims == 0
+                        if "valid" in name and tensor.shape.ndimsq == 0
                     },
                     every_n_iter=log_valid_tensor_steps,
                 ),
