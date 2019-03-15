@@ -16,29 +16,29 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         features = Struct(tf.parse_single_example(
             serialized=example,
             features=dict(
-                path1=tf.FixedLenFeature([], dtype=tf.string),
-                path2=tf.FixedLenFeature([], dtype=tf.string),
-                pitch=tf.FixedLenFeature([], dtype=tf.int64),
-                source=tf.FixedLenFeature([], dtype=tf.int64)
+                path_to_magnitude_spectrogram=tf.FixedLenFeature([], dtype=tf.string),
+                path_to_instantaneous_frequency=tf.FixedLenFeature([], dtype=tf.string),
+                instrument_source=tf.FixedLenFeature([], dtype=tf.int64),
+                pitch=tf.FixedLenFeature([], dtype=tf.int64)
             )
         ))
 
-        image1 = tf.read_file(features.path1)
-        image1 = tf.image.decode_jpeg(image1, channels=1)
-        image1 = tf.reshape(image1, [1, 128, 1024])
+        magnitude_spectrogram = tf.read_file(features.path_to_magnitude_spectrogram)
+        magnitude_spectrogram = tf.image.decode_jpeg(magnitude_spectrogram, channels=1)
+        magnitude_spectrogram = tf.reshape(magnitude_spectrogram, [1, 128, 1024])
 
-        image2 = tf.read_file(features.path2)
-        image2 = tf.image.decode_jpeg(image2, channels=1)
-        image2 = tf.reshape(image2, [1, 128, 1024])
+        instantaneous_frequency = tf.read_file(features.path_to_instantaneous_frequency)
+        instantaneous_frequency = tf.image.decode_jpeg(instantaneous_frequency, channels=1)
+        instantaneous_frequency = tf.reshape(instantaneous_frequency, [1, 128, 1024])
 
-        image = tf.concat([image1, image2], axis=0)
+        image = tf.concat([magnitude_spectrogram, instantaneous_frequency], axis=0)
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = linear_map(image, 0.0, 1.0, -1.0, 1.0)
 
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
 
-        return image, label, features.pitch, features.source
+        return image, label, features.instrument_source, features.pitch
 
     dataset = tf.data.TFRecordDataset(filenames)
     if shuffle:

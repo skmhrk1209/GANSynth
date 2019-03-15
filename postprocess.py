@@ -87,25 +87,25 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
     return iterator.get_next()
 
 
-def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, waveform_dir):
+def main(magnitude_spectrogram_dir, instantaneous_frequency_dir, waveform_dir):
 
-    log_mel_magnitude_spectrogram_dir = Path(log_mel_magnitude_spectrogram_dir)
-    mel_instantaneous_frequency_dir = Path(mel_instantaneous_frequency_dir)
+    magnitude_spectrogram_dir = Path(magnitude_spectrogram_dir)
+    instantaneous_frequency_dir = Path(instantaneous_frequency_dir)
     waveform_dir = Path(waveform_dir)
 
     if not waveform_dir.exists():
-        waveform_dir.mkdir()
+        waveform_dir.mkdir(parents=True, exist_ok=True)
 
     with tf.Graph().as_default():
 
         def spectrogram_generator():
-            for filename1, filename2 in zip(sorted(log_mel_magnitude_spectrogram_dir.glob("*.jpg")), sorted(mel_instantaneous_frequency_dir.glob("*.jpg"))):
+            for filename1, filename2 in zip(sorted(magnitude_spectrogram_dir.glob("*.jpg")), sorted(instantaneous_frequency_dir.glob("*.jpg"))):
                 assert filename1.name == filename2.name
-                log_mel_magnitude_spectrogram = np.squeeze(skimage.io.imread(filename1))
-                log_mel_magnitude_spectrogram = linear_map(log_mel_magnitude_spectrogram.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
-                mel_instantaneous_frequency = np.squeeze(skimage.io.imread(filename2))
-                mel_instantaneous_frequency = linear_map(mel_instantaneous_frequency.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
-                yield ((filename1 or filename2).stem, log_mel_magnitude_spectrogram, mel_instantaneous_frequency)
+                magnitude_spectrogram = np.squeeze(skimage.io.imread(filename1))
+                magnitude_spectrogram = linear_map(magnitude_spectrogram.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
+                instantaneous_frequency = np.squeeze(skimage.io.imread(filename2))
+                instantaneous_frequency = linear_map(instantaneous_frequency.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
+                yield ((filename1 or filename2).stem, magnitude_spectrogram, instantaneous_frequency)
 
         waveforms = convert_to_waveform(
             spectrogram_generator=spectrogram_generator,
@@ -116,8 +116,6 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
         )
 
         with tf.Session() as session:
-
-            tf.logging.info("postprocessing started")
 
             while True:
                 try:
@@ -130,8 +128,15 @@ def main(log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir, wav
                 except tf.errors.OutOfRangeError:
                     break
 
-            tf.logging.info("postprocessing completed")
-
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+
+    tf.logging.info("postprocessing started")
+
+    main(
+        waveform_dir="samples/waveforms",
+        magnitude_spectrogram_dir="samples/magnitude_spectrograms",
+        instantaneous_frequency_dir="samples/instantaneous_frequencies"
+    )
+
+    tf.logging.info("postprocessing completed")

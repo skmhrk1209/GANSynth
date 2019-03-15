@@ -84,17 +84,17 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
     return iterator.get_next()
 
 
-def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_frequency_dir):
+def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
 
     waveform_dir = Path(waveform_dir)
-    log_mel_magnitude_spectrogram_dir = Path(log_mel_magnitude_spectrogram_dir)
-    mel_instantaneous_frequency_dir = Path(mel_instantaneous_frequency_dir)
+    magnitude_spectrogram_dir = Path(magnitude_spectrogram_dir)
+    instantaneous_frequency_dir = Path(instantaneous_frequency_dir)
 
-    if not log_mel_magnitude_spectrogram_dir.exists():
-        log_mel_magnitude_spectrogram_dir.mkdir()
+    if not magnitude_spectrogram_dir.exists():
+        magnitude_spectrogram_dir.mkdir(parents=True, exist_ok=True)
 
-    if not mel_instantaneous_frequency_dir.exists():
-        mel_instantaneous_frequency_dir.mkdir()
+    if not instantaneous_frequency_dir.exists():
+        instantaneous_frequency_dir.mkdir(parents=True, exist_ok=True)
 
     with tf.Graph().as_default():
 
@@ -114,24 +114,39 @@ def main(waveform_dir, log_mel_magnitude_spectrogram_dir, mel_instantaneous_freq
 
         with tf.Session() as session:
 
-            tf.logging.info("preprocessing started")
-
             while True:
                 try:
-                    for filename, log_mel_magnitude_spectrogram, mel_instantaneous_frequency in zip(*session.run(spectrograms)):
+                    for filename, magnitude_spectrogram, instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
-                            fname=log_mel_magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
-                            arr=linear_map(log_mel_magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                            fname=magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
+                            arr=linear_map(magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                         )
                         skimage.io.imsave(
-                            fname=mel_instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
-                            arr=linear_map(mel_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                            fname=instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
+                            arr=linear_map(instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                         )
                 except tf.errors.OutOfRangeError:
                     break
 
-            tf.logging.info("preprocessing completed")
-
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+
+    tf.logging.info("preprocessing started")
+
+    main(
+        waveform_dir="nsynth-train/audio",
+        magnitude_spectrogram_dir="nsynth-train/magnitude_spectrograms",
+        instantaneous_frequency_dir="nsynth-train/instantaneous_frequencies"
+    )
+    main(
+        waveform_dir="nsynth-valid/audio",
+        magnitude_spectrogram_dir="nsynth-valid/magnitude_spectrograms",
+        instantaneous_frequency_dir="nsynth-valid/instantaneous_frequencies"
+    )
+    main(
+        waveform_dir="nsynth-test/audio",
+        magnitude_spectrogram_dir="nsynth-test/magnitude_spectrograms",
+        instantaneous_frequency_dir="nsynth-test/instantaneous_frequencies"
+    )
+
+    tf.logging.info("preprocessing completed")
