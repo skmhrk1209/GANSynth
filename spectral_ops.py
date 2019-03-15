@@ -9,7 +9,7 @@ def diff(inputs, axis=-1):
     begin_front[axis] = 1
 
     size = [-1] * inputs.shape.ndims
-    size[axis] = inputs.shape[axis].value - 1
+    size[axis] = inputs.shape[axis] - 1
 
     front = tf.slice(inputs, begin_front, size)
     back = tf.slice(inputs, begin_back, size)
