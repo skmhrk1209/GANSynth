@@ -30,5 +30,5 @@ python make_tfrecord.py
 python train.py
 python evaluate.py
 python generate.py
-python postprocess
+python postprocess.py
 ```
