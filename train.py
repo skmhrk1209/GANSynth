@@ -74,7 +74,7 @@ with tf.Graph().as_default():
             filenames=args.valid_filenames,
             batch_size=args.valid_batch_size,
             num_epochs=args.num_epochs,
-            shuffle=True,
+            shuffle=False,
             pitches=pitch_counts.keys()
         ),
         valid_fake_input_fn=lambda: (
