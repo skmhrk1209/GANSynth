@@ -55,15 +55,15 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         num_parallel_calls=os.cpu_count()
     )
     # filter just acoustic instruments and just pitches 24-84 (as in the paper)
-    dataset = dataset.filter(lambda image, label, pitch, source: tf.logical_and(
-        x=tf.equal(source, 0),
+    dataset = dataset.filter(lambda image, label, instrument_source, pitch: tf.logical_and(
+        x=tf.equal(instrument_source, 0),
         y=tf.logical_and(
             x=tf.greater_equal(pitch, min(pitches)),
             y=tf.less_equal(pitch, max(pitches))
         )
     ))
     dataset = dataset.map(
-        map_func=lambda image, label, pitch, source: (image, label),
+        map_func=lambda image, label, instrument_source, pitch: (image, label),
         num_parallel_calls=os.cpu_count()
     )
     dataset = dataset.batch(batch_size=batch_size)
