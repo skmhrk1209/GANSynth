@@ -94,7 +94,7 @@ if __name__ == "__main__":
     with open("nsynth_train_examples.json", "w") as file:
         json.dump(dict(train_ground_truth), file, indent=4)
 
-    with open("nsynth_valid_examples", "w") as file:
+    with open("nsynth_valid_examples.json", "w") as file:
         json.dump(dict(valid_ground_truth), file, indent=4)
 
     with open("nsynth_test_examples.json", "w") as file:
