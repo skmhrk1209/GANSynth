@@ -45,6 +45,10 @@ def main(in_file, out_file):
 
 
 if __name__ == "__main__":
+    '''
+    Create a new train/valid/test 80/10/10 split from shuffled data,
+    as the original split was divided along instrument type, which isn’t desirable for this task.
+    '''
 
     with open("nsynth-train/examples.json") as file:
         train_ground_truth = json.load(file)
