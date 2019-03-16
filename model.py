@@ -27,12 +27,12 @@ class GANSynth(object):
         train_real_features, train_real_adversarial_logits, train_real_classification_logits = discriminator(train_real_images, train_real_labels)
         train_fake_features, train_fake_adversarial_logits, train_fake_classification_logits = discriminator(train_fake_images, train_fake_labels)
         train_real_adversarial_logits = tf.squeeze(train_real_adversarial_logits, axis=1)
-        train_fake_adversarial_logits = tf.square(train_fake_adversarial_logits, axis=1)
+        train_fake_adversarial_logits = tf.squeeze(train_fake_adversarial_logits, axis=1)
         # -----------------------------------------------------------------------------------------
         valid_real_features, valid_real_adversarial_logits, valid_real_classification_logits = discriminator(valid_real_images, valid_real_labels)
         valid_fake_features, valid_fake_adversarial_logits, valid_fake_classification_logits = discriminator(valid_fake_images, valid_fake_labels)
         valid_real_adversarial_logits = tf.squeeze(valid_real_adversarial_logits, axis=1)
-        valid_fake_adversarial_logits = tf.square(valid_fake_adversarial_logits, axis=1)
+        valid_fake_adversarial_logits = tf.squeeze(valid_fake_adversarial_logits, axis=1)
         # =========================================================================================
         # WGAN-GP + ACGAN
         # [Improved Training of Wasserstein GANs]
