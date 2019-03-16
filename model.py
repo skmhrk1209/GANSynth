@@ -37,16 +37,17 @@ class GANSynth(object):
         # (https://arxiv.org/pdf/1610.09585.pdf)
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
-        train_generator_losses = -train_fake_adversarial_logits
+        train_generator_adversarial_losses = -train_fake_adversarial_logits
         # auxiliary classification loss
         train_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
             labels=train_fake_labels,
             logits=train_fake_classification_logits
         )
-        train_generator_losses += hyper_params.generator_classification_weight * train_generator_classification_losses
+        train_generator_losses = train_generator_adversarial_losses + \
+            hyper_params.generator_classification_weight * train_generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
-        train_discriminator_losses = -train_real_adversarial_logits + train_fake_adversarial_logits
+        train_discriminator_adversarial_losses = -train_real_adversarial_logits + train_fake_adversarial_logits
         # one-centered gradient penalty
         coefficients = tf.random_uniform([tf.shape(train_real_images)[0], 1, 1, 1])
         train_interpolated_images = lerp(train_real_images, train_fake_images, coefficients)
@@ -54,7 +55,6 @@ class GANSynth(object):
         train_interpolated_gradients = tf.gradients(train_interpolated_adversarial_logits, [train_interpolated_images])[0]
         train_interpolated_gradient_norms = tf.sqrt(tf.reduce_sum(tf.square(train_interpolated_gradients), axis=[1, 2, 3]) + 1e-8)
         train_interpolated_gradient_penalties = tf.square(1.0 - train_interpolated_gradient_norms)
-        train_discriminator_losses += hyper_params.gradient_penalty_weight * train_interpolated_gradient_penalties
         # auxiliary classification loss
         train_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
             labels=train_real_labels,
@@ -64,7 +64,11 @@ class GANSynth(object):
             labels=train_fake_labels,
             logits=train_fake_classification_logits
         )
-        train_discriminator_losses += hyper_params.discriminator_classification_weight * train_discriminator_classification_losses
+        train_discriminator_losses = train_discriminator_adversarial_losses + \
+            hyper_params.gradient_penalty_weight * train_interpolated_gradient_penalties + \
+            hyper_params.discriminator_classification_weight * train_discriminator_classification_losses
+
+        print(train_discriminator_losses)
         # -----------------------------------------------------------------------------------------
         # losss reduction
         train_generator_loss = tf.reduce_mean(train_generator_losses)
