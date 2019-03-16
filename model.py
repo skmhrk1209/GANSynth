@@ -1,8 +1,4 @@
 import tensorflow as tf
-import numpy as np
-import scipy as sp
-import skimage
-import metrics
 from utils import Struct
 
 
