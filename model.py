@@ -68,7 +68,7 @@ class GANSynth(object):
             hyper_params.gradient_penalty_weight * train_interpolated_gradient_penalties + \
             hyper_params.discriminator_classification_weight * train_discriminator_classification_losses
 
-        print(train_discriminator_losses)
+        print(train_discriminator_losses.shape)
         # -----------------------------------------------------------------------------------------
         # losss reduction
         train_generator_loss = tf.reduce_mean(train_generator_losses)
