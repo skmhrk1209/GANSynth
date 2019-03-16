@@ -37,6 +37,7 @@ class GANSynth(object):
         # (https://arxiv.org/pdf/1610.09585.pdf)
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
+        print(train_fake_adversarial_logits)
         train_generator_adversarial_losses = -tf.squeeze(train_fake_adversarial_logits)
         # auxiliary classification loss
         train_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
