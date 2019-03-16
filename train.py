@@ -22,10 +22,8 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument('--train_filenames', type=str, nargs="+", default=["nsynth_train_examples.tfrecord"])
-parser.add_argument('--valid_filenames', type=str, nargs="+", default=["nsynth_valid_examples.tfrecord"])
-parser.add_argument("--train_batch_size", type=int, default=8)
-parser.add_argument("--valid_batch_size", type=int, default=8)
+parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train_examples.tfrecord"])
+parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--gpu", type=str, default="0")
@@ -56,18 +54,18 @@ with tf.Graph().as_default():
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
             nsynth_input_fn,
-            filenames=args.train_filenames,
-            batch_size=args.train_batch_size,
+            filenames=args.filenames,
+            batch_size=args.batch_size,
             num_epochs=args.num_epochs,
             shuffle=True,
             pitches=pitch_counts.keys()
         ),
         fake_input_fn=lambda: (
-            tf.random_normal([args.train_batch_size, 256]),
+            tf.random_normal([args.batch_size, 256]),
             tf.one_hot(tf.reshape(tf.multinomial(
                 logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
-                num_samples=args.train_batch_size
-            ), [args.train_batch_size]), len(pitch_counts))
+                num_samples=args.batch_size
+            ), [args.batch_size]), len(pitch_counts))
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
