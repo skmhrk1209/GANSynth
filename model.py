@@ -223,7 +223,7 @@ class GANSynth(object):
                 tf.train.LoggingTensorHook(
                     tensors={
                         name: tensor for name, tensor in self.tensors.items()
-                        if "valid" in name and tensor.shape.ndimsq == 0
+                        if "valid" in name and tensor.shape.ndims == 0
                     },
                     every_n_iter=log_valid_tensor_steps,
                 ),
