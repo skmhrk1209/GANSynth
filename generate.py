@@ -1,16 +1,3 @@
-#=================================================================================================#
-# TensorFlow implementation of GANSynth
-#
-# original paper
-# [GANSynth: Adversarial Neural Audio Synthesis]
-# (https://openreview.net/pdf?id=H1xQVn09FX)
-#
-# based on following papers
-#
-# [Progressive Growing of GANs for Improved Quality, Stability, and Variation]
-# (https://arxiv.org/pdf/1710.10196.pdf)
-#=================================================================================================#
-
 import tensorflow as tf
 import numpy as np
 import skimage
