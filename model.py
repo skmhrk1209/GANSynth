@@ -92,6 +92,7 @@ class GANSynth(object):
             generator_train_op=generator_train_op
         )
         self.tensors = Struct(
+            global_step=tf.train.get_global_step(),
             real_magnitude_spectrograms=real_images[:, 0, ..., tf.newaxis],
             real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
             fake_magnitude_spectrograms=fake_images[:, 0, ..., tf.newaxis],
