@@ -55,14 +55,11 @@ with tf.Graph().as_default():
         shuffle=False,
         pitches=pitch_counts.keys()
     )
-
-    fake_latents, fake_labels = (
-        tf.random_normal([args.batch_size, 256]),
-        tf.one_hot(tf.reshape(tf.multinomial(
-            logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
-            num_samples=args.batch_size
-        ), [args.batch_size]), len(pitch_counts))
-    )
+    fake_latents = tf.random_normal([args.batch_size, 256])
+    fake_labels = tf.one_hot(tf.reshape(tf.multinomial(
+        logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
+        num_samples=args.batch_size
+    ), [args.batch_size]), len(pitch_counts))
 
     fake_images = pggan.generator(fake_latents, fake_labels)
     real_features, _, real_classification_logits = pggan.discriminator(real_images, real_labels)

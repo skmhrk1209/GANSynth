@@ -51,7 +51,8 @@ class GANSynth(object):
             hyper_params.generator_classification_weight * train_generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
-        train_discriminator_adversarial_losses = -train_real_adversarial_logits + train_fake_adversarial_logits
+        train_discriminator_adversarial_losses = -train_real_adversarial_logits
+        train_discriminator_adversarial_losses += train_fake_adversarial_logits
         # one-centered gradient penalty
         coefficients = tf.random_uniform([tf.shape(train_real_images)[0], 1, 1, 1])
         train_interpolated_images = lerp(train_real_images, train_fake_images, coefficients)
@@ -87,7 +88,8 @@ class GANSynth(object):
             hyper_params.generator_classification_weight * valid_generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
-        valid_discriminator_adversarial_losses = -valid_real_adversarial_logits + valid_fake_adversarial_logits
+        valid_discriminator_adversarial_losses = -valid_real_adversarial_logits
+        valid_discriminator_adversarial_losses += valid_fake_adversarial_logits
         # one-centered gradient penalty
         coefficients = tf.random_uniform([tf.shape(valid_real_images)[0], 1, 1, 1])
         valid_interpolated_images = lerp(valid_real_images, valid_fake_images, coefficients)
