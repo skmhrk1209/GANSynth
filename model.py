@@ -37,7 +37,7 @@ class GANSynth(object):
         # (https://arxiv.org/pdf/1610.09585.pdf)
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
-        train_generator_adversarial_losses = -train_fake_adversarial_logits
+        train_generator_adversarial_losses = -tf.squeeze(train_fake_adversarial_logits)
         # auxiliary classification loss
         train_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
             labels=train_fake_labels,
@@ -47,7 +47,7 @@ class GANSynth(object):
             hyper_params.generator_classification_weight * train_generator_classification_losses
         # -----------------------------------------------------------------------------------------
         # wasserstein loss
-        train_discriminator_adversarial_losses = -train_real_adversarial_logits + train_fake_adversarial_logits
+        train_discriminator_adversarial_losses = -tf.squeeze(train_real_adversarial_logits) + tf.squeeze(train_fake_adversarial_logits)
         # one-centered gradient penalty
         coefficients = tf.random_uniform([tf.shape(train_real_images)[0], 1, 1, 1])
         train_interpolated_images = lerp(train_real_images, train_fake_images, coefficients)
