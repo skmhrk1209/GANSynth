@@ -7,28 +7,16 @@ def lerp(a, b, t): return t * a + (1.0 - t) * b
 
 class GANSynth(object):
 
-    def __init__(self, generator, discriminator, train_real_input_fn, train_fake_input_fn,
-                 valid_real_input_fn, valid_fake_input_fn, hyper_params):
+    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
         # =========================================================================================
-        train_real_images, train_real_labels = train_real_input_fn()
-        train_fake_latents, train_fake_labels = train_fake_input_fn()
-        # -----------------------------------------------------------------------------------------
-        valid_real_images, valid_real_labels = valid_real_input_fn()
-        valid_fake_latents, valid_fake_labels = valid_fake_input_fn()
+        real_images, real_labels = real_input_fn()
+        fake_latents, fake_labels = fake_input_fn()
+        fake_images = generator(fake_latents, fake_labels)
         # =========================================================================================
-        train_fake_images = generator(train_fake_latents, train_fake_labels)
-        # -----------------------------------------------------------------------------------------
-        valid_fake_images = generator(valid_fake_latents, valid_fake_labels)
-        # =========================================================================================
-        train_real_features, train_real_adversarial_logits, train_real_classification_logits = discriminator(train_real_images, train_real_labels)
-        train_fake_features, train_fake_adversarial_logits, train_fake_classification_logits = discriminator(train_fake_images, train_fake_labels)
-        train_real_adversarial_logits = tf.squeeze(train_real_adversarial_logits, axis=1)
-        train_fake_adversarial_logits = tf.squeeze(train_fake_adversarial_logits, axis=1)
-        # -----------------------------------------------------------------------------------------
-        valid_real_features, valid_real_adversarial_logits, valid_real_classification_logits = discriminator(valid_real_images, valid_real_labels)
-        valid_fake_features, valid_fake_adversarial_logits, valid_fake_classification_logits = discriminator(valid_fake_images, valid_fake_labels)
-        valid_real_adversarial_logits = tf.squeeze(valid_real_adversarial_logits, axis=1)
-        valid_fake_adversarial_logits = tf.squeeze(valid_fake_adversarial_logits, axis=1)
+        real_features, real_adversarial_logits, train_real_classification_logits = discriminator(real_images, real_labels)
+        fake_features, fake_adversarial_logits, train_fake_classification_logits = discriminator(fake_images, fake_labels)
+        real_adversarial_logits = tf.squeeze(real_adversarial_logits, axis=1)
+        fake_adversarial_logits = tf.squeeze(fake_adversarial_logits, axis=1)
         # =========================================================================================
         # WGAN-GP + ACGAN
         # [Improved Training of Wasserstein GANs]
@@ -37,80 +25,42 @@ class GANSynth(object):
         # (https://arxiv.org/pdf/1610.09585.pdf)
         # -----------------------------------------------------------------------------------------
         # generator wasserstein loss
-        train_generator_adversarial_losses = -train_fake_adversarial_logits
+        generator_adversarial_losses = -fake_adversarial_logits
         # generator classification loss
-        train_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=train_fake_labels,
+        generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=fake_labels,
             logits=train_fake_classification_logits
         )
-        train_generator_losses = \
-            train_generator_adversarial_losses + \
-            train_generator_classification_losses * hyper_params.generator_classification_weight
+        generator_losses = \
+            generator_adversarial_losses + \
+            generator_classification_losses * hyper_params.generator_classification_weight
         # -----------------------------------------------------------------------------------------
         # discriminator wasserstein loss
-        train_discriminator_adversarial_losses = -train_real_adversarial_logits
-        train_discriminator_adversarial_losses += train_fake_adversarial_logits
+        discriminator_adversarial_losses = -real_adversarial_logits
+        discriminator_adversarial_losses += fake_adversarial_logits
         # discriminator one-centered gradient penalty
-        coefficients = tf.random_uniform([tf.shape(train_real_images)[0], 1, 1, 1])
-        train_interpolated_images = lerp(train_real_images, train_fake_images, coefficients)
-        _, train_interpolated_adversarial_logits, _ = discriminator(train_interpolated_images, train_real_labels)
-        train_interpolated_gradients = tf.gradients(train_interpolated_adversarial_logits, [train_interpolated_images])[0]
-        train_interpolated_gradient_norms = tf.sqrt(tf.reduce_sum(tf.square(train_interpolated_gradients), axis=[1, 2, 3]) + 1e-8)
-        train_interpolated_gradient_penalties = tf.square(1.0 - train_interpolated_gradient_norms)
+        coefficients = tf.random_uniform([tf.shape(real_images)[0], 1, 1, 1])
+        interpolated_images = lerp(real_images, fake_images, coefficients)
+        _, interpolated_adversarial_logits, _ = discriminator(interpolated_images, real_labels)
+        interpolated_gradients = tf.gradients(interpolated_adversarial_logits, [interpolated_images])[0]
+        interpolated_gradient_norms = tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8)
+        interpolated_gradient_penalties = tf.square(1.0 - interpolated_gradient_norms)
         # discriminator classification loss
-        train_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=train_real_labels,
+        discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=real_labels,
             logits=train_real_classification_logits
         )
-        train_discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=train_fake_labels,
+        discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=fake_labels,
             logits=train_fake_classification_logits
         )
-        train_discriminator_losses = \
-            train_discriminator_adversarial_losses + \
-            train_interpolated_gradient_penalties * hyper_params.gradient_penalty_weight + \
-            train_discriminator_classification_losses * hyper_params.discriminator_classification_weight
+        discriminator_losses = \
+            discriminator_adversarial_losses + \
+            interpolated_gradient_penalties * hyper_params.gradient_penalty_weight + \
+            discriminator_classification_losses * hyper_params.discriminator_classification_weight
         # -----------------------------------------------------------------------------------------
-        train_generator_loss = tf.reduce_mean(train_generator_losses)
-        train_discriminator_loss = tf.reduce_mean(train_discriminator_losses)
-        # -----------------------------------------------------------------------------------------
-        # generator wasserstein loss
-        valid_generator_adversarial_losses = -valid_fake_adversarial_logits
-        # generator classification loss
-        valid_generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=valid_fake_labels,
-            logits=valid_fake_classification_logits
-        )
-        valid_generator_losses = \
-            valid_generator_adversarial_losses + \
-            valid_generator_classification_losses * hyper_params.generator_classification_weight
-        # -----------------------------------------------------------------------------------------
-        # discriminator wasserstein loss
-        valid_discriminator_adversarial_losses = -valid_real_adversarial_logits
-        valid_discriminator_adversarial_losses += valid_fake_adversarial_logits
-        # discriminator one-centered gradient penalty
-        coefficients = tf.random_uniform([tf.shape(valid_real_images)[0], 1, 1, 1])
-        valid_interpolated_images = lerp(valid_real_images, valid_fake_images, coefficients)
-        _, valid_interpolated_adversarial_logits, _ = discriminator(valid_interpolated_images, valid_real_labels)
-        valid_interpolated_gradients = tf.gradients(valid_interpolated_adversarial_logits, [valid_interpolated_images])[0]
-        valid_interpolated_gradient_norms = tf.sqrt(tf.reduce_sum(tf.square(valid_interpolated_gradients), axis=[1, 2, 3]) + 1e-8)
-        valid_interpolated_gradient_penalties = tf.square(1.0 - valid_interpolated_gradient_norms)
-        # discriminator classification loss
-        valid_discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=valid_real_labels,
-            logits=valid_real_classification_logits
-        )
-        valid_discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=valid_fake_labels,
-            logits=valid_fake_classification_logits
-        )
-        valid_discriminator_losses = \
-            valid_discriminator_adversarial_losses + \
-            valid_interpolated_gradient_penalties * hyper_params.gradient_penalty_weight + \
-            valid_discriminator_classification_losses * hyper_params.discriminator_classification_weight
-        # -----------------------------------------------------------------------------------------
-        valid_generator_loss = tf.reduce_mean(valid_generator_losses)
-        valid_discriminator_loss = tf.reduce_mean(valid_discriminator_losses)
+        generator_loss = tf.reduce_mean(generator_losses)
+        discriminator_loss = tf.reduce_mean(discriminator_losses)
         # =========================================================================================
         generator_optimizer = tf.train.AdamOptimizer(
             learning_rate=hyper_params.generator_learning_rate,
@@ -127,18 +77,14 @@ class GANSynth(object):
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
         # =========================================================================================
         generator_train_op = generator_optimizer.minimize(
-            loss=train_generator_loss,
+            loss=generator_loss,
             var_list=generator_variables,
             global_step=tf.train.get_or_create_global_step()
         )
         discriminator_train_op = discriminator_optimizer.minimize(
-            loss=train_discriminator_loss,
+            loss=discriminator_loss,
             var_list=discriminator_variables
         )
-        # =========================================================================================
-        train_frechet_inception_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(train_real_features, train_fake_features)
-        # -----------------------------------------------------------------------------------------
-        valid_frechet_inception_distance = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(valid_real_features, valid_fake_features)
         # =========================================================================================
         # tensors and operations used later
         self.operations = Struct(
@@ -146,25 +92,15 @@ class GANSynth(object):
             generator_train_op=generator_train_op
         )
         self.tensors = Struct(
-            train_real_magnitude_spectrograms=train_real_images[:, 0, ..., tf.newaxis],
-            train_real_instantaneous_frequencies=train_real_images[:, 1, ..., tf.newaxis],
-            train_fake_magnitude_spectrograms=train_fake_images[:, 0, ..., tf.newaxis],
-            train_fake_instantaneous_frequencies=train_fake_images[:, 1, ..., tf.newaxis],
-            train_generator_loss=train_generator_loss,
-            train_discriminator_loss=train_discriminator_loss,
-            train_frechet_inception_distance=train_frechet_inception_distance,
-            valid_real_magnitude_spectrograms=valid_real_images[:, 0, ..., tf.newaxis],
-            valid_real_instantaneous_frequencies=valid_real_images[:, 1, ..., tf.newaxis],
-            valid_fake_magnitude_spectrograms=valid_fake_images[:, 0, ..., tf.newaxis],
-            valid_fake_instantaneous_frequencies=valid_fake_images[:, 1, ..., tf.newaxis],
-            valid_generator_loss=valid_generator_loss,
-            valid_discriminator_loss=valid_discriminator_loss,
-            valid_frechet_inception_distance=valid_frechet_inception_distance
+            real_magnitude_spectrograms=real_images[:, 0, ..., tf.newaxis],
+            real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
+            fake_magnitude_spectrograms=fake_images[:, 0, ..., tf.newaxis],
+            fake_instantaneous_frequencies=fake_images[:, 1, ..., tf.newaxis],
+            generator_loss=generator_loss,
+            discriminator_loss=discriminator_loss
         )
 
-    def train(self, model_dir, total_steps, save_checkpoint_steps,
-              save_train_summary_steps, save_valid_summary_steps,
-              log_train_tensor_steps, log_valid_tensor_steps, config):
+    def train(self, model_dir, total_steps, save_checkpoint_steps, save_summary_steps, log_tensor_steps, config):
 
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
@@ -187,35 +123,19 @@ class GANSynth(object):
                 ),
                 tf.train.SummarySaverHook(
                     output_dir=model_dir,
-                    save_steps=save_train_summary_steps,
+                    save_steps=save_summary_steps,
                     summary_op=tf.summary.merge([
                         tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.ndims == 0 else
                         tf.summary.image(name=name, tensor=tensor, max_outputs=4)
-                        for name, tensor in self.tensors.items() if "train" in name
-                    ])
-                ),
-                tf.train.SummarySaverHook(
-                    output_dir=model_dir,
-                    save_steps=save_valid_summary_steps,
-                    summary_op=tf.summary.merge([
-                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.ndims == 0 else
-                        tf.summary.image(name=name, tensor=tensor, max_outputs=4)
-                        for name, tensor in self.tensors.items() if "valid" in name
+                        for name, tensor in self.tensors.items()
                     ])
                 ),
                 tf.train.LoggingTensorHook(
                     tensors={
                         name: tensor for name, tensor in self.tensors.items()
-                        if "train" in name and tensor.shape.ndims == 0
+                        if tensor.shape.ndims == 0
                     },
-                    every_n_iter=log_train_tensor_steps,
-                ),
-                tf.train.LoggingTensorHook(
-                    tensors={
-                        name: tensor for name, tensor in self.tensors.items()
-                        if "valid" in name and tensor.shape.ndims == 0
-                    },
-                    every_n_iter=log_valid_tensor_steps,
+                    every_n_iter=log_tensor_steps,
                 ),
                 tf.train.StopAtStepHook(
                     last_step=total_steps

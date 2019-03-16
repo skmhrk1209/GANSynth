@@ -54,7 +54,7 @@ with tf.Graph().as_default():
     gan_synth = GANSynth(
         generator=pggan.generator,
         discriminator=pggan.discriminator,
-        train_real_input_fn=functools.partial(
+        real_input_fn=functools.partial(
             nsynth_input_fn,
             filenames=args.train_filenames,
             batch_size=args.train_batch_size,
@@ -62,27 +62,12 @@ with tf.Graph().as_default():
             shuffle=True,
             pitches=pitch_counts.keys()
         ),
-        train_fake_input_fn=lambda: (
+        fake_input_fn=lambda: (
             tf.random_normal([args.train_batch_size, 256]),
             tf.one_hot(tf.reshape(tf.multinomial(
                 logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
                 num_samples=args.train_batch_size
             ), [args.train_batch_size]), len(pitch_counts))
-        ),
-        valid_real_input_fn=functools.partial(
-            nsynth_input_fn,
-            filenames=args.valid_filenames,
-            batch_size=args.valid_batch_size,
-            num_epochs=args.num_epochs,
-            shuffle=False,
-            pitches=pitch_counts.keys()
-        ),
-        valid_fake_input_fn=lambda: (
-            tf.random_normal([args.valid_batch_size, 256]),
-            tf.one_hot(tf.reshape(tf.multinomial(
-                logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
-                num_samples=args.valid_batch_size
-            ), [args.valid_batch_size]), len(pitch_counts))
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
@@ -100,10 +85,8 @@ with tf.Graph().as_default():
         model_dir=args.model_dir,
         total_steps=args.total_steps,
         save_checkpoint_steps=10000,
-        save_train_summary_steps=100,
-        save_valid_summary_steps=1000,
-        log_train_tensor_steps=100,
-        log_valid_tensor_steps=1000,
+        save_summary_steps=1000,
+        log_tensor_steps=1000,
         config=tf.ConfigProto(
             gpu_options=tf.GPUOptions(
                 visible_device_list=args.gpu,
