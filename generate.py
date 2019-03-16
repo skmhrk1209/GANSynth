@@ -16,10 +16,7 @@ import numpy as np
 import skimage
 import argparse
 import pickle
-import metrics
-from dataset import nsynth_input_fn
 from network import PGGAN
-from utils import Struct
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -32,8 +29,6 @@ args = parser.parse_args()
 tf.logging.set_verbosity(tf.logging.INFO)
 
 with tf.Graph().as_default():
-
-    tf.set_random_seed(0)
 
     pggan = PGGAN(
         min_resolution=[2, 16],
