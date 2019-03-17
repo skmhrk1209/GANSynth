@@ -27,8 +27,8 @@ tar -xvf nsynth-test.jsonwav.tar.gz
 
 python preprocess.py
 python make_tfrecord.py
-python train.py
-python evaluate.py
-python generate.py
+python main.py --filenames nsynth_train_examples.tfrecord --train
+python main.py --filenames nsynth_test_examples.tfrecord --evaluate
+python main.py --filenames nsynth_test_examples.tfrecord --generate
 python postprocess.py
 ```

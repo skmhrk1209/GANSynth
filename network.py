@@ -3,10 +3,12 @@ import numpy as np
 from ops import *
 
 
-def log(x, base): return tf.log(x) / tf.log(base)
+def log(x, base):
+    return tf.log(x) / tf.log(base)
 
 
-def lerp(a, b, t): return t * a + (1.0 - t) * b
+def lerp(a, b, t):
+    return t * a + (1.0 - t) * b
 
 
 class PGGAN(object):
@@ -28,9 +30,11 @@ class PGGAN(object):
 
     def generator(self, latents, labels, name="generator", reuse=tf.AUTO_REUSE):
 
-        def resolution(depth): return self.min_resolution << depth
+        def resolution(depth):
+            return self.min_resolution << depth
 
-        def channels(depth): return min(self.max_channels, self.min_channels << (self.max_depth - depth))
+        def channels(depth):
+            return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
@@ -152,9 +156,11 @@ class PGGAN(object):
 
     def discriminator(self, images, labels, name="discriminator", reuse=tf.AUTO_REUSE):
 
-        def resolution(depth): return self.min_resolution << depth
+        def resolution(depth):
+            return self.min_resolution << depth
 
-        def channels(depth): return min(self.max_channels, self.min_channels << (self.max_depth - depth))
+        def channels(depth):
+            return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):

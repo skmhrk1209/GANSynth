@@ -1,8 +1,16 @@
 import tensorflow as tf
+import numpy as np
+import skimage
+import metrics
 from utils import Struct
 
 
-def lerp(a, b, t): return t * a + (1.0 - t) * b
+def lerp(a, b, t):
+    return t * a + (1.0 - t) * b
+
+
+def linear_map(inputs, in_min, in_max, out_min, out_max):
+    return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
 class GANSynth(object):
@@ -97,6 +105,8 @@ class GANSynth(object):
             real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
             fake_magnitude_spectrograms=fake_images[:, 0, ..., tf.newaxis],
             fake_instantaneous_frequencies=fake_images[:, 1, ..., tf.newaxis],
+            real_features=real_features,
+            fake_features=fake_features,
             generator_loss=generator_loss,
             discriminator_loss=discriminator_loss
         )
@@ -126,15 +136,16 @@ class GANSynth(object):
                     output_dir=model_dir,
                     save_steps=save_summary_steps,
                     summary_op=tf.summary.merge([
-                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.ndims == 0 else
+                        tf.summary.scalar(name=name, tensor=tensor) if tensor.shape.rank == 0 else
                         tf.summary.image(name=name, tensor=tensor, max_outputs=4)
                         for name, tensor in self.tensors.items()
+                        if tensor.shape.rank == 0 or tensor.shape.rank == 4
                     ])
                 ),
                 tf.train.LoggingTensorHook(
                     tensors={
                         name: tensor for name, tensor in self.tensors.items()
-                        if tensor.shape.ndims == 0
+                        if tensor.shape.rank == 0
                     },
                     every_n_iter=log_tensor_steps,
                 ),
@@ -147,3 +158,59 @@ class GANSynth(object):
             while not session.should_stop():
                 for name, operation in self.operations.items():
                     session.run(operation)
+
+    def evaluate(self, model_dir, config):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            def generator():
+                while True:
+                    try:
+                        yield session.run([self.tensors.real_features, self.tensors.fake_features])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            frechet_inception_distance = metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator())))
+            tf.logging.info("frechet_inception_distance: {}".format(frechet_inception_distance))
+
+    def generate(self, model_dir, config):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            magnitude_spectrogram_dir = Path("samples/magnitude_spectrograms")
+            instantaneous_frequency_dir = Path("samples/instantaneous_frequencies")
+
+            if not magnitude_spectrogram_dir.exists():
+                magnitude_spectrogram_dir.mkdir(parents=True, exist_ok=True)
+            if not instantaneous_frequency_dir.exists():
+                instantaneous_frequency_dir.mkdir(parents=True, exist_ok=True)
+
+            for image in session.run(images):
+                skimage.io.imsave(
+                    fname=magnitude_spectrogram_dir / "{}.jpg".format(len(list(magnitude_spectrogram_dir.glob("*.jpg")))),
+                    arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                )
+                skimage.io.imsave(
+                    fname=instantaneous_frequency_dir / "{}.jpg".format(len(list(instantaneous_frequency_dir.glob("*.jpg")))),
+                    arr=linear_map(image[1], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                )
