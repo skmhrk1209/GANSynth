@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import skimage
 import metrics
+from pathlib import Path
 from utils import Struct
 
 
@@ -205,12 +206,12 @@ class GANSynth(object):
             if not instantaneous_frequency_dir.exists():
                 instantaneous_frequency_dir.mkdir(parents=True, exist_ok=True)
 
-            for image in session.run(images):
+            for fake_magnitude_spectrogram, fake_instantaneous_frequency in session.run([self.tensors.fake_magnitude_spectrograms, self.tensors.fake_instantaneous_frequencies]):
                 skimage.io.imsave(
                     fname=magnitude_spectrogram_dir / "{}.jpg".format(len(list(magnitude_spectrogram_dir.glob("*.jpg")))),
-                    arr=linear_map(image[0], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                    arr=linear_map(fake_magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                 )
                 skimage.io.imsave(
                     fname=instantaneous_frequency_dir / "{}.jpg".format(len(list(instantaneous_frequency_dir.glob("*.jpg")))),
-                    arr=linear_map(image[1], -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                    arr=linear_map(fake_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
                 )
