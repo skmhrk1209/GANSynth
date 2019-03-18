@@ -7,10 +7,10 @@ def softmax(logits):
     return exp / np.sum(exp, axis=1, keepdims=True)
 
 
-def inception_score(logits, eps=1e-6):
-    probabilities = softmax(logits)
-    density_ratio = np.log(probabilities + eps) - np.log(np.mean(probabilities, axis=0, keepdims=True) + eps)
-    kl_divergence = np.sum(probabilities * density_ratio, axis=1)
+def inception_score(logits):
+    p = softmax(logits)
+    q = np.mean(p, axis=0, keepdims=True)
+    kl_divergence = np.sum(np.where(p == 0.0, 0.0, p * np.log(p / q)), axis=1)
     return np.exp(np.mean(kl_divergence))
 
 
