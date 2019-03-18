@@ -11,10 +11,10 @@ def kl_divergence(p, q, axis=-1):
     return np.sum(np.where(p == 0.0, 0.0, p * np.log(p / q)), axis=axis)
 
 
-def inception_score(logits, axis=-1):
-    p = softmax(logits, axis=axis)
+def inception_score(logits):
+    p = softmax(logits)
     q = np.mean(p, axis=0, keepdims=True)
-    return np.exp(np.mean(kl_divergence(p, q, axis=axis)))
+    return np.exp(np.mean(kl_divergence(p, q)))
 
 
 def frechet_inception_distance(real_features, fake_features):
