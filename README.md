@@ -9,6 +9,9 @@
 ### Dataset
 * [The NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth)
 
+### Requirements
+* TensorFlow 1.13.1 with GPU support.
+
 ### Usage
 * Following the paper, create a new train/valid/test 80/10/10 split from shuffled data,
 as the original split was divided along instrument type, which isn’t desirable for this task.
