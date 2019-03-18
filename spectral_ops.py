@@ -4,11 +4,11 @@ import numpy as np
 
 def diff(inputs, axis=-1):
 
-    begin_back = [0] * inputs.shape.ndims
-    begin_front = [0] * inputs.shape.ndims
+    begin_back = [0] * inputs.shape.rank
+    begin_front = [0] * inputs.shape.rank
     begin_front[axis] = 1
 
-    size = [-1] * inputs.shape.ndims
+    size = [-1] * inputs.shape.rank
     size[axis] = inputs.shape[axis] - 1
 
     front = tf.slice(inputs, begin_front, size)
@@ -40,9 +40,9 @@ def instantaneous_frequency(phases, axis=-2):
     unwrapped = unwrap(phases, axis=axis)
     diffs = diff(unwrapped, axis=axis)
 
-    begin = [0] * unwrapped.shape.ndims
+    begin = [0] * unwrapped.shape.rank
 
-    size = [-1] * unwrapped.shape.ndims
+    size = [-1] * unwrapped.shape.rank
     size[axis] = 1
 
     unwrapped = tf.slice(unwrapped, begin, size)
