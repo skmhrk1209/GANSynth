@@ -3,15 +3,18 @@ import scipy as sp
 
 
 def softmax(logits):
-    exp = np.exp(logits - np.max(logits, axis=1, keepdims=True))
-    return exp / np.sum(exp, axis=1, keepdims=True)
+    exp = np.exp(logits - np.max(logits, axis=-1, keepdims=True))
+    return exp / np.sum(exp, axis=-1, keepdims=True)
+
+
+def kl_divergence(p, q):
+    return np.sum(np.where(p == 0.0, 0.0, p * np.log(p / q)), axis=-1)
 
 
 def inception_score(logits):
     p = softmax(logits)
     q = np.mean(p, axis=0, keepdims=True)
-    kl_divergence = np.sum(np.where(p == 0.0, 0.0, p * np.log(p / q)), axis=1)
-    return np.exp(np.mean(kl_divergence))
+    return np.exp(np.mean(kl_divergence(p, q)))
 
 
 def frechet_inception_distance(real_features, fake_features):
