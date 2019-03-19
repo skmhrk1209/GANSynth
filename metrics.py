@@ -52,7 +52,8 @@ def num_different_bins(real_features, fake_features, num_bins=100, significance_
     different_bins = binomial_proportion_test(
         p=real_proportions,
         m=len(real_features),
-        q=fake_counts,
-        n=len(fake_features)
+        q=fake_proportions,
+        n=len(fake_features),
+        significance_level=significance_level
     )
     return np.count_nonzero(different_bins)
