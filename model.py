@@ -22,8 +22,8 @@ class GANSynth(object):
         fake_latents, fake_labels = fake_input_fn()
         fake_images = generator(fake_latents, fake_labels)
         # =========================================================================================
-        real_features, real_adversarial_logits, train_real_classification_logits = discriminator(real_images, real_labels)
-        fake_features, fake_adversarial_logits, train_fake_classification_logits = discriminator(fake_images, fake_labels)
+        real_features, real_adversarial_logits, real_classification_logits = discriminator(real_images, real_labels)
+        fake_features, fake_adversarial_logits, fake_classification_logits = discriminator(fake_images, fake_labels)
         real_adversarial_logits = tf.squeeze(real_adversarial_logits, axis=1)
         fake_adversarial_logits = tf.squeeze(fake_adversarial_logits, axis=1)
         # =========================================================================================
@@ -38,7 +38,7 @@ class GANSynth(object):
         # generator classification loss
         generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
             labels=fake_labels,
-            logits=train_fake_classification_logits
+            logits=fake_classification_logits
         )
         generator_losses = \
             generator_adversarial_losses + \
@@ -57,11 +57,11 @@ class GANSynth(object):
         # discriminator classification loss
         discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
             labels=real_labels,
-            logits=train_real_classification_logits
+            logits=real_classification_logits
         )
         discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
             labels=fake_labels,
-            logits=train_fake_classification_logits
+            logits=fake_classification_logits
         )
         discriminator_losses = \
             discriminator_adversarial_losses + \
@@ -177,12 +177,29 @@ class GANSynth(object):
             def generator():
                 while True:
                     try:
-                        yield session.run([self.tensors.real_features, self.tensors.fake_features])
+                        yield session.run([
+                            self.tensors.real_images,
+                            self.tensors.real_features,
+                            self.tensors.real_classification_logits,
+                            self.tensors.fake_images,
+                            self.tensors.fake_features,
+                            self.tensors.fake_classification_logits
+                        ])
                     except tf.errors.OutOfRangeError:
                         break
 
-            frechet_inception_distance = metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator())))
-            tf.logging.info("frechet_inception_distance: {}".format(frechet_inception_distance))
+            real_images, real_features, real_classification_logits, \
+                fake_images, fake_features, fake_classification_logits = map(np.concatenate, zip(*generator()))
+
+            tf.logging.info(
+                "num_different_bins: {}, real_inception_score: {}, "
+                "fake_inception_score: {}, frechet_inception_distance: {}".format(
+                    metrics.num_different_bins(real_images, fake_images, num_bins=50),
+                    metrics.inception_score(real_classification_logits),
+                    metrics.inception_score(fake_classification_logits),
+                    metrics.frechet_inception_distance(real_features, fake_features)
+                )
+            )
 
     def generate(self, model_dir, config):
 
