@@ -7,9 +7,9 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
+def nsynth_real_input_fn(filenames, batch_size, num_epochs, shuffle, pitch_counts):
 
-    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
+    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitch_counts), dtype=tf.int32)
 
     def parse_example(example):
 
@@ -36,7 +36,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         image = linear_map(image, 0.0, 1.0, -1.0, 1.0)
 
         label = index_table.lookup(features.pitch)
-        label = tf.one_hot(label, len(pitches))
+        label = tf.one_hot(label, len(pitch_counts))
 
         return image, label, features.instrument_source, features.pitch
 
@@ -58,8 +58,8 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
     dataset = dataset.filter(lambda image, label, instrument_source, pitch: tf.logical_and(
         x=tf.equal(instrument_source, 0),
         y=tf.logical_and(
-            x=tf.greater_equal(pitch, min(pitches)),
-            y=tf.less_equal(pitch, max(pitches))
+            x=tf.greater_equal(pitch, min(pitch_counts)),
+            y=tf.less_equal(pitch, max(pitch_counts))
         )
     ))
     dataset = dataset.map(
@@ -75,3 +75,18 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
     return iterator.get_next()
+
+
+def nsynth_fake_input_fn(latent_size, batch_size, pitch_counts):
+
+    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitch_counts), dtype=tf.int32)
+
+    latents = tf.random_normal([batch_size, latent_size])
+
+    labels = index_table.lookup(tf.reshape(tf.multinomial(
+        logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
+        num_samples=batch_size
+    ), [batch_size]))
+    labels = tf.one_hot(labels, len(pitch_counts))
+
+    return latents, labels

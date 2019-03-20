@@ -15,7 +15,8 @@ import tensorflow as tf
 import argparse
 import functools
 import pickle
-from dataset import nsynth_input_fn
+from dataset import nsynth_real_input_fn
+from dataset import nsynth_fake_input_fn
 from model import GANSynth
 from network import PGGAN
 from utils import Struct
@@ -56,19 +57,18 @@ with tf.Graph().as_default():
         generator=pggan.generator,
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
-            nsynth_input_fn,
+            nsynth_real_input_fn,
             filenames=args.filenames,
             batch_size=args.batch_size,
             num_epochs=args.num_epochs,
             shuffle=True,
-            pitches=pitch_counts.keys()
+            pitch_counts=pitch_counts
         ),
-        fake_input_fn=lambda: (
-            tf.random_normal([args.batch_size, 256]),
-            tf.one_hot(tf.reshape(tf.multinomial(
-                logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
-                num_samples=args.batch_size
-            ), [args.batch_size]), len(pitch_counts))
+        fake_input_fn=functools.partial(
+            nsynth_fake_input_fn,
+            latent_size=256,
+            batch_size=args.batch_size,
+            pitch_counts=pitch_counts
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
