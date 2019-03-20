@@ -209,6 +209,23 @@ class GANSynth(object):
                 )
             )
 
+        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(tf.convert_to_tensor(real_features), tf.convert_to_tensor(fake_features))
+        is_score = tf.contrib.gan.eval.classifier_score_from_logits(tf.convert_to_tensor(real_classification_logits), tf.convert_to_tensor(fake_classification_logits))
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            print("fid: {}, is: {}".format(*session.run([fid, is_score])))
+
     def generate(self, model_dir, config):
 
         with tf.train.SingularMonitoredSession(
