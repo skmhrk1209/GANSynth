@@ -198,7 +198,11 @@ class GANSynth(object):
             tf.logging.info(
                 "num_different_bins: {}, frechet_inception_distance: {}, "
                 "real_inception_score: {}, fake_inception_score: {}".format(
-                    metrics.num_different_bins(np.ravel(real_magnitude_spectrograms), np.ravel(fake_magnitude_spectrograms), num_bins=50),
+                    metrics.num_different_bins(
+                        np.reshape(real_magnitude_spectrograms, [-1, np.prod(real_magnitude_spectrograms.shape[1:])]),
+                        np.reshape(fake_magnitude_spectrograms, [-1, np.prod(fake_magnitude_spectrograms.shape[1:])]),
+                        num_bins=50
+                    ),
                     metrics.frechet_inception_distance(real_features, fake_features),
                     metrics.inception_score(real_classification_logits),
                     metrics.inception_score(fake_classification_logits)
