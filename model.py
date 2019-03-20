@@ -48,7 +48,7 @@ class GANSynth(object):
         discriminator_adversarial_losses = -real_adversarial_logits
         discriminator_adversarial_losses += fake_adversarial_logits
         # discriminator one-centered gradient penalty
-        coefficients = tf.random_uniform([tf.shape(real_images)[0], 1, 1, 1])
+        coefficients = tf.random.uniform([tf.shape(real_images)[0], 1, 1, 1])
         interpolated_images = lerp(real_images, fake_images, coefficients)
         _, interpolated_adversarial_logits, _ = discriminator(interpolated_images, real_labels)
         interpolated_gradients = tf.gradients(interpolated_adversarial_logits, [interpolated_images])[0]

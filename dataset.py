@@ -79,12 +79,10 @@ def nsynth_real_input_fn(filenames, batch_size, num_epochs, shuffle, pitch_count
 
 def nsynth_fake_input_fn(latent_size, batch_size, pitch_counts):
 
-    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitch_counts), dtype=tf.int32)
-
-    latents = tf.random_normal([batch_size, latent_size])
+    latents = tf.random.normal([batch_size, latent_size])
 
     logits = tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)])
-    labels = index_table.lookup(tf.reshape(tf.multinomial(logits=logits, num_samples=batch_size), [batch_size]))
+    labels = tf.reshape(tf.random.categorical(logits=logits, num_samples=batch_size), [batch_size])
     labels = tf.one_hot(labels, len(pitch_counts))
 
     return latents, labels
