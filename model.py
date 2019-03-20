@@ -103,11 +103,15 @@ class GANSynth(object):
         self.tensors = Struct(
             global_step=tf.train.get_global_step(),
             real_magnitude_spectrograms=real_images[:, 0, ..., tf.newaxis],
-            real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
             fake_magnitude_spectrograms=fake_images[:, 0, ..., tf.newaxis],
+            real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
             fake_instantaneous_frequencies=fake_images[:, 1, ..., tf.newaxis],
             real_features=real_features,
             fake_features=fake_features,
+            real_adversarial_logits=real_adversarial_logits,
+            fake_adversarial_logits=fake_adversarial_logits,
+            real_classification_logits=real_classification_logits,
+            fake_classification_logits=fake_classification_logits,
             generator_loss=generator_loss,
             discriminator_loss=discriminator_loss
         )
@@ -179,25 +183,25 @@ class GANSynth(object):
                     try:
                         yield session.run([
                             self.tensors.real_magnitude_spectrograms,
-                            self.tensors.real_features,
-                            self.tensors.real_classification_logits,
                             self.tensors.fake_magnitude_spectrograms,
+                            self.tensors.real_features,
                             self.tensors.fake_features,
+                            self.tensors.real_classification_logits,
                             self.tensors.fake_classification_logits
                         ])
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_images, real_features, real_classification_logits, \
-                fake_images, fake_features, fake_classification_logits = map(np.concatenate, zip(*generator()))
+            real_magnitude_spectrograms, fake_magnitude_spectrograms, real_features, fake_features, \
+                real_classification_logits, fake_classification_logits = map(np.concatenate, zip(*generator()))
 
             tf.logging.info(
-                "num_different_bins: {}, real_inception_score: {}, "
-                "fake_inception_score: {}, frechet_inception_distance: {}".format(
-                    metrics.num_different_bins(np.ravel(real_images), np.ravel(fake_images), num_bins=50),
+                "num_different_bins: {}, frechet_inception_distance: {}, "
+                "real_inception_score: {}, fake_inception_score: {}".format(
+                    metrics.num_different_bins(np.ravel(real_magnitude_spectrograms), np.ravel(fake_magnitude_spectrograms), num_bins=50),
+                    metrics.frechet_inception_distance(real_features, fake_features),
                     metrics.inception_score(real_classification_logits),
-                    metrics.inception_score(fake_classification_logits),
-                    metrics.frechet_inception_distance(real_features, fake_features)
+                    metrics.inception_score(fake_classification_logits)
                 )
             )
 
