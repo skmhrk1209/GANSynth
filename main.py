@@ -77,9 +77,9 @@ with tf.Graph().as_default():
             discriminator_learning_rate=8e-4,
             discriminator_beta1=0.0,
             discriminator_beta2=0.99,
-            gradient_penalty_weight=10.0,
-            generator_classification_weight=10.0,
-            discriminator_classification_weight=10.0,
+            mode_seeking_loss_weight=1.0,
+            real_gradient_penalty_weight=5.0,
+            fake_gradient_penalty_weight=0.0,
         )
     )
 
