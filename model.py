@@ -28,9 +28,11 @@ class GANSynth(object):
         fake_features1, fake_logits1 = discriminator(fake_images1, fake_labels)
         fake_features2, fake_logits2 = discriminator(fake_images2, fake_labels)
         # =========================================================================================
-        # Non-Saturating + Zero-Centered Gradient Penalty
+        # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
         # (https://arxiv.org/abs/1406.2661)
+        # [Mode Seeking Generative Adversarial Networks for Diverse Image Synthesis]
+        # (https://arxiv.org/pdf/1903.05628.pdf)
         # [Which Training Methods for GANs do actually Converge?]
         # (https://arxiv.org/pdf/1801.04406.pdf)
         # -----------------------------------------------------------------------------------------
