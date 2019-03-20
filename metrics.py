@@ -9,9 +9,7 @@ def softmax(logits, axis=-1):
 
 
 def kl_divergence(p, q, axis=-1):
-    p = p[p > 0]
-    q = q[p > 0]
-    return np.sum(p * np.log(p / q), axis=axis)
+    return np.sum(np.where(p == 0, 0, p * np.log(p / q)), axis=axis)
 
 
 def inception_score(logits):
