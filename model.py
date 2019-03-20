@@ -195,18 +195,15 @@ class GANSynth(object):
                 real_instantaneous_frequencies, fake_instantaneous_frequencies1, \
                 real_features, fake_features, real_logits, fake_logits = map(np.concatenate, zip(*generator()))
 
+            def spatial_flatten(inputs):
+                return np.reshape(inputs, [-1, np.prod(inputs.shape[1:])])
+
             tf.logging.info(
                 "num_different_bins: {}, frechet_inception_distance: {}, "
                 "real_inception_score: {}, fake_inception_score: {}".format(
                     metrics.num_different_bins(
-                        real_features=np.reshape(
-                            a=real_magnitude_spectrograms,
-                            newshape=[-1, np.prod(real_magnitude_spectrograms.shape[1:])]
-                        ),
-                        fake_features=np.reshape(
-                            a=fake_magnitude_spectrograms,
-                            newshape=[-1, np.prod(fake_magnitude_spectrograms.shape[1:])]
-                        ),
+                        real_features=spatial_flatten(real_magnitude_spectrograms),
+                        fake_features=spatial_flatten(fake_magnitude_spectrograms),
                         num_bins=50,
                         significance_level=0.05
                     ),
