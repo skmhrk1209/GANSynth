@@ -186,26 +186,22 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         features = tf.nn.leaky_relu(features)
-                    with tf.variable_scope("adversarial_logits"):
-                        adversarial_logits = dense(
-                            inputs=features,
-                            units=1,
-                            use_bias=True,
-                            variance_scale=1,
-                            scale_weight=True
-                        )
-                    with tf.variable_scope("classification_logits"):
+                    with tf.variable_scope("logits"):
                         # label conditioning from
-                        # [Conditional Image Synthesis With Auxiliary Classifier GANs]
-                        # (https://arxiv.org/pdf/1610.09585.pdf)
-                        classification_logits = dense(
+                        # [Which Training Methods for GANs do actually Converge?]
+                        # (https://arxiv.org/pdf/1801.04406.pdf)
+                        logits = dense(
                             inputs=features,
                             units=labels.shape[1],
                             use_bias=True,
                             variance_scale=1,
                             scale_weight=True
                         )
-                    return features, adversarial_logits, classification_logits
+                        logits = tf.gather_nd(
+                            params=logits,
+                            indices=tf.where(labels)
+                        )
+                    return features, logits
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(

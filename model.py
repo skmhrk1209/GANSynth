@@ -19,55 +19,49 @@ class GANSynth(object):
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
         # =========================================================================================
         real_images, real_labels = real_input_fn()
-        fake_latents, fake_labels = fake_input_fn()
-        fake_images = generator(fake_latents, fake_labels)
+        fake_latents1, fake_latents2, fake_labels = fake_input_fn()
+        fake_images1 = generator(fake_latents1, fake_labels)
+        fake_images2 = generator(fake_latents2, fake_labels)
         # =========================================================================================
-        real_features, real_adversarial_logits, real_classification_logits = discriminator(real_images, real_labels)
-        fake_features, fake_adversarial_logits, fake_classification_logits = discriminator(fake_images, fake_labels)
-        real_adversarial_logits = tf.squeeze(real_adversarial_logits, axis=1)
-        fake_adversarial_logits = tf.squeeze(fake_adversarial_logits, axis=1)
+        real_features, real_logits = discriminator(real_images, real_labels)
+        fake_features1, fake_logits1 = discriminator(fake_images1, fake_labels)
+        fake_features2, fake_logits2 = discriminator(fake_images2, fake_labels)
         # =========================================================================================
-        # WGAN-GP + ACGAN
-        # [Improved Training of Wasserstein GANs]
-        # (https://arxiv.org/pdf/1704.00028.pdf)
-        # [Conditional Image Synthesis With Auxiliary Classifier GANs]
-        # (https://arxiv.org/pdf/1610.09585.pdf)
+        # Non-Saturating + Zero-Centered Gradient Penalty
+        # [Generative Adversarial Networks]
+        # (https://arxiv.org/abs/1406.2661)
+        # [Which Training Methods for GANs do actually Converge?]
+        # (https://arxiv.org/pdf/1801.04406.pdf)
         # -----------------------------------------------------------------------------------------
-        # generator wasserstein loss
-        generator_adversarial_losses = -fake_adversarial_logits
-        # generator classification loss
-        generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=fake_labels,
-            logits=fake_classification_logits
-        )
-        generator_losses = \
-            generator_adversarial_losses + \
-            generator_classification_losses * hyper_params.generator_classification_weight
+        # non-saturating loss
+        generator_losses = tf.nn.softplus(-fake_logits1)
+        generator_losses += tf.nn.softplus(-fake_logits2)
+        # mode seeking loss
+        if hyper_params.mode_seeking_loss_weight:
+            latent_distances = tf.reduce_sum(tf.abs(fake_latents1 - fake_latents2), axis=[1])
+            image_distances = tf.reduce_sum(tf.abs(fake_images1 - fake_images2), axis=[1, 2, 3])
+            mode_seeking_losses = latent_distances / (image_distances + 1e-6)
+            generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
         # -----------------------------------------------------------------------------------------
-        # discriminator wasserstein loss
-        discriminator_adversarial_losses = -real_adversarial_logits
-        discriminator_adversarial_losses += fake_adversarial_logits
-        # discriminator one-centered gradient penalty
-        coefficients = tf.random.uniform([tf.shape(real_images)[0], 1, 1, 1])
-        interpolated_images = lerp(real_images, fake_images, coefficients)
-        _, interpolated_adversarial_logits, _ = discriminator(interpolated_images, real_labels)
-        interpolated_gradients = tf.gradients(interpolated_adversarial_logits, [interpolated_images])[0]
-        interpolated_gradient_norms = tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1e-8)
-        interpolated_gradient_penalties = tf.square(1.0 - interpolated_gradient_norms)
-        # discriminator classification loss
-        discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=real_labels,
-            logits=real_classification_logits
-        )
-        discriminator_classification_losses += tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=fake_labels,
-            logits=fake_classification_logits
-        )
-        discriminator_losses = \
-            discriminator_adversarial_losses + \
-            interpolated_gradient_penalties * hyper_params.gradient_penalty_weight + \
-            discriminator_classification_losses * hyper_params.discriminator_classification_weight
+        # non-saturating loss
+        discriminator_losses = tf.nn.softplus(-real_logits)
+        discriminator_losses += tf.nn.softplus(fake_logits1)
+        discriminator_losses += tf.nn.softplus(fake_logits2)
+        # zero-centerd gradient penalty on data distribution
+        if hyper_params.real_gradient_penalty_weight:
+            real_gradients = tf.gradients(real_logits, [real_images])[0]
+            real_gradient_penalties = tf.reduce_sum(tf.square(real_gradients), axis=[1, 2, 3])
+            discriminator_losses += real_gradient_penalties * hyper_params.real_gradient_penalty_weight
+        # zero-centerd gradient penalty on generator distribution
+        if hyper_params.fake_gradient_penalty_weight:
+            fake_gradients1 = tf.gradients(fake_logits1, [fake_images1])[0]
+            fake_gradients2 = tf.gradients(fake_logits2, [fake_images2])[0]
+            fake_gradient_penalties1 = tf.reduce_sum(tf.square(fake_gradients1), axis=[1, 2, 3])
+            fake_gradient_penalties2 = tf.reduce_sum(tf.square(fake_gradients2), axis=[1, 2, 3])
+            discriminator_losses += fake_gradient_penalties1 * hyper_params.fake_gradient_penalty_weight
+            discriminator_losses += fake_gradient_penalties2 * hyper_params.fake_gradient_penalty_weight
         # -----------------------------------------------------------------------------------------
+        # losss reduction
         generator_loss = tf.reduce_mean(generator_losses)
         discriminator_loss = tf.reduce_mean(discriminator_losses)
         # =========================================================================================
@@ -103,15 +97,13 @@ class GANSynth(object):
         self.tensors = Struct(
             global_step=tf.train.get_global_step(),
             real_magnitude_spectrograms=real_images[:, 0, ..., tf.newaxis],
-            fake_magnitude_spectrograms=fake_images[:, 0, ..., tf.newaxis],
+            fake_magnitude_spectrograms=fake_images1[:, 0, ..., tf.newaxis],
             real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
-            fake_instantaneous_frequencies=fake_images[:, 1, ..., tf.newaxis],
+            fake_instantaneous_frequencies=fake_images1[:, 1, ..., tf.newaxis],
             real_features=real_features,
-            fake_features=fake_features,
-            real_adversarial_logits=real_adversarial_logits,
-            fake_adversarial_logits=fake_adversarial_logits,
-            real_classification_logits=real_classification_logits,
-            fake_classification_logits=fake_classification_logits,
+            fake_features=fake_features1,
+            real_logits=real_logits,
+            fake_logits=fake_logits1,
             generator_loss=generator_loss,
             discriminator_loss=discriminator_loss
         )
