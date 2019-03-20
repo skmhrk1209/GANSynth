@@ -194,7 +194,7 @@ class GANSynth(object):
             tf.logging.info(
                 "num_different_bins: {}, real_inception_score: {}, "
                 "fake_inception_score: {}, frechet_inception_distance: {}".format(
-                    metrics.num_different_bins(real_images, fake_images, num_bins=50),
+                    metrics.num_different_bins(np.ravel(real_images), np.ravel(fake_images), num_bins=50),
                     metrics.inception_score(real_classification_logits),
                     metrics.inception_score(fake_classification_logits),
                     metrics.frechet_inception_distance(real_features, fake_features)
