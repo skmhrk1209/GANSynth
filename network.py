@@ -152,6 +152,12 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
+            labels = embedding(
+                inputs=labels,
+                units=latents.shape[1],
+                variance_scale=1,
+                scale_weight=True
+            )
             return grow(tf.concat([latents, labels], axis=1), self.min_depth)
 
     def discriminator(self, images, labels, name="discriminator", reuse=tf.AUTO_REUSE):
