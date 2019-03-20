@@ -192,7 +192,7 @@ class GANSynth(object):
                         break
 
             real_magnitude_spectrograms, fake_magnitude_spectrograms, \
-                real_instantaneous_frequencies, fake_instantaneous_frequencies1, \
+                real_instantaneous_frequencies, fake_instantaneous_frequencies, \
                 real_features, fake_features, real_logits, fake_logits = map(np.concatenate, zip(*generator()))
 
             def spatial_flatten(inputs):
