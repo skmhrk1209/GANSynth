@@ -98,13 +98,17 @@ class GANSynth(object):
         self.tensors = Struct(
             global_step=tf.train.get_global_step(),
             real_magnitude_spectrograms=real_images[:, 0, ..., tf.newaxis],
-            fake_magnitude_spectrograms=fake_images1[:, 0, ..., tf.newaxis],
+            fake_magnitude_spectrograms1=fake_images1[:, 0, ..., tf.newaxis],
+            fake_magnitude_spectrograms2=fake_images2[:, 0, ..., tf.newaxis],
             real_instantaneous_frequencies=real_images[:, 1, ..., tf.newaxis],
-            fake_instantaneous_frequencies=fake_images1[:, 1, ..., tf.newaxis],
+            fake_instantaneous_frequencies1=fake_images1[:, 1, ..., tf.newaxis],
+            fake_instantaneous_frequencies2=fake_images2[:, 1, ..., tf.newaxis],
             real_features=real_features,
-            fake_features=fake_features1,
+            fake_features1=fake_features1,
+            fake_features2=fake_features2,
             real_logits=real_logits,
-            fake_logits=fake_logits1,
+            fake_logits1=fake_logits1,
+            fake_logits2=fake_logits2,
             generator_loss=generator_loss,
             discriminator_loss=discriminator_loss
         )
