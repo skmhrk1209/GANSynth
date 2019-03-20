@@ -83,10 +83,8 @@ def nsynth_fake_input_fn(latent_size, batch_size, pitch_counts):
 
     latents = tf.random_normal([batch_size, latent_size])
 
-    labels = index_table.lookup(tf.reshape(tf.multinomial(
-        logits=tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)]),
-        num_samples=batch_size
-    ), [batch_size]))
+    logits = tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)])
+    labels = index_table.lookup(tf.reshape(tf.multinomial(logits=logits, num_samples=batch_size), [batch_size]))
     labels = tf.one_hot(labels, len(pitch_counts))
 
     return latents, labels
