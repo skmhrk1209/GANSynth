@@ -23,7 +23,7 @@ from utils import Struct
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, nargs="+")
-parser.add_argument("--batch_size", type=int, default=8)
+parser.add_argument("--batch_size", type=int, default=60)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument('--train', action="store_true")
@@ -37,10 +37,8 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 def nsynth_fake_input_fn(latent_size, batch_size, pitch_counts):
 
-    latents = tf.random.normal([batch_size, latent_size])
-
-    labels = tf.tile([48], [batch_size])
-    labels = tf.one_hot(labels, len(pitch_counts))
+    latents = tf.tile(tf.random.normal([1, latent_size]), [batch_size, 1])
+    labels = tf.one_hot(tf.range(0, 60), len(pitch_counts))
 
     return latents, labels
 
