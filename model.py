@@ -211,8 +211,7 @@ class GANSynth(object):
 
         fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
             tf.convert_to_tensor(real_features), tf.convert_to_tensor(fake_features))
-        is_score = tf.contrib.gan.eval.classifier_score_from_logits(tf.convert_to_tensor(
-            real_classification_logits), tf.convert_to_tensor(fake_classification_logits))
+        is_score = tf.contrib.gan.eval.classifier_score_from_logits(tf.convert_to_tensor(fake_classification_logits))
 
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
