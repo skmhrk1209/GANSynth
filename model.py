@@ -19,7 +19,8 @@ class GANSynth(object):
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
         # =========================================================================================
         real_images, real_labels = real_input_fn()
-        fake_latents1, fake_latents2, fake_labels = fake_input_fn()
+        fake_latents1, fake_labels = fake_input_fn()
+        fake_latents2, fake_labels = fake_input_fn()
         fake_images1 = generator(fake_latents1, fake_labels)
         fake_images2 = generator(fake_latents2, fake_labels)
         # =========================================================================================
