@@ -199,8 +199,8 @@ class GANSynth(object):
                 "num_different_bins: {}, frechet_inception_distance: {}, "
                 "real_inception_score: {}, fake_inception_score: {}".format(
                     metrics.num_different_bins(
-                        np.reshape(real_magnitude_spectrograms, [-1, np.prod(real_magnitude_spectrograms.shape[1:])]),
-                        np.reshape(fake_magnitude_spectrograms, [-1, np.prod(fake_magnitude_spectrograms.shape[1:])]),
+                        real_features=np.reshape(real_magnitude_spectrograms, [-1, np.prod(real_magnitude_spectrograms.shape[1:])]),
+                        fake_features=np.reshape(fake_magnitude_spectrograms, [-1, np.prod(fake_magnitude_spectrograms.shape[1:])]),
                         num_bins=50
                     ),
                     metrics.frechet_inception_distance(real_features, fake_features),
@@ -209,8 +209,10 @@ class GANSynth(object):
                 )
             )
 
-        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(tf.convert_to_tensor(real_features), tf.convert_to_tensor(fake_features))
-        is_score = tf.contrib.gan.eval.classifier_score_from_logits(tf.convert_to_tensor(real_classification_logits), tf.convert_to_tensor(fake_classification_logits))
+        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
+            tf.convert_to_tensor(real_features), tf.convert_to_tensor(fake_features))
+        is_score = tf.contrib.gan.eval.classifier_score_from_logits(tf.convert_to_tensor(
+            real_classification_logits), tf.convert_to_tensor(fake_classification_logits))
 
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
