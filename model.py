@@ -180,20 +180,24 @@ class GANSynth(object):
                     try:
                         yield session.run([
                             self.tensors.real_magnitude_spectrograms,
-                            self.tensors.fake_magnitude_spectrograms,
+                            self.tensors.fake_magnitude_spectrograms1,
+                            self.tensors.real_instantaneous_frequencies,
+                            self.tensors.fake_instantaneous_frequencies1,
                             self.tensors.real_features,
-                            self.tensors.fake_features,
-                            self.tensors.real_classification_logits,
-                            self.tensors.fake_classification_logits
+                            self.tensors.fake_features1,
+                            self.tensors.real_logits,
+                            self.tensors.fake_logits1
                         ])
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_magnitude_spectrograms, fake_magnitude_spectrograms, real_features, fake_features, \
-                real_classification_logits, fake_classification_logits = map(np.concatenate, zip(*generator()))
+            real_magnitude_spectrograms, fake_magnitude_spectrograms, \
+                real_instantaneous_frequencies, fake_instantaneous_frequencies1, \
+                real_features, fake_features, real_logits, fake_logits = map(np.concatenate, zip(*generator()))
 
             tf.logging.info(
-                "num_different_bins: {}, frechet_inception_distance: {}, inception_score: {}".format(
+                "num_different_bins: {}, frechet_inception_distance: {}, "
+                "real_inception_score: {}, fake_inception_score: {}".format(
                     metrics.num_different_bins(
                         real_features=np.reshape(real_magnitude_spectrograms, [-1, np.prod(real_magnitude_spectrograms.shape[1:])]),
                         fake_features=np.reshape(fake_magnitude_spectrograms, [-1, np.prod(fake_magnitude_spectrograms.shape[1:])]),
@@ -201,7 +205,8 @@ class GANSynth(object):
                         significance_level=0.05
                     ),
                     metrics.frechet_inception_distance(real_features, fake_features),
-                    metrics.inception_score(fake_classification_logits)
+                    metrics.inception_score(real_logits),
+                    metrics.inception_score(fake_logits)
                 )
             )
 
@@ -227,7 +232,13 @@ class GANSynth(object):
             if not instantaneous_frequency_dir.exists():
                 instantaneous_frequency_dir.mkdir(parents=True, exist_ok=True)
 
-            for fake_magnitude_spectrogram, fake_instantaneous_frequency in zip(*session.run([self.tensors.fake_magnitude_spectrograms, self.tensors.fake_instantaneous_frequencies])):
+            def generator():
+                yield session.run([
+                    self.tensors.fake_magnitude_spectrograms1,
+                    self.tensors.fake_instantaneous_frequencies1
+                ])
+
+            for fake_magnitude_spectrogram, fake_instantaneous_frequency in zip(*map(np.concatenate, zip(*generator()))):
                 skimage.io.imsave(
                     fname=magnitude_spectrogram_dir / "{}.jpg".format(len(list(magnitude_spectrogram_dir.glob("*.jpg")))),
                     arr=linear_map(fake_magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255).squeeze()
