@@ -178,10 +178,10 @@ class GANSynth(object):
                 while True:
                     try:
                         yield session.run([
-                            self.tensors.real_images,
+                            self.tensors.real_magnitude_spectrograms,
                             self.tensors.real_features,
                             self.tensors.real_classification_logits,
-                            self.tensors.fake_images,
+                            self.tensors.fake_magnitude_spectrograms,
                             self.tensors.fake_features,
                             self.tensors.fake_classification_logits
                         ])
