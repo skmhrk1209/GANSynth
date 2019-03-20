@@ -231,6 +231,7 @@ class GANSynth(object):
                 instantaneous_frequency_dir.mkdir(parents=True, exist_ok=True)
 
             for fake_magnitude_spectrogram, fake_instantaneous_frequency in zip(*session.run([self.tensors.fake_magnitude_spectrograms, self.tensors.fake_instantaneous_frequencies])):
+                print(fake_instantaneous_frequency.shape)
                 skimage.io.imsave(
                     fname=magnitude_spectrogram_dir / "{}.jpg".format(len(list(magnitude_spectrogram_dir.glob("*.jpg")))),
                     arr=linear_map(fake_magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
