@@ -199,8 +199,14 @@ class GANSynth(object):
                 "num_different_bins: {}, frechet_inception_distance: {}, "
                 "real_inception_score: {}, fake_inception_score: {}".format(
                     metrics.num_different_bins(
-                        real_features=np.reshape(real_magnitude_spectrograms, [-1, np.prod(real_magnitude_spectrograms.shape[1:])]),
-                        fake_features=np.reshape(fake_magnitude_spectrograms, [-1, np.prod(fake_magnitude_spectrograms.shape[1:])]),
+                        real_features=np.reshape(
+                            a=real_magnitude_spectrograms,
+                            newshape=[-1, np.prod(real_magnitude_spectrograms.shape[1:])]
+                        ),
+                        fake_features=np.reshape(
+                            a=fake_magnitude_spectrograms,
+                            newshape=[-1, np.prod(fake_magnitude_spectrograms.shape[1:])]
+                        ),
                         num_bins=50,
                         significance_level=0.05
                     ),
