@@ -237,5 +237,5 @@ class GANSynth(object):
                 )
                 skimage.io.imsave(
                     fname=instantaneous_frequency_dir / "{}.jpg".format(len(list(instantaneous_frequency_dir.glob("*.jpg")))),
-                    arr=linear_map(fake_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255).square()
+                    arr=linear_map(fake_instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255).squeeze()
                 )
