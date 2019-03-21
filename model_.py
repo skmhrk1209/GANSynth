@@ -38,7 +38,7 @@ class GANSynth(object):
         # mode seeking loss
         if hyper_params.latent_gradient_penalty_weight:
             latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
-            latent_gradient_penalties = tf.reduce_sum(tf.square(latent_gradients), axis=[1, 2, 3])
+            latent_gradient_penalties = tf.reduce_sum(tf.square(latent_gradients), axis=[1])
             latent_gradient_penalties = 1.0 / (latent_gradient_penalties + 1e-6)
             generator_losses += latent_gradient_penalties * hyper_params.latent_gradient_penalty_weight
         # -----------------------------------------------------------------------------------------
