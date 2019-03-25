@@ -7,9 +7,9 @@ def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
 
-def nsynth_real_input_fn(filenames, batch_size, num_epochs, shuffle, pitch_counts):
+def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
 
-    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitch_counts), dtype=tf.int32)
+    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
     def parse_example(example):
 
@@ -36,7 +36,7 @@ def nsynth_real_input_fn(filenames, batch_size, num_epochs, shuffle, pitch_count
         image = linear_map(image, 0.0, 1.0, -1.0, 1.0)
 
         label = index_table.lookup(features.pitch)
-        label = tf.one_hot(label, len(pitch_counts))
+        label = tf.one_hot(label, len(pitches))
 
         return image, label, features.instrument_source, features.pitch
 
@@ -58,8 +58,8 @@ def nsynth_real_input_fn(filenames, batch_size, num_epochs, shuffle, pitch_count
     dataset = dataset.filter(lambda image, label, instrument_source, pitch: tf.logical_and(
         x=tf.equal(instrument_source, 0),
         y=tf.logical_and(
-            x=tf.greater_equal(pitch, min(pitch_counts)),
-            y=tf.less_equal(pitch, max(pitch_counts))
+            x=tf.greater_equal(pitch, min(pitches)),
+            y=tf.less_equal(pitch, max(pitches))
         )
     ))
     dataset = dataset.map(
@@ -75,14 +75,3 @@ def nsynth_real_input_fn(filenames, batch_size, num_epochs, shuffle, pitch_count
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
     return iterator.get_next()
-
-
-def nsynth_fake_input_fn(latent_size, batch_size, pitch_counts):
-
-    latents = tf.random.normal([batch_size, latent_size])
-
-    logits = tf.log([tf.cast(list(zip(*sorted(pitch_counts.items())))[1], tf.float32)])
-    labels = tf.reshape(tf.random.categorical(logits=logits, num_samples=batch_size), [batch_size])
-    labels = tf.one_hot(labels, len(pitch_counts))
-
-    return latents, labels

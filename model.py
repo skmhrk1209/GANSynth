@@ -6,10 +6,6 @@ from pathlib import Path
 from utils import Struct
 
 
-def lerp(a, b, t):
-    return t * a + (1.0 - t) * b
-
-
 def linear_map(inputs, in_min, in_max, out_min, out_max):
     return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
 
@@ -18,15 +14,15 @@ class GANSynth(object):
 
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
         # =========================================================================================
-        real_images, real_labels = real_input_fn()
-        fake_latents1, fake_labels = fake_input_fn()
-        fake_latents2, fake_labels = fake_input_fn()
-        fake_images1 = generator(fake_latents1, fake_labels)
-        fake_images2 = generator(fake_latents2, fake_labels)
+        real_images, labels = real_input_fn()
+        fake_latents1 = fake_input_fn()
+        fake_latents2 = fake_input_fn()
+        fake_images1 = generator(fake_latents1, labels)
+        fake_images2 = generator(fake_latents2, labels)
         # =========================================================================================
-        real_features, real_logits = discriminator(real_images, real_labels)
-        fake_features1, fake_logits1 = discriminator(fake_images1, fake_labels)
-        fake_features2, fake_logits2 = discriminator(fake_images2, fake_labels)
+        real_features, real_logits = discriminator(real_images, labels)
+        fake_features1, fake_logits1 = discriminator(fake_images1, labels)
+        fake_features2, fake_logits2 = discriminator(fake_images2, labels)
         # =========================================================================================
         # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]

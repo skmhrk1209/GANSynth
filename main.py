@@ -15,7 +15,7 @@ import tensorflow as tf
 import argparse
 import functools
 import pickle
-from dataset import nsynth_real_input_fn
+from dataset import nsynth_input_fn
 from dataset import nsynth_fake_input_fn
 from model import GANSynth
 from network import PGGAN
@@ -50,25 +50,19 @@ with tf.Graph().as_default():
         ), tf.float32)
     )
 
-    with open("pitch_counts.pickle", "rb") as file:
-        pitch_counts = pickle.load(file)
-
     gan_synth = GANSynth(
         generator=pggan.generator,
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
-            nsynth_real_input_fn,
+            nsynth_input_fn,
             filenames=args.filenames,
             batch_size=args.batch_size,
             num_epochs=args.num_epochs,
             shuffle=True,
-            pitch_counts=pitch_counts
+            pitches=list(range(24, 85))
         ),
-        fake_input_fn=functools.partial(
-            nsynth_fake_input_fn,
-            latent_size=256,
-            batch_size=args.batch_size,
-            pitch_counts=pitch_counts
+        fake_input_fn=lambda: (
+            tf.random.normal([args.batch_size, 256])
         ),
         hyper_params=Struct(
             generator_learning_rate=8e-4,
