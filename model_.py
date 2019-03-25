@@ -15,8 +15,8 @@ class GANSynth(object):
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, hyper_params):
         # =========================================================================================
         real_images, labels = real_input_fn()
-        fake_latents = fake_input_fn()
-        fake_images = generator(fake_latents, labels)
+        latents = fake_input_fn()
+        fake_images = generator(latents, labels)
         # =========================================================================================
         real_features, real_logits = discriminator(real_images, labels)
         fake_features, fake_logits = discriminator(fake_images, labels)
@@ -33,7 +33,7 @@ class GANSynth(object):
         generator_losses = tf.nn.softplus(-fake_logits)
         # mode seeking loss
         if hyper_params.latent_gradient_penalty_weight:
-            latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
+            latent_gradients = tf.gradients(fake_images, [latents])[0]
             latent_gradient_penalties = 1.0 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1e-6)
             generator_losses += latent_gradient_penalties * hyper_params.latent_gradient_penalty_weight
         # -----------------------------------------------------------------------------------------
