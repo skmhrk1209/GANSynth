@@ -16,6 +16,7 @@ class GANSynth(object):
         # =========================================================================================
         real_images, labels = real_input_fn()
         latents = fake_input_fn()
+        # =========================================================================================
         fake_images = generator(latents, labels)
         # =========================================================================================
         real_features, real_logits = discriminator(real_images, labels)

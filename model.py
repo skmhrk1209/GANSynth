@@ -17,6 +17,7 @@ class GANSynth(object):
         real_images, labels = real_input_fn()
         latents1 = fake_input_fn()
         latents2 = fake_input_fn()
+        # =========================================================================================
         fake_images1 = generator(latents1, labels)
         fake_images2 = generator(latents2, labels)
         # =========================================================================================
