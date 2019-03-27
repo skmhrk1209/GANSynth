@@ -12,10 +12,6 @@ from pathlib import Path
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-def linear_map(inputs, in_min, in_max, out_min, out_max):
-    return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-
-
 def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     time_steps, num_freq_bins = spectrogram_shape
@@ -24,6 +20,9 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
     num_samples = frame_step * (time_steps - 1) + frame_length
 
     def preprocess(filenames, waveforms):
+
+        def normalize(inputs, mean, std):
+            return (inputs - mean) / std
         # =========================================================================================
         # For Nsynth dataset, we are putting all padding in the front
         # This causes edge effects in the tail
@@ -60,8 +59,8 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
         mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_spectrograms)
         # =========================================================================================
-        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -14.0, 6.0, -1.0, 1.0)
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1.0, 1.0, -1.0, 1.0)
+        log_mel_magnitude_spectrograms = normalize(log_mel_magnitude_spectrograms, -4.0, 10.0)
+        mel_instantaneous_frequencies = normalize(mel_instantaneous_frequencies, 0.0, 1.0)
         # =========================================================================================
         return filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
@@ -98,10 +97,18 @@ def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
 
     with tf.Graph().as_default():
 
+        def normalize(inputs, mean, std):
+            return (inputs - mean) / std
+
+        def unnormalize(inputs, mean, std):
+            return inputs * std + mean
+
         def waveform_generator():
+            mean = (np.iinfo(np.int16).max + np.iinfo(np.int16).min) / 2.0
+            std = (np.iinfo(np.int16).max - np.iinfo(np.int16).min) / 2.0
             for filename in sorted(waveform_dir.glob("*.wav")):
                 waveform = scipy.io.wavfile.read(filename)[1]
-                waveform = linear_map(waveform.astype(np.float32), np.iinfo(np.int16).min, np.iinfo(np.int16).max, -1.0, 1.0)
+                waveform = normalize(waveform, mean, std)
                 yield (filename.stem, waveform)
 
         spectrograms = convert_to_spectrograms(
@@ -119,11 +126,11 @@ def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
                     for filename, magnitude_spectrogram, instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
                             fname=magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
-                            arr=linear_map(magnitude_spectrogram, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                            arr=unnormalize(magnitude_spectrogram, 0.5, 0, 5)
                         )
                         skimage.io.imsave(
                             fname=instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
-                            arr=linear_map(instantaneous_frequency, -1.0, 1.0, 0.0, 255.0).astype(np.uint8).clip(0, 255)
+                            arr=unnormalize(instantaneous_frequency, 0.5, 0.5)
                         )
                 except tf.errors.OutOfRangeError:
                     break

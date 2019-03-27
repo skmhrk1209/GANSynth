@@ -3,15 +3,14 @@ import os
 from utils import Struct
 
 
-def linear_map(inputs, in_min, in_max, out_min, out_max):
-    return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-
-
 def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
 
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
     def parse_example(example):
+
+        def normalize(inputs, mean, std):
+            return (inputs - mean) / std
 
         features = Struct(tf.parse_single_example(
             serialized=example,
@@ -33,7 +32,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
 
         image = tf.concat([magnitude_spectrogram, instantaneous_frequency], axis=0)
         image = tf.image.convert_image_dtype(image, tf.float32)
-        image = linear_map(image, 0.0, 1.0, -1.0, 1.0)
+        image = normalize(image, 0.5, 0.5)
 
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
@@ -66,7 +65,10 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches):
         map_func=lambda image, label, instrument_source, pitch: (image, label),
         num_parallel_calls=os.cpu_count()
     )
-    dataset = dataset.batch(batch_size=batch_size)
+    dataset = dataset.batch(
+        batch_size=batch_size,
+        drop_remainder=True
+    )
     dataset = dataset.prefetch(buffer_size=1)
 
     iterator = dataset.make_initializable_iterator()

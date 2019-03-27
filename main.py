@@ -57,8 +57,8 @@ with tf.Graph().as_default():
             nsynth_input_fn,
             filenames=args.filenames,
             batch_size=args.batch_size,
-            num_epochs=args.num_epochs,
-            shuffle=True,
+            num_epochs=args.num_epochs if args.train else 1,
+            shuffle=True if args.train else False,
             pitches=list(range(24, 85))
         ),
         fake_input_fn=lambda: (
@@ -77,39 +77,31 @@ with tf.Graph().as_default():
         )
     )
 
+    config = tf.ConfigProto(
+        gpu_options=tf.GPUOptions(
+            visible_device_list=args.gpu,
+            allow_growth=True
+        )
+    )
+
     if args.train:
         gan_synth.train(
             model_dir=args.model_dir,
             total_steps=args.total_steps,
-            save_checkpoint_steps=10000,
-            save_summary_steps=1000,
-            log_tensor_steps=1000,
-            config=tf.ConfigProto(
-                gpu_options=tf.GPUOptions(
-                    visible_device_list=args.gpu,
-                    allow_growth=True
-                )
-            )
+            save_checkpoint_steps=1000,
+            save_summary_steps=100,
+            log_tensor_steps=100,
+            config=config
         )
 
     if args.evaluate:
         gan_synth.evaluate(
             model_dir=args.model_dir,
-            config=tf.ConfigProto(
-                gpu_options=tf.GPUOptions(
-                    visible_device_list=args.gpu,
-                    allow_growth=True
-                )
-            )
+            config=config
         )
 
     if args.generate:
         gan_synth.generate(
             model_dir=args.model_dir,
-            config=tf.ConfigProto(
-                gpu_options=tf.GPUOptions(
-                    visible_device_list=args.gpu,
-                    allow_growth=True
-                )
-            )
+            config=config
         )

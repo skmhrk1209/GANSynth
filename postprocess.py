@@ -12,10 +12,6 @@ from pathlib import Path
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-def linear_map(inputs, in_min, in_max, out_min, out_max):
-    return out_min + (inputs - in_min) / (in_max - in_min) * (out_max - out_min)
-
-
 def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     time_steps, num_freq_bins = spectrogram_shape
@@ -24,9 +20,12 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
     num_samples = frame_step * (time_steps - 1) + frame_length
 
     def postprocess(filename, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies):
+
+        def unnormalize(inputs, mean, std):
+            return inputs * std + mean
         # =========================================================================================
-        log_mel_magnitude_spectrograms = linear_map(log_mel_magnitude_spectrograms, -1.0, 1.0, -14.0, 6.0)
-        mel_instantaneous_frequencies = linear_map(mel_instantaneous_frequencies, -1.0, 1.0, -1.0, 1.0)
+        log_mel_magnitude_spectrograms = unnormalize(log_mel_magnitude_spectrograms, -4.0, 10.0)
+        mel_instantaneous_frequencies = unnormalize(mel_instantaneous_frequencies, 0.0, 1.0)
         # =========================================================================================
         mel_magnitude_spectrograms = tf.exp(log_mel_magnitude_spectrograms)
         mel_phase_spectrograms = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
@@ -98,13 +97,21 @@ def main(magnitude_spectrogram_dir, instantaneous_frequency_dir, waveform_dir):
 
     with tf.Graph().as_default():
 
+        def normalize(inputs, mean, std):
+            return (inputs - mean) / std
+
+        def unnormalize(inputs, mean, std):
+            return inputs * std + mean
+
         def spectrogram_generator():
+            mean = (np.iinfo(np.uint8).max + np.iinfo(np.uint8).min) / 2.0
+            std = (np.iinfo(np.uint8).max - np.iinfo(np.uint8).min) / 2.0
             for filename1, filename2 in zip(sorted(magnitude_spectrogram_dir.glob("*.jpg")), sorted(instantaneous_frequency_dir.glob("*.jpg"))):
                 assert filename1.name == filename2.name
                 magnitude_spectrogram = np.squeeze(skimage.io.imread(filename1))
-                magnitude_spectrogram = linear_map(magnitude_spectrogram.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
+                magnitude_spectrogram = normalize(magnitude_spectrogram, mean, std)
                 instantaneous_frequency = np.squeeze(skimage.io.imread(filename2))
-                instantaneous_frequency = linear_map(instantaneous_frequency.astype(np.float32), 0.0, 255.0, -1.0, 1.0)
+                instantaneous_frequency = normalize(instantaneous_frequency, mean, std)
                 yield ((filename1 or filename2).stem, magnitude_spectrogram, instantaneous_frequency)
 
         waveforms = convert_to_waveform(
