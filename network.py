@@ -8,7 +8,7 @@ def log(x, base):
 
 
 def lerp(a, b, t):
-    return t * a + (1.0 - t) * b
+    return t * a + (1 - t) * b
 
 
 class PGGAN(object):
@@ -26,7 +26,7 @@ class PGGAN(object):
         self.min_depth = log2(self.min_resolution // self.min_resolution)
         self.max_depth = log2(self.max_resolution // self.min_resolution)
 
-        self.growing_depth = log(1.0 + ((1 << (self.max_depth + 1)) - 1.0) * self.growing_level, 2.0)
+        self.growing_depth = log(1 + ((1 << (self.max_depth + 1)) - 1) * self.growing_level, 2.0)
 
     def generator(self, latents, labels, name="generator", reuse=tf.AUTO_REUSE):
 

@@ -48,8 +48,8 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
             num_mel_bins=num_freq_bins,
             num_spectrogram_bins=num_freq_bins,
             sample_rate=sample_rate,
-            lower_edge_hertz=0.0,
-            upper_edge_hertz=sample_rate / 2.0
+            lower_edge_hertz=0,
+            upper_edge_hertz=sample_rate / 2
         )
         mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, linear_to_mel_weight_matrix, axes=1)
         mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
@@ -59,8 +59,8 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
         mel_instantaneous_frequencies = spectral_ops.instantaneous_frequency(mel_phase_spectrograms)
         # =========================================================================================
-        log_mel_magnitude_spectrograms = normalize(log_mel_magnitude_spectrograms, -4.0, 10.0)
-        mel_instantaneous_frequencies = normalize(mel_instantaneous_frequencies, 0.0, 1.0)
+        log_mel_magnitude_spectrograms = normalize(log_mel_magnitude_spectrograms, -4, 10)
+        mel_instantaneous_frequencies = normalize(mel_instantaneous_frequencies, 0, 1)
         # =========================================================================================
         return filenames, log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
@@ -104,8 +104,8 @@ def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
             return inputs * std + mean
 
         def waveform_generator():
-            mean = (np.iinfo(np.int16).max + np.iinfo(np.int16).min) / 2.0
-            std = (np.iinfo(np.int16).max - np.iinfo(np.int16).min) / 2.0
+            mean = (np.iinfo(np.int16).max + np.iinfo(np.int16).min) / 2
+            std = (np.iinfo(np.int16).max - np.iinfo(np.int16).min) / 2
             for filename in sorted(waveform_dir.glob("*.wav")):
                 waveform = scipy.io.wavfile.read(filename)[1]
                 waveform = normalize(waveform, mean, std)

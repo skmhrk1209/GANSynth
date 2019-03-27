@@ -8,13 +8,13 @@ def get_weight(shape, variance_scale=2, scale_weight=False):
         weight = tf.get_variable(
             name="weight",
             shape=shape,
-            initializer=tf.initializers.truncated_normal(0.0, 1.0)
+            initializer=tf.initializers.truncated_normal(0, 1)
         ) * stddev
     else:
         weight = tf.get_variable(
             name="weight",
             shape=shape,
-            initializer=tf.initializers.truncated_normal(0.0, stddev)
+            initializer=tf.initializers.truncated_normal(0, stddev)
         )
     return weight
 
