@@ -16,7 +16,6 @@ import argparse
 import functools
 import pickle
 from dataset import nsynth_input_fn
-from dataset import nsynth_fake_input_fn
 from model import GANSynth
 from network import PGGAN
 from utils import Struct
