@@ -125,11 +125,11 @@ def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
                     for filename, magnitude_spectrogram, instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
                             fname=magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
-                            arr=unnormalize(magnitude_spectrogram, 0.5, 0.5)
+                            arr=np.clip(unnormalize(magnitude_spectrogram, 0.5, 0.5), 0, 1)
                         )
                         skimage.io.imsave(
                             fname=instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),
-                            arr=unnormalize(instantaneous_frequency, 0.5, 0.5)
+                            arr=np.clip(unnormalize(instantaneous_frequency, 0.5, 0.5), 0, 1)
                         )
                 except tf.errors.OutOfRangeError:
                     break
