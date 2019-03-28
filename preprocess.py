@@ -27,12 +27,12 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         # This causes edge effects in the tail
         waveforms = tf.pad(waveforms, [[0, 0], [num_samples - waveform_length, 0]])
         # =========================================================================================
-        stfts = tf.contrib.signal.stft(
+        stfts = tf.signal.stft(
             signals=waveforms,
             frame_length=frame_length,
             frame_step=frame_step,
             window_fn=functools.partial(
-                tf.contrib.signal.hann_window,
+                tf.signal.hann_window,
                 periodic=True
             )
         )
@@ -43,7 +43,7 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
         magnitude_spectrograms = tf.abs(stfts)
         phase_spectrograms = tf.angle(stfts)
         # =========================================================================================
-        linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
+        linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
             num_mel_bins=num_freq_bins,
             num_spectrogram_bins=num_freq_bins,
             sample_rate=sample_rate,
@@ -125,7 +125,7 @@ def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
                     for filename, magnitude_spectrogram, instantaneous_frequency in zip(*session.run(spectrograms)):
                         skimage.io.imsave(
                             fname=magnitude_spectrogram_dir / "{}.jpg".format(filename.decode()),
-                            arr=unnormalize(magnitude_spectrogram, 0.5, 0, 5)
+                            arr=unnormalize(magnitude_spectrogram, 0.5, 0.5)
                         )
                         skimage.io.imsave(
                             fname=instantaneous_frequency_dir / "{}.jpg".format(filename.decode()),

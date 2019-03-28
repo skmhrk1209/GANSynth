@@ -29,7 +29,7 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
         mel_magnitude_spectrograms = tf.exp(log_mel_magnitude_spectrograms)
         mel_phase_spectrograms = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
         # =========================================================================================
-        linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
+        linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
             num_mel_bins=num_freq_bins,
             num_spectrogram_bins=num_freq_bins,
             sample_rate=sample_rate,
@@ -47,14 +47,14 @@ def convert_to_waveform(spectrogram_generator, waveform_length, sample_rate, spe
         # discard_dc
         stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])
         # =========================================================================================
-        waveforms = tf.contrib.signal.inverse_stft(
+        waveforms = tf.signal.inverse_stft(
             stfts=stfts,
             frame_length=frame_length,
             frame_step=frame_step,
-            window_fn=tf.contrib.signal.inverse_stft_window_fn(
+            window_fn=tf.signal.inverse_stft_window_fn(
                 frame_step=frame_step,
                 forward_window_fn=functools.partial(
-                    tf.contrib.signal.hann_window,
+                    tf.signal.hann_window,
                     periodic=True
                 )
             )
