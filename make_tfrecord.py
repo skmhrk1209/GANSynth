@@ -1,9 +1,6 @@
 import tensorflow as tf
-import itertools
 import random
 import json
-import sys
-from pathlib import Path
 
 
 def main(in_file, out_file):

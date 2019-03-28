@@ -1,13 +1,12 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 import numpy as np
-import functools
 import skimage
-import glob
-import sys
+import functools
+import pathlib
 import os
-import spectral_ops
 import scipy.io.wavfile
-from pathlib import Path
+import spectral_ops
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -85,9 +84,9 @@ def convert_to_spectrograms(waveform_generator, waveform_length, sample_rate, sp
 
 def main(waveform_dir, magnitude_spectrogram_dir, instantaneous_frequency_dir):
 
-    waveform_dir = Path(waveform_dir)
-    magnitude_spectrogram_dir = Path(magnitude_spectrogram_dir)
-    instantaneous_frequency_dir = Path(instantaneous_frequency_dir)
+    waveform_dir = pathlib.Path(waveform_dir)
+    magnitude_spectrogram_dir = pathlib.Path(magnitude_spectrogram_dir)
+    instantaneous_frequency_dir = pathlib.Path(instantaneous_frequency_dir)
 
     if not magnitude_spectrogram_dir.exists():
         magnitude_spectrogram_dir.mkdir(parents=True, exist_ok=True)
