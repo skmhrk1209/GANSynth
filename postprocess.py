@@ -1,11 +1,11 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 import numpy as np
-import skimage
+import skimage.io
+import scipy.io.wavfile
 import functools
 import pathlib
 import os
-import scipy.io.wavfile
 import spectral_ops
 
 tf.logging.set_verbosity(tf.logging.INFO)

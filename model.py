@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import skimage
+import skimage.io
 import metrics
 import pathlib
 
