@@ -68,8 +68,6 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
     dataset = dataset.prefetch(buffer_size=1)
 
     iterator = dataset.make_initializable_iterator()
-
-    tf.add_to_collection(tf.GraphKeys.SAVEABLE_OBJECTS, tf.data.experimental.make_saveable_from_iterator(iterator))
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
     return iterator.get_next()
