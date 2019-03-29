@@ -81,15 +81,55 @@ class GANSynth(object):
         # -----------------------------------------------------------------------------------------
         generator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="generator")
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
-        # =========================================================================================
+        # -----------------------------------------------------------------------------------------
+        global_step = tf.train.get_or_create_global_step()
+        # -----------------------------------------------------------------------------------------
         generator_train_op = generator_optimizer.minimize(
             loss=generator_loss,
             var_list=generator_variables,
-            global_step=tf.train.get_or_create_global_step()
+            global_step=global_step
         )
         discriminator_train_op = discriminator_optimizer.minimize(
             loss=discriminator_loss,
             var_list=discriminator_variables
+        )
+        # =========================================================================================
+        scaffold = tf.train.Scaffold(
+            init_op=tf.global_variables_initializer(),
+            local_init_op=tf.group(
+                tf.local_variables_initializer(),
+                tf.tables_initializer()
+            ),
+            saver=tf.train.Saver(
+                max_to_keep=10,
+                keep_checkpoint_every_n_hours=12,
+            ),
+            summary_op=tf.summary.merge([
+                tf.summary.scalar(
+                    name=name,
+                    tensor=tensor
+                ) if tensor.shape.rank == 0 else
+                tf.summary.audio(
+                    name=name,
+                    tensor=tensor,
+                    sample_rate=sample_rate,
+                    max_outputs=4
+                ) if tensor.shape.rank == 2 else
+                tf.summary.image(
+                    name=name,
+                    tensor=tensor,
+                    max_outputs=4
+                ) for name, tensor in dict(
+                    real_waveforms=real_waveforms,
+                    fake_waveforms=fake_waveforms,
+                    real_magnitude_spectrograms=real_magnitude_spectrograms[..., tf.newaxis],
+                    fake_magnitude_spectrograms=fake_magnitude_spectrograms[..., tf.newaxis],
+                    real_instantaneous_frequencies=real_instantaneous_frequencies[..., tf.newaxis],
+                    fake_instantaneous_frequencies=fake_instantaneous_frequencies[..., tf.newaxis],
+                    generator_loss=generator_loss,
+                    discriminator_loss=discriminator_loss
+                ).items()
+            ])
         )
         # =========================================================================================
         self.real_waveforms = real_waveforms
@@ -102,64 +142,31 @@ class GANSynth(object):
         self.fake_features = fake_features
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
+        self.global_step = global_step
         self.generator_train_op = generator_train_op
         self.discriminator_train_op = discriminator_train_op
+        self.scaffold = scaffold
 
     def train(self, model_dir, total_steps, save_checkpoint_steps, save_summary_steps, log_tensor_steps, config):
 
         with tf.train.SingularMonitoredSession(
-            scaffold=tf.train.Scaffold(
-                init_op=tf.global_variables_initializer(),
-                local_init_op=tf.group(
-                    tf.local_variables_initializer(),
-                    tf.tables_initializer()
-                )
-            ),
+            scaffold=self.scaffold,
             checkpoint_dir=model_dir,
             config=config,
             hooks=[
                 tf.train.CheckpointSaverHook(
                     checkpoint_dir=model_dir,
                     save_steps=save_checkpoint_steps,
-                    saver=tf.train.Saver(
-                        max_to_keep=10,
-                        keep_checkpoint_every_n_hours=12,
-                    )
+                    scaffold=self.scaffold,
                 ),
                 tf.train.SummarySaverHook(
                     output_dir=model_dir,
                     save_steps=save_summary_steps,
-                    summary_op=tf.summary.merge([
-                        tf.summary.scalar(
-                            name=name,
-                            tensor=tensor
-                        ) if tensor.shape.rank == 0 else
-                        tf.summary.audio(
-                            name=name,
-                            tensor=tensor,
-                            sample_rate=sample_rate,
-                            max_outputs=4
-                        ) if tensor.shape.rank == 2 else
-                        tf.summary.image(
-                            name=name,
-                            tensor=tensor,
-                            sample_rate=sample_rate,
-                            max_outputs=4
-                        ) for name, tensor in dict(
-                            real_waveforms=self.real_waveforms,
-                            fake_waveforms=self.fake_waveforms,
-                            real_magnitude_spectrograms=self.real_magnitude_spectrograms[..., :],
-                            fake_magnitude_spectrograms=self.fake_magnitude_spectrograms[..., :],
-                            real_instantaneous_frequencies=self.real_instantaneous_frequencies[..., :],
-                            fake_instantaneous_frequencies=self.fake_instantaneous_frequencies[..., :],
-                            generator_loss=self.generator_loss,
-                            discriminator_loss=self.discriminator_loss
-                        ).items()
-                    ])
+                    scaffold=self.scaffold,
                 ),
                 tf.train.LoggingTensorHook(
                     tensors=dict(
-                        global_step=tf.train.get_global_step(),
+                        global_step=self.global_step,
                         generator_loss=self.generator_loss,
                         discriminator_loss=self.discriminator_loss
                     ),
@@ -178,13 +185,7 @@ class GANSynth(object):
     def evaluate(self, model_dir, config):
 
         with tf.train.SingularMonitoredSession(
-            scaffold=tf.train.Scaffold(
-                init_op=tf.global_variables_initializer(),
-                local_init_op=tf.group(
-                    tf.local_variables_initializer(),
-                    tf.tables_initializer()
-                )
-            ),
+            scaffold=self.scaffold,
             checkpoint_dir=model_dir,
             config=config
         ) as session:

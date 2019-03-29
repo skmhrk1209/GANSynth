@@ -12,6 +12,7 @@
 #=================================================================================================#
 
 import tensorflow as tf
+import numpy as np
 import argparse
 import functools
 import pickle
@@ -22,9 +23,10 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument('--filenames', type=str, nargs="+")
+parser.add_argument('--directory', type=str, default="nsynth-test/audio")
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
+parser.add_argument("--buffer_size", type=int, default=80000)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument('--train', action="store_true")
 parser.add_argument('--evaluate', action="store_true")
@@ -54,15 +56,21 @@ with tf.Graph().as_default():
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
             nsynth_input_fn,
-            filenames=args.filenames,
+            directory=args.directory,
+            pitches=np.arange(24, 85),
+            sources=["acoustic"],
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
             shuffle=True if args.train else False,
-            pitches=list(range(24, 85))
+            buffer_size=args.buffer_size
         ),
         fake_input_fn=lambda: (
             tf.random.normal([args.batch_size, 256])
         ),
+        waveform_length=64000,
+        sample_rate=16000,
+        spectrogram_shape=[128, 1024],
+        overlap=0.75,
         hyper_params=Struct(
             generator_learning_rate=8e-4,
             generator_beta1=0.0,

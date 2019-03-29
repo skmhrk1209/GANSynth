@@ -1,5 +1,7 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 import numpy as np
+import functools
 
 
 def diff(inputs, axis=-1):
@@ -131,7 +133,7 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, mel_to_linear_weight_matrix, axes=1)
     phase_spectrograms.set_shape(mel_phase_spectrograms.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
     # =========================================================================================
-    stfts = tf.complex(magnitudes, 0) * tf.complex(tf.cos(phase_spectrograms), tf.sin(phase_spectrograms))
+    stfts = tf.complex(magnitudes, 0.0) * tf.complex(tf.cos(phase_spectrograms), tf.sin(phase_spectrograms))
     # =========================================================================================
     # discard_dc
     stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])

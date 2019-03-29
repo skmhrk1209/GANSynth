@@ -1,18 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import scipy.io.wavfile
-import os
-from utils import Struct
 import pathlib
 
 
-def nsynth_input_fn(directory, waveform_length, pitches, sources, batch_size, num_epochs, shuffle, buffer_size):
-
-    time_steps, num_freq_bins = spectrogram_shape
-    frame_length = num_freq_bins * 2
-    frame_step = int((1 - overlap) * frame_length)
-    num_samples = frame_step * (time_steps - 1) + frame_length
-    index_table = tf.contrib.lookup.index_table_from_tensor(range(*pitch_range), dtype=tf.int32)
+def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle, buffer_size):
 
     def normalize(inputs, mean, std):
         return (inputs - mean) / std
@@ -24,19 +16,19 @@ def nsynth_input_fn(directory, waveform_length, pitches, sources, batch_size, nu
         mean = (np.iinfo(np.int16).max + np.iinfo(np.int16).min) / 2
         std = (np.iinfo(np.int16).max - np.iinfo(np.int16).min) / 2
         for filename in pathlib.Path(directory).glob("*.wav"):
-            instrument, pitch, _ = filename.split("-")
-            _, source, _ = instrument.split("_")
-            if pitch in pitches and source in sources:
+            instrument, pitch, _ = str(filename.stem).split("-")
+            *_, source, _ = instrument.split("_")
+            if int(pitch) in pitches and source in sources:
                 _, waveform = scipy.io.wavfile.read(filename)
                 waveform = normalize(waveform, mean, std)
-                label = np.squeeze(np.where(np.asanyarray(pitches) == pitch))
+                label = np.squeeze(np.where(pitches == pitch))
                 label = np.eye(len(pitches))[label]
                 yield waveform, label
 
     dataset = tf.data.Dataset.from_generator(
         generator=generator,
-        output_types=tf.float32,
-        output_shapes=[waveform_length]
+        output_types=(tf.float32, tf.int32),
+        output_shapes=([64000], [len(pitches)])
     )
     if shuffle:
         dataset = dataset.shuffle(buffer_size, reshuffle_each_iteration=True)
