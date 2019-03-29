@@ -1,35 +1,19 @@
 import tensorflow as tf
 import numpy as np
 import metrics
-import spectral_ops
 
 
 class GANSynth(object):
 
-    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn,
-                 waveform_length, sample_rate, spectrogram_shape, overlap, hyper_params):
+    def __init__(self, generator, discriminator, latent_fn, input_fn, output_fn, hyper_params):
         # =========================================================================================
-        real_waveforms, labels = real_input_fn()
-        real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spactrograms(
-            waveforms=real_waveforms,
-            waveform_length=waveform_length,
-            sample_rate=sample_rate,
-            spectrogram_shape=spectrogram_shape,
-            overlap=overlap
-        )
+        real_waveforms, real_magnitude_spectrograms, real_instantaneous_frequencies, labels = input_fn()
         real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
         # =========================================================================================
-        fake_latents = fake_input_fn()
-        fake_images = generator(fake_latents, labels)
+        latents = latent_fn()
+        fake_images = generator(latents, labels)
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
-        fake_waveforms = spectral_ops.convert_to_waveforms(
-            log_mel_magnitude_spectrograms=fake_magnitude_spectrograms,
-            mel_instantaneous_frequencies=fake_instantaneous_frequencies,
-            waveform_length=waveform_length,
-            sample_rate=sample_rate,
-            spectrogram_shape=spectrogram_shape,
-            overlap=overlap
-        )
+        fake_waveforms = output_fn(fake_magnitude_spectrograms, fake_instantaneous_frequencies)
         # =========================================================================================
         real_features, real_logits = discriminator(real_images, labels)
         fake_features, fake_logits = discriminator(fake_images, labels)
@@ -46,7 +30,7 @@ class GANSynth(object):
         generator_losses = tf.nn.softplus(-fake_logits)
         # gradient-based mode-seeking loss
         if hyper_params.mode_seeking_loss_weight:
-            latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
+            latent_gradients = tf.gradients(fake_images, [latents])[0]
             mode_seeking_losses = 1 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1e-6)
             generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
         # -----------------------------------------------------------------------------------------
@@ -94,50 +78,12 @@ class GANSynth(object):
             var_list=discriminator_variables
         )
         # =========================================================================================
-        scaffold = tf.train.Scaffold(
-            init_op=tf.global_variables_initializer(),
-            local_init_op=tf.group(
-                tf.local_variables_initializer(),
-                tf.tables_initializer()
-            ),
-            saver=tf.train.Saver(
-                max_to_keep=10,
-                keep_checkpoint_every_n_hours=12,
-            ),
-            summary_op=tf.summary.merge([
-                tf.summary.scalar(
-                    name=name,
-                    tensor=tensor
-                ) if tensor.shape.rank == 0 else
-                tf.summary.audio(
-                    name=name,
-                    tensor=tensor,
-                    sample_rate=sample_rate,
-                    max_outputs=4
-                ) if tensor.shape.rank == 2 else
-                tf.summary.image(
-                    name=name,
-                    tensor=tensor,
-                    max_outputs=4
-                ) for name, tensor in dict(
-                    real_waveforms=real_waveforms,
-                    fake_waveforms=fake_waveforms,
-                    real_magnitude_spectrograms=real_magnitude_spectrograms[..., tf.newaxis],
-                    fake_magnitude_spectrograms=fake_magnitude_spectrograms[..., tf.newaxis],
-                    real_instantaneous_frequencies=real_instantaneous_frequencies[..., tf.newaxis],
-                    fake_instantaneous_frequencies=fake_instantaneous_frequencies[..., tf.newaxis],
-                    generator_loss=generator_loss,
-                    discriminator_loss=discriminator_loss
-                ).items()
-            ])
-        )
-        # =========================================================================================
         self.real_waveforms = real_waveforms
         self.fake_waveforms = fake_waveforms
-        self.real_magnitude_spectrograms = real_magnitude_spectrograms
-        self.fake_magnitude_spectrograms = fake_magnitude_spectrograms
-        self.real_instantaneous_frequencies = real_instantaneous_frequencies
-        self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
+        self.real_magnitude_spectrograms = real_magnitude_spectrograms[..., tf.newaxis]
+        self.fake_magnitude_spectrograms = fake_magnitude_spectrograms[..., tf.newaxis]
+        self.real_instantaneous_frequencies = real_instantaneous_frequencies[..., tf.newaxis]
+        self.fake_instantaneous_frequencies = fake_instantaneous_frequencies[..., tf.newaxis]
         self.real_features = real_features
         self.fake_features = fake_features
         self.generator_loss = generator_loss
@@ -145,24 +91,71 @@ class GANSynth(object):
         self.global_step = global_step
         self.generator_train_op = generator_train_op
         self.discriminator_train_op = discriminator_train_op
-        self.scaffold = scaffold
 
-    def train(self, model_dir, total_steps, save_checkpoint_steps, save_summary_steps, log_tensor_steps, config):
+    def train(self, model_dir, config, total_steps, save_checkpoint_steps, save_summary_steps, log_tensor_steps):
 
         with tf.train.SingularMonitoredSession(
-            scaffold=self.scaffold,
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
             checkpoint_dir=model_dir,
             config=config,
             hooks=[
                 tf.train.CheckpointSaverHook(
                     checkpoint_dir=model_dir,
                     save_steps=save_checkpoint_steps,
-                    scaffold=self.scaffold,
+                    saver=tf.train.Saver(
+                        max_to_keep=10,
+                        keep_checkpoint_every_n_hours=12,
+                    ),
                 ),
                 tf.train.SummarySaverHook(
                     output_dir=model_dir,
                     save_steps=save_summary_steps,
-                    scaffold=self.scaffold,
+                    summary_op=tf.summary.merge([
+                        tf.summary.audio(
+                            name=name,
+                            tensor=tensor,
+                            sample_rate=16000,
+                            max_outputs=4
+                        ) for name, tensor in dict(
+                            real_waveforms=self.real_waveforms,
+                            fake_waveforms=self.fake_waveforms
+                        ).items()
+                    ]),
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=save_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.image(
+                            name=name,
+                            tensor=tensor,
+                            max_outputs=4
+                        ) for name, tensor in dict(
+                            real_magnitude_spectrograms=self.real_magnitude_spectrograms,
+                            fake_magnitude_spectrograms=self.fake_magnitude_spectrograms,
+                            real_instantaneous_frequencies=self.real_instantaneous_frequencies,
+                            fake_instantaneous_frequencies=self.fake_instantaneous_frequencies
+                        ).items()
+                    ]),
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=save_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.scalar(
+                            name=name,
+                            tensor=tensor
+                        ) for name, tensor in dict(
+                            generator_loss=self.generator_loss,
+                            discriminator_loss=self.discriminator_loss
+                        ).items()
+                    ]),
                 ),
                 tf.train.LoggingTensorHook(
                     tensors=dict(

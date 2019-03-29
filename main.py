@@ -16,6 +16,7 @@ import numpy as np
 import argparse
 import functools
 import pickle
+import spectral_ops
 from dataset import nsynth_input_fn
 from model import GANSynth
 from network import PGGAN
@@ -23,7 +24,7 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument('--directory', type=str, default="nsynth-test/audio")
+parser.add_argument('--directory', type=str, default="nsynth-train/audio")
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--buffer_size", type=int, default=80000)
@@ -54,7 +55,10 @@ with tf.Graph().as_default():
     gan_synth = GANSynth(
         generator=pggan.generator,
         discriminator=pggan.discriminator,
-        real_input_fn=functools.partial(
+        latent_fn=lambda: (
+            tf.random.normal([args.batch_size, 256])
+        ),
+        input_fn=functools.partial(
             nsynth_input_fn,
             directory=args.directory,
             pitches=np.arange(24, 85),
@@ -62,15 +66,19 @@ with tf.Graph().as_default():
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
             shuffle=True if args.train else False,
-            buffer_size=args.buffer_size
+            buffer_size=args.buffer_size,
+            waveform_length=64000,
+            sample_rate=16000,
+            spectrogram_shape=[128, 1024],
+            overlap=0.75,
         ),
-        fake_input_fn=lambda: (
-            tf.random.normal([args.batch_size, 256])
+        output_fn=functools.partial(
+            spectral_ops.convert_to_waveforms,
+            waveform_length=64000,
+            sample_rate=16000,
+            spectrogram_shape=[128, 1024],
+            overlap=0.75
         ),
-        waveform_length=64000,
-        sample_rate=16000,
-        spectrogram_shape=[128, 1024],
-        overlap=0.75,
         hyper_params=Struct(
             generator_learning_rate=8e-4,
             generator_beta1=0.0,
@@ -94,11 +102,11 @@ with tf.Graph().as_default():
     if args.train:
         gan_synth.train(
             model_dir=args.model_dir,
+            config=config,
             total_steps=args.total_steps,
             save_checkpoint_steps=1000,
             save_summary_steps=100,
-            log_tensor_steps=100,
-            config=config
+            log_tensor_steps=100
         )
 
     if args.evaluate:

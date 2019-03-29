@@ -2,9 +2,15 @@ import tensorflow as tf
 import numpy as np
 import scipy.io.wavfile
 import pathlib
+import json
+import os
+import spectral_ops
 
 
-def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle, buffer_size):
+def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle, buffer_size,
+                    waveform_length, sample_rate, spectrogram_shape, overlap):
+
+    index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
     def normalize(inputs, mean, std):
         return (inputs - mean) / std
@@ -13,27 +19,52 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
         return inputs * std + mean
 
     def generator():
-        mean = (np.iinfo(np.int16).max + np.iinfo(np.int16).min) / 2
-        std = (np.iinfo(np.int16).max - np.iinfo(np.int16).min) / 2
-        for filename in pathlib.Path(directory).glob("*.wav"):
-            instrument, pitch, _ = str(filename.stem).split("-")
-            *_, source, _ = instrument.split("_")
-            if int(pitch) in pitches and source in sources:
-                _, waveform = scipy.io.wavfile.read(filename)
-                waveform = normalize(waveform, mean, std)
-                label = np.squeeze(np.where(pitches == pitch))
-                label = np.eye(len(pitches))[label]
-                yield waveform, label
+        directory = pathlib.Path(directory)
+        with open(directory / "examples.json") as file:
+            examples = json.load(file)
+        for example in examples.values():
+            if example["pitch"] in pitches and example["instrument_source"] in sources:
+                yield directory / "{}.wav".format(example["note_str"]), example["pitch"]
+
+    def decode_audio(filename, pitch):
+
+        waveform = tf.contrib.ffmpeg.decode_audio(
+            contents=tf.read_file(filename),
+            file_format="wav",
+            samples_per_second=sample_rate,
+            channel_count=1
+        )
+        waveform = tf.squeeze(waveform)
+        waveform.set_shape([waveform_length])
+
+        label = index_table.lookup(pitch)
+        label = tf.one_hot(label, len(pitches))
+
+        return waveform, label
+
+    def convert_to_spactrograms(waveforms, labels):
+
+        magnitude_spectrograms, instantaneous_frequencies = spectral_ops.convert_to_spactrograms(
+            waveforms=waveforms,
+            waveform_length=waveform_length,
+            sample_rate=sample_rate,
+            spectrogram_shape=spectrogram_shape,
+            overlap=overlap
+        )
+
+        return waveforms, magnitude_spectrograms, instantaneous_frequencies, labels
 
     dataset = tf.data.Dataset.from_generator(
         generator=generator,
-        output_types=(tf.float32, tf.int32),
-        output_shapes=([64000], [len(pitches)])
+        output_types=(tf.string, tf.int64),
+        output_shapes=([], [])
     )
     if shuffle:
         dataset = dataset.shuffle(buffer_size, reshuffle_each_iteration=True)
     dataset = dataset.repeat(count=num_epochs)
+    dataset = dataset.map(decode_audio, num_parallel_calls=os.cpu_count())
     dataset = dataset.batch(batch_size, drop_remainder=True)
+    dataset = dataset.map(convert_to_spactrograms, num_parallel_calls=os.cpu_count())
     dataset = dataset.prefetch(buffer_size=1)
 
     iterator = dataset.make_initializable_iterator()
