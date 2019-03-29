@@ -74,6 +74,6 @@ if __name__ == "__main__":
         )
     ]
 
-    main("nsynth_train_examples.json", "nsynth_train.tfrecord")
-    main("nsynth_valid_examples.json", "nsynth_valid.tfrecord")
-    main("nsynth_test_examples.json", "nsynth_test.tfrecord")
+    main(nsynth_train_examples, "nsynth_train.tfrecord")
+    main(nsynth_valid_examples, "nsynth_valid.tfrecord")
+    main(nsynth_test_examples, "nsynth_test.tfrecord")
