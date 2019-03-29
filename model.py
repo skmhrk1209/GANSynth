@@ -66,12 +66,10 @@ class GANSynth(object):
         generator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="generator")
         discriminator_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="discriminator")
         # -----------------------------------------------------------------------------------------
-        global_step = tf.train.get_or_create_global_step()
-        # -----------------------------------------------------------------------------------------
         generator_train_op = generator_optimizer.minimize(
             loss=generator_loss,
             var_list=generator_variables,
-            global_step=global_step
+            global_step=tf.train.get_or_create_global_step()
         )
         discriminator_train_op = discriminator_optimizer.minimize(
             loss=discriminator_loss,
@@ -88,7 +86,6 @@ class GANSynth(object):
         self.fake_features = fake_features
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
-        self.global_step = global_step
         self.generator_train_op = generator_train_op
         self.discriminator_train_op = discriminator_train_op
 
@@ -159,7 +156,7 @@ class GANSynth(object):
                 ),
                 tf.train.LoggingTensorHook(
                     tensors=dict(
-                        global_step=self.global_step,
+                        global_step=tf.train.get_global_step(),
                         generator_loss=self.generator_loss,
                         discriminator_loss=self.discriminator_loss
                     ),
