@@ -42,7 +42,10 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
         label = index_table.lookup(features.pitch)
         label = tf.one_hot(label, len(pitches))
 
-        return waveform, label, features.pitch, features.source
+        pitch = tf.cast(features.pitch, tf.int32)
+        source = tf.cast(features.source, tf.int32)
+
+        return waveform, label, pitch, source
 
     def preprocess(waveforms, labels):
 
