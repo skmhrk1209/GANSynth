@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import scipy.io.wavfile
+import functools
 import pathlib
 import json
 import os
@@ -18,8 +19,7 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
     def unnormalize(inputs, mean, std):
         return inputs * std + mean
 
-    def generator():
-        global directory
+    def generator(directory):
         directory = pathlib.Path(directory)
         with open(directory / "examples.json") as file:
             examples = json.load(file)
@@ -56,7 +56,7 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
         return waveforms, magnitude_spectrograms, instantaneous_frequencies, labels
 
     dataset = tf.data.Dataset.from_generator(
-        generator=generator,
+        generator=functools.patrial(generator, directory),
         output_types=(tf.string, tf.int64),
         output_shapes=([], [])
     )
