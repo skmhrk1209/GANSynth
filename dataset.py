@@ -7,7 +7,6 @@ import json
 import os
 import spectral_ops
 from utils import Struct
-from tensorflow.contrib.framework.python.ops import audio_ops
 
 
 def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle,
@@ -27,7 +26,7 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
         ))
 
         waveform = tf.read_file(features.path)
-        waveform, _ = audio_ops.decode_wav(
+        waveform, _ = tf.contrib.framework.python.ops.audio_ops.decode_wav(
             contents=waveform,
             desired_channels=1,
             desired_samples=waveform_length
