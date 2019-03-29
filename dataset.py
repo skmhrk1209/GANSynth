@@ -56,7 +56,7 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
         return waveforms, magnitude_spectrograms, instantaneous_frequencies, labels
 
     dataset = tf.data.Dataset.from_generator(
-        generator=functools.patrial(generator, directory),
+        generator=functools.partial(generator, directory),
         output_types=(tf.string, tf.int64)
     )
     if shuffle:
