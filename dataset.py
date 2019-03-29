@@ -26,12 +26,16 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
         ))
 
         waveform = tf.read_file(features.path)
+        '''
         waveform = tf.contrib.ffmpeg.decode_audio(
             contents=waveform,
             file_format="wav",
             samples_per_second=sample_rate,
             channel_count=1
         )
+        '''
+        from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
+        waveform = contrib_audio.decode_wav(waveform, desired_channels=1).audio
         waveform = tf.squeeze(waveform)
         waveform.set_shape([waveform_length])
 
