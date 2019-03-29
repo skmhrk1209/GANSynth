@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import scipy.io.wavfile
 import functools
 import pathlib
 import json
@@ -27,6 +26,7 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
         ))
 
         waveform = tf.read_file(features.path)
+        # decode a 16-bit PCM WAV file
         waveform, _ = audio_ops.decode_wav(
             contents=waveform,
             desired_channels=1,
