@@ -61,7 +61,7 @@ with tf.Graph().as_default():
             nsynth_input_fn,
             filenames=args.filenames,
             pitches=np.arange(24, 85),
-            sources=[0],
+            sources=np.array([0]),
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
             shuffle=True if args.train else False,
