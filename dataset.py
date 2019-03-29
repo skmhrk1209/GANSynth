@@ -14,12 +14,6 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
 
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
-    def normalize(inputs, mean, std):
-        return (inputs - mean) / std
-
-    def unnormalize(inputs, mean, std):
-        return inputs * std + mean
-
     def parse_example(example):
 
         features = Struct(tf.parse_single_example(
@@ -75,7 +69,7 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
     # filter just acoustic instruments and just pitches 24-84 (as in the paper)
     dataset = dataset.filter(
         predicate=lambda waveform, label, pitch, source: tf.logical_and(
-            x=tf.equal(source, 0),
+            x=tf.reduce_any(tf.equal(sources, source)),
             y=tf.logical_and(
                 x=tf.greater_equal(pitch, min(pitches)),
                 y=tf.less_equal(pitch, max(pitches))
