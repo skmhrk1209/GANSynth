@@ -20,12 +20,11 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
         return inputs * std + mean
 
     def generator(directory):
-        directory = pathlib.Path(directory)
-        with open(directory / "examples.json") as file:
+        with open("{}/examples.json".format(directory)) as file:
             examples = json.load(file)
         for example in examples.values():
             if example["pitch"] in pitches and example["instrument_source"] in sources:
-                yield directory / "{}.wav".format(example["note_str"]), example["pitch"]
+                yield "{}/{}.wav".format(directory, example["note_str"]), example["pitch"]
 
     def decode_audio(filename, pitch):
 
