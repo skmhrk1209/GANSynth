@@ -24,7 +24,7 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument('--directory', type=str, default="nsynth-train/audio")
+parser.add_argument('--directory', type=str, default="nsynth-train")
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--buffer_size", type=int, default=80000)
