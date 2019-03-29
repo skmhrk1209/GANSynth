@@ -13,8 +13,8 @@
 
 import tensorflow as tf
 import numpy as np
-import argparse
 import functools
+import argparse
 import pickle
 import spectral_ops
 from dataset import nsynth_input_fn
@@ -62,7 +62,7 @@ with tf.Graph().as_default():
             nsynth_input_fn,
             directory=args.directory,
             pitches=np.arange(24, 85),
-            sources=["acoustic"],
+            sources=[0],
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
             shuffle=True if args.train else False,

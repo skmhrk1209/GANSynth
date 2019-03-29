@@ -19,6 +19,7 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
         return inputs * std + mean
 
     def generator():
+        global directory
         directory = pathlib.Path(directory)
         with open(directory / "examples.json") as file:
             examples = json.load(file)
