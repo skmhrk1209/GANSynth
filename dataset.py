@@ -24,7 +24,7 @@ def nsynth_input_fn(directory, pitches, sources, batch_size, num_epochs, shuffle
             examples = json.load(file)
         for example in examples.values():
             if example["pitch"] in pitches and example["instrument_source"] in sources:
-                yield "{}/{}.wav".format(directory, example["note_str"]), example["pitch"]
+                yield "{}/audio/{}.wav".format(directory, example["note_str"]), example["pitch"]
 
     def decode_audio(filename, pitch):
 
