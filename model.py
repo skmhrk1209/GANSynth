@@ -1,19 +1,21 @@
 import tensorflow as tf
 import numpy as np
 import metrics
+import spectral_ops
 
 
 class GANSynth(object):
 
-    def __init__(self, generator, discriminator, latent_fn, input_fn, output_fn, hyper_params):
+    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, spectral_params, hyper_params):
         # =========================================================================================
-        real_waveforms, real_magnitude_spectrograms, real_instantaneous_frequencies, labels = input_fn()
+        real_waveforms, labels = real_input_fn()
+        real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrograms(real_waveforms, **spectral_params)
         real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
         # =========================================================================================
-        latents = latent_fn()
-        fake_images = generator(latents, labels)
+        fake_latents = fake_input_fn()
+        fake_images = generator(fake_latents, labels)
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
-        fake_waveforms = output_fn(fake_magnitude_spectrograms, fake_instantaneous_frequencies)
+        fake_waveforms = spectral_ops.convert_to_waveforms(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
         # =========================================================================================
         real_features, real_logits = discriminator(real_images, labels)
         fake_features, fake_logits = discriminator(fake_images, labels)
@@ -30,7 +32,7 @@ class GANSynth(object):
         generator_losses = tf.nn.softplus(-fake_logits)
         # gradient-based mode-seeking loss
         if hyper_params.mode_seeking_loss_weight:
-            latent_gradients = tf.gradients(fake_images, [latents])[0]
+            latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
             mode_seeking_losses = 1 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1e-6)
             generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
         # -----------------------------------------------------------------------------------------

@@ -11,7 +11,7 @@ def diff(inputs, axis=-1):
     begin_front[axis] = 1
 
     size = [-1] * inputs.shape.rank
-    size[axis] = inputs.shape[axis] - 1
+    size[axis] = inputs.shape[axis].value - 1
 
     front = tf.slice(inputs, begin_front, size)
     back = tf.slice(inputs, begin_back, size)
@@ -28,8 +28,7 @@ def unwrap(phases, discont=np.pi, axis=-1):
     corrects = diff_mods - diffs
     cumsums = tf.cumsum(corrects, axis=axis)
 
-    shape = phases.shape.dims
-    shape[0] = tf.shape(phases)[0]
+    shape = phases.shape.as_list()
     shape[axis] = 1
 
     cumsums = tf.concat([tf.zeros(shape), cumsums], axis=axis)
@@ -53,7 +52,7 @@ def instantaneous_frequency(phases, axis=-2):
     return diffs
 
 
-def convert_to_spactrograms(waveforms, waveform_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     def normalize(inputs, mean, std):
         return (inputs - mean) / std

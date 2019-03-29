@@ -54,10 +54,7 @@ with tf.Graph().as_default():
     gan_synth = GANSynth(
         generator=pggan.generator,
         discriminator=pggan.discriminator,
-        latent_fn=lambda: (
-            tf.random.normal([args.batch_size, 256])
-        ),
-        input_fn=functools.partial(
+        real_input_fn=functools.partial(
             nsynth_input_fn,
             filenames=args.filenames,
             pitches=range(24, 85),
@@ -70,8 +67,10 @@ with tf.Graph().as_default():
             spectrogram_shape=[128, 1024],
             overlap=0.75,
         ),
-        output_fn=functools.partial(
-            spectral_ops.convert_to_waveforms,
+        fake_input_fn=lambda: (
+            tf.random.normal([args.batch_size, 256])
+        ),
+        spectral_params=Struct(
             waveform_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],

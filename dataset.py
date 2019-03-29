@@ -42,18 +42,6 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
 
         return waveform, label, pitch, source
 
-    def preprocess(waveforms, labels):
-
-        magnitude_spectrograms, instantaneous_frequencies = spectral_ops.convert_to_spactrograms(
-            waveforms=waveforms,
-            waveform_length=waveform_length,
-            sample_rate=sample_rate,
-            spectrogram_shape=spectrogram_shape,
-            overlap=overlap
-        )
-
-        return waveforms, magnitude_spectrograms, instantaneous_frequencies, labels
-
     dataset = tf.data.TFRecordDataset(filenames=filenames)
     if shuffle:
         dataset = dataset.shuffle(
@@ -85,10 +73,6 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
     dataset = dataset.batch(
         batch_size=batch_size,
         drop_remainder=True
-    )
-    dataset = dataset.map(
-        map_func=preprocess,
-        num_parallel_calls=os.cpu_count()
     )
     dataset = dataset.prefetch(buffer_size=1)
 
