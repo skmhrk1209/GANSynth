@@ -10,11 +10,11 @@ def diff(inputs, axis=-1):
     begin_front = [0] * inputs.shape.rank
     begin_front[axis] = 1
 
-    size = [-1] * inputs.shape.rank
-    size[axis] = inputs.shape[axis].value - 1
+    size = inputs.shape.as_list()
+    size[axis] -= 1
 
-    front = tf.slice(inputs, begin_front, size)
     back = tf.slice(inputs, begin_back, size)
+    front = tf.slice(inputs, begin_front, size)
 
     return front - back
 
@@ -22,10 +22,10 @@ def diff(inputs, axis=-1):
 def unwrap(phases, discont=np.pi, axis=-1):
 
     diffs = diff(phases, axis=axis)
-    diff_mods = tf.mod(diffs + np.pi, 2 * np.pi) - np.pi
-    indices = tf.logical_and(tf.equal(diff_mods, -np.pi), tf.greater(diffs, 0))
-    diff_mods = tf.where(indices, tf.ones_like(diff_mods) * np.pi, diff_mods)
-    corrects = diff_mods - diffs
+    mods = tf.mod(diffs + np.pi, 2 * np.pi) - np.pi
+    indices = tf.logical_and(tf.equal(mods, -np.pi), tf.greater(diffs, 0))
+    mods = tf.where(indices, tf.ones_like(mods) * np.pi, mods)
+    corrects = mods - diffs
     cumsums = tf.cumsum(corrects, axis=axis)
 
     shape = phases.shape.as_list()
@@ -43,7 +43,7 @@ def instantaneous_frequency(phases, axis=-2):
 
     begin = [0] * unwrapped.shape.rank
 
-    size = [-1] * unwrapped.shape.rank
+    size = unwrapped.shape.as_list()
     size[axis] = 1
 
     unwrapped = tf.slice(unwrapped, begin, size)
