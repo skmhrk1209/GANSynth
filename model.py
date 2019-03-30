@@ -80,10 +80,10 @@ class GANSynth(object):
         # =========================================================================================
         self.real_waveforms = real_waveforms
         self.fake_waveforms = fake_waveforms
-        self.real_magnitude_spectrograms = real_magnitude_spectrograms[..., tf.newaxis]
-        self.fake_magnitude_spectrograms = fake_magnitude_spectrograms[..., tf.newaxis]
-        self.real_instantaneous_frequencies = real_instantaneous_frequencies[..., tf.newaxis]
-        self.fake_instantaneous_frequencies = fake_instantaneous_frequencies[..., tf.newaxis]
+        self.real_magnitude_spectrograms = real_magnitude_spectrograms
+        self.fake_magnitude_spectrograms = fake_magnitude_spectrograms
+        self.real_instantaneous_frequencies = real_instantaneous_frequencies
+        self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
         self.real_features = real_features
         self.fake_features = fake_features
         self.generator_loss = generator_loss
@@ -136,10 +136,10 @@ class GANSynth(object):
                             tensor=tensor,
                             max_outputs=4
                         ) for name, tensor in dict(
-                            real_magnitude_spectrograms=self.real_magnitude_spectrograms,
-                            fake_magnitude_spectrograms=self.fake_magnitude_spectrograms,
-                            real_instantaneous_frequencies=self.real_instantaneous_frequencies,
-                            fake_instantaneous_frequencies=self.fake_instantaneous_frequencies
+                            real_magnitude_spectrograms=self.real_magnitude_spectrograms[..., tf.newaxis],
+                            fake_magnitude_spectrograms=self.fake_magnitude_spectrograms[..., tf.newaxis],
+                            real_instantaneous_frequencies=self.real_instantaneous_frequencies[..., tf.newaxis],
+                            fake_instantaneous_frequencies=self.fake_instantaneous_frequencies[..., tf.newaxis]
                         ).items()
                     ]),
                 ),
