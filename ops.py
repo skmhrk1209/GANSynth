@@ -69,8 +69,8 @@ def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True
         scale_weight=scale_weight
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
-    input_shape = np.array(inputs.shape)
-    output_shape = [tf.shape(inputs)[0], filters, *input_shape[2:] * strides]
+    input_shape = np.array(inputs.shape.as_list())
+    output_shape = [input_shape[0], filters, *input_shape[2:] * strides]
     inputs = tf.nn.conv2d_transpose(
         value=inputs,
         filter=weight,
@@ -89,7 +89,7 @@ def upscale2d(inputs, factors=[2, 2]):
     factors = np.asanyarray(factors)
     if (factors == 1).all():
         return inputs
-    shape = inputs.shape
+    shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2], 1, shape[3], 1])
     inputs = tf.tile(inputs, [1, 1, 1, factors[0], 1, factors[1]])
     inputs = tf.reshape(inputs, [-1, shape[1], shape[2] * factors[0], shape[3] * factors[1]])
@@ -127,7 +127,7 @@ def pixel_norm(inputs, epsilon=1e-8):
 
 
 def batch_stddev(inputs, group_size=4, epsilon=1e-8):
-    shape = inputs.shape
+    shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [group_size, -1, *shape[1:]])
     inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
     inputs = tf.square(inputs)
