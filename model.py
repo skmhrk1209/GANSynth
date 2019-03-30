@@ -177,7 +177,13 @@ class GANSynth(object):
     def evaluate(self, model_dir, config):
 
         with tf.train.SingularMonitoredSession(
-            scaffold=self.scaffold,
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
             checkpoint_dir=model_dir,
             config=config
         ) as session:
