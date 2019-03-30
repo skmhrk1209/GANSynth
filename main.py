@@ -55,11 +55,11 @@ with tf.Graph().as_default():
         real_input_fn=functools.partial(
             nsynth_input_fn,
             filenames=args.filenames,
-            pitches=range(24, 85),
-            sources=[0],
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
-            shuffle=True if args.train else False
+            shuffle=True if args.train else False,
+            pitches=range(24, 85),
+            sources=[0]
         ),
         fake_input_fn=lambda: (
             tf.random.normal([args.batch_size, 256])

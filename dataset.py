@@ -9,7 +9,7 @@ from utils import Struct
 from tensorflow.contrib.framework.python.ops import audio_ops
 
 
-def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle):
+def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle, pitches, sources):
 
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
