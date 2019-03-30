@@ -9,8 +9,7 @@ from utils import Struct
 from tensorflow.contrib.framework.python.ops import audio_ops
 
 
-def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle,
-                    waveform_length, sample_rate, spectrogram_shape, overlap):
+def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle):
 
     index_table = tf.contrib.lookup.index_table_from_tensor(sorted(pitches), dtype=tf.int32)
 
@@ -30,7 +29,7 @@ def nsynth_input_fn(filenames, pitches, sources, batch_size, num_epochs, shuffle
         waveform, _ = audio_ops.decode_wav(
             contents=waveform,
             desired_channels=1,
-            desired_samples=waveform_length
+            desired_samples=64000
         )
         waveform = tf.squeeze(waveform)
 

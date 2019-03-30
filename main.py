@@ -59,11 +59,7 @@ with tf.Graph().as_default():
             sources=[0],
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
-            shuffle=True if args.train else False,
-            waveform_length=64000,
-            sample_rate=16000,
-            spectrogram_shape=[128, 1024],
-            overlap=0.75,
+            shuffle=True if args.train else False
         ),
         fake_input_fn=lambda: (
             tf.random.normal([args.batch_size, 256])
