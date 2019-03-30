@@ -77,7 +77,7 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
     )
     # =========================================================================================
     # discard_dc
-    stfts = stfts[:, :, 1:]
+    stfts = stfts[..., 1:]
     # =========================================================================================
     magnitude_spectrograms = tf.abs(stfts)
     phase_spectrograms = tf.angle(stfts)
