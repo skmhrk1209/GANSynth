@@ -29,7 +29,6 @@ parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument('--train', action="store_true")
 parser.add_argument('--evaluate', action="store_true")
 parser.add_argument('--generate', action="store_true")
-parser.add_argument("--gpu", type=str, default="0")
 args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -83,17 +82,10 @@ with tf.Graph().as_default():
         )
     )
 
-    config = tf.ConfigProto(
-        gpu_options=tf.GPUOptions(
-            visible_device_list=args.gpu,
-            allow_growth=True
-        )
-    )
-
     if args.train:
         gan_synth.train(
             model_dir=args.model_dir,
-            config=config,
+            config=None,
             total_steps=args.total_steps,
             save_checkpoint_steps=1000,
             save_summary_steps=100,
@@ -103,11 +95,11 @@ with tf.Graph().as_default():
     if args.evaluate:
         gan_synth.evaluate(
             model_dir=args.model_dir,
-            config=config
+            config=None
         )
 
     if args.generate:
         gan_synth.generate(
             model_dir=args.model_dir,
-            config=config
+            config=None
         )

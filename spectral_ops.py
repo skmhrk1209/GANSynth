@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 import numpy as np
 import functools
+import os
 
 
 def diff(inputs, axis=-1):
@@ -155,3 +156,71 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
     waveforms = waveforms[:, num_samples - waveform_length:]
     # =========================================================================================
     return waveforms
+
+
+def correlate(x, y, padding="VALID", normalize=True):
+
+    if normalize:
+        x /= tf.norm(x, axis=-1, keepdims=True)
+        y /= tf.norm(y, axis=-1, keepdims=True)
+
+    return tf.map_fn(
+        fn=lambda inputs: tf.squeeze(tf.nn.conv2d(
+            input=inputs[0][tf.newaxis, :, tf.newaxis, tf.newaxis],
+            filter=inputs[1][:, tf.newaxis, tf.newaxis, tf.newaxis],
+            strides=[1, 1, 1, 1],
+            padding=padding,
+            data_format="NHWC",
+        )),
+        elems=(x, y),
+        dtype=tf.float32,
+        parallel_iterations=os.cpu_count(),
+        swap_memory=True,
+    )
+
+
+if __name__ == "__main__":
+
+    from dataset import nsynth_input_fn
+
+    tf.logging.set_verbosity(tf.logging.INFO)
+
+    originals, _ = nsynth_input_fn(
+        filenames="nsynth_test.tfrecord",
+        batch_size=100,
+        num_epochs=1,
+        shuffle=False,
+        pitches=range(24, 85),
+        sources=[0]
+    )
+
+    reconstructions = convert_to_waveforms(
+        *convert_to_spectrograms(
+            waveforms=originals,
+            waveform_length=64000,
+            sample_rate=16000,
+            spectrogram_shape=[128, 1024],
+            overlap=0.75
+        ),
+        waveform_length=64000,
+        sample_rate=16000,
+        spectrogram_shape=[128, 1024],
+        overlap=0.75
+    )
+
+    correlations = correlate(originals, reconstructions)
+
+    with tf.train.SingularMonitoredSession(
+        scaffold=tf.train.Scaffold(
+            init_op=tf.global_variables_initializer(),
+            local_init_op=tf.group(
+                tf.local_variables_initializer(),
+                tf.tables_initializer()
+            )
+        )
+    ) as session:
+
+        import matplotlib.pyplot as plt
+
+        plt.hist(session.run(correlations))
+        plt.show()
