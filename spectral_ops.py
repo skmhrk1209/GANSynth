@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 import numpy as np
 import functools
 import glob
@@ -95,8 +94,9 @@ def diff(inputs, axis=-1):
 
     back = tf.slice(inputs, begin_back, size)
     front = tf.slice(inputs, begin_front, size)
+    diffs = front - back
 
-    return front - back
+    return diffs
 
 
 def unwrap(phases, discont=np.pi, axis=-1):
@@ -112,8 +112,9 @@ def unwrap(phases, discont=np.pi, axis=-1):
     shape[axis] = 1
 
     cumsums = tf.concat([tf.zeros(shape), cumsums], axis=axis)
+    unwrapped = phases + cumsums
 
-    return phases + cumsums
+    return unwrapped
 
 
 def instantaneous_frequency(phases, axis=-2):
@@ -136,16 +137,16 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
 
     def normalize(inputs, mean, std):
         return (inputs - mean) / std
-    # =========================================================================================
+
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
     frame_step = int((1 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
-    # =========================================================================================
+
     # For Nsynth dataset, we are putting all padding in the front
     # This causes edge effects in the tail
     waveforms = tf.pad(waveforms, [[0, 0], [num_samples - waveform_length, 0]])
-    # =========================================================================================
+
     stfts = tf.signal.stft(
         signals=waveforms,
         frame_length=frame_length,
@@ -155,13 +156,13 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
             periodic=True
         )
     )
-    # =========================================================================================
+
     # discard_dc
     stfts = stfts[..., 1:]
-    # =========================================================================================
+
     magnitude_spectrograms = tf.abs(stfts)
     phase_spectrograms = tf.angle(stfts)
-    # =========================================================================================
+
     weight_matrix = linear_to_mel_weight_matrix(
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
@@ -174,13 +175,13 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
     mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
     mel_phase_spectrograms = tf.tensordot(phase_spectrograms, weight_matrix, axes=1)
     mel_phase_spectrograms.set_shape(phase_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
-    # =========================================================================================
+
     log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
-    mel_instantaneous_frequencies = instantaneous_frequency(mel_phase_spectrograms)
-    # =========================================================================================
-    log_mel_magnitude_spectrograms = normalize(log_mel_magnitude_spectrograms, -4, 10)
-    mel_instantaneous_frequencies = normalize(mel_instantaneous_frequencies, 0, 1)
-    # =========================================================================================
+    mel_instantaneous_frequencies = instantaneous_frequency(mel_phase_spectrograms, axis=-2)
+
+    log_mel_magnitude_spectrograms = normalize(log_mel_magnitude_spectrograms, -3.76, 10.05)
+    mel_instantaneous_frequencies = normalize(mel_instantaneous_frequencies, 0.0, 1.0)
+
     return log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
 
@@ -188,18 +189,18 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
 
     def unnormalize(inputs, mean, std):
         return inputs * std + mean
-    # =========================================================================================
+
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
     frame_step = int((1 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
-    # =========================================================================================
-    log_mel_magnitude_spectrograms = unnormalize(log_mel_magnitude_spectrograms, -4, 10)
-    mel_instantaneous_frequencies = unnormalize(mel_instantaneous_frequencies, 0, 1)
-    # =========================================================================================
+
+    log_mel_magnitude_spectrograms = unnormalize(log_mel_magnitude_spectrograms, -3.76, 10.05)
+    mel_instantaneous_frequencies = unnormalize(mel_instantaneous_frequencies, 0.0, 1.0)
+
     mel_magnitude_spectrograms = tf.exp(log_mel_magnitude_spectrograms)
     mel_phase_spectrograms = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
-    # =========================================================================================
+
     weight_matrix = mel_to_linear_weight_matrix(
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
@@ -212,12 +213,12 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
     magnitudes.set_shape(mel_magnitude_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, weight_matrix, axes=1)
     phase_spectrograms.set_shape(mel_phase_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
-    # =========================================================================================
+
     stfts = tf.complex(magnitudes, 0.0) * tf.complex(tf.cos(phase_spectrograms), tf.sin(phase_spectrograms))
-    # =========================================================================================
+
     # discard_dc
     stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])
-    # =========================================================================================
+
     waveforms = tf.signal.inverse_stft(
         stfts=stfts,
         frame_length=frame_length,
@@ -230,11 +231,11 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
             )
         )
     )
-    # =========================================================================================
+
     # For Nsynth dataset, we are putting all padding in the front
     # This causes edge effects in the tail
     waveforms = waveforms[:, num_samples - waveform_length:]
-    # =========================================================================================
+
     return waveforms
 
 
@@ -244,7 +245,7 @@ def cross_correlation(x, y, padding="VALID", normalize=True):
         x /= tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1, keepdims=True))
         y /= tf.sqrt(tf.reduce_sum(tf.square(y), axis=-1, keepdims=True))
 
-    return tf.map_fn(
+    cross_correlations = tf.map_fn(
         fn=lambda inputs: tf.squeeze(tf.nn.conv2d(
             input=inputs[0][tf.newaxis, :, tf.newaxis, tf.newaxis],
             filter=inputs[1][:, tf.newaxis, tf.newaxis, tf.newaxis],
@@ -258,6 +259,8 @@ def cross_correlation(x, y, padding="VALID", normalize=True):
         swap_memory=True,
     )
 
+    return cross_correlations
+
 
 if __name__ == "__main__":
 
@@ -267,7 +270,7 @@ if __name__ == "__main__":
     tf.logging.set_verbosity(tf.logging.INFO)
 
     originals, _ = nsynth_input_fn(
-        filenames=glob.glob("nsynth_test.tfrecord"),
+        filenames=glob.glob("*.tfrecord"),
         batch_size=100,
         num_epochs=1,
         shuffle=False,
