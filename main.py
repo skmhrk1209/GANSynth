@@ -22,7 +22,7 @@ from utils import Struct
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
-parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.tfrecord"])
+parser.add_argument('--filenames', type=str, nargs="+", default="*.tfrecord")
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
@@ -54,7 +54,7 @@ with tf.Graph().as_default():
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
             nsynth_input_fn,
-            filenames=args.filenames,
+            filenames=glob.glob(args.filenames),
             batch_size=args.batch_size,
             num_epochs=args.num_epochs if args.train else 1,
             shuffle=True if args.train else False,
