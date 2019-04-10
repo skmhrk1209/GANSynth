@@ -238,11 +238,11 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
     return waveforms
 
 
-def correlate(x, y, padding="VALID", normalize=True):
+def cross_correlation(x, y, padding="VALID", normalize=True):
 
     if normalize:
-        x /= tf.norm(x, axis=-1, keepdims=True)
-        y /= tf.norm(y, axis=-1, keepdims=True)
+        x /= tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1, keepdims=True))
+        y /= tf.sqrt(tf.reduce_sum(tf.square(y), axis=-1, keepdims=True))
 
     return tf.map_fn(
         fn=lambda inputs: tf.squeeze(tf.nn.conv2d(
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     tf.logging.set_verbosity(tf.logging.INFO)
 
     originals, _ = nsynth_input_fn(
-        filenames=glob.glob("*.tfrecord"),
+        filenames=glob.glob("nsynth_test.tfrecord"),
         batch_size=100,
         num_epochs=1,
         shuffle=False,
@@ -289,7 +289,7 @@ if __name__ == "__main__":
         overlap=0.75
     )
 
-    correlations = correlate(originals, reconstructions)
+    cross_correlations = cross_correlation(originals, reconstructions)
 
     with tf.train.SingularMonitoredSession(
         scaffold=tf.train.Scaffold(
@@ -304,7 +304,7 @@ if __name__ == "__main__":
         def generator():
             while True:
                 try:
-                    yield session.run([correlations])
+                    yield session.run([cross_correlations])
                 except tf.errors.OutOfRangeError:
                     break
 
