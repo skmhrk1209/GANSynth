@@ -26,6 +26,7 @@ parser.add_argument('--filenames', type=str, nargs="+", default=["nsynth_train.t
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
+parser.add_argument("--growing_steps", type=int, default=100000)
 parser.add_argument('--train', action="store_true")
 parser.add_argument('--evaluate', action="store_true")
 parser.add_argument('--generate', action="store_true")
@@ -44,7 +45,7 @@ with tf.Graph().as_default():
         max_channels=256,
         growing_level=tf.cast(tf.divide(
             x=tf.train.create_global_step(),
-            y=args.total_steps
+            y=args.growing_steps
         ), tf.float32)
     )
 
