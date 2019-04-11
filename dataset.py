@@ -53,7 +53,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle,
     # filter just acoustic instruments and just pitches 24-84 (as in the paper)
     dataset = dataset.filter(lambda waveform, label, pitch, source: functools.reduce(
         tf.logical_and,
-        filter(None, [
+        filter(lambda x: x is not None, [
             tf.greater_equal(pitch, min(pitches)) if pitches else pitches,
             tf.less_equal(pitch, max(pitches)) if pitches else pitches,
             tf.reduce_any(tf.equal(sources, source)) if sources else sources,
