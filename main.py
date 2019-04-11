@@ -84,10 +84,16 @@ with tf.Graph().as_default():
         )
     )
 
+    config = tf.ConfigProto(
+        gpu_options=tf.GPUOptions(
+            allow_growth=True
+        )
+    )
+
     if args.train:
         gan_synth.train(
             model_dir=args.model_dir,
-            config=None,
+            config=config,
             total_steps=args.total_steps,
             save_checkpoint_steps=1000,
             save_summary_steps=100,
@@ -97,11 +103,11 @@ with tf.Graph().as_default():
     if args.evaluate:
         gan_synth.evaluate(
             model_dir=args.model_dir,
-            config=None
+            config=config
         )
 
     if args.generate:
         gan_synth.generate(
             model_dir=args.model_dir,
-            config=None
+            config=config
         )
