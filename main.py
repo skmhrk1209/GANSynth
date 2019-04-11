@@ -15,6 +15,7 @@ import tensorflow as tf
 import numpy as np
 import functools
 import argparse
+import glob
 from dataset import nsynth_input_fn
 from model import GANSynth
 from network import PGGAN
