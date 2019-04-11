@@ -26,7 +26,9 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle,
         ))
 
         waveform = tf.read_file(features.path)
-        # decode a 16-bit PCM WAV file
+        # Decode a 16-bit PCM WAV file to a float tensor.
+        # The -32768 to 32767 signed 16-bit values
+        # will be scaled to -1.0 to 1.0 in float.
         waveform, _ = audio_ops.decode_wav(
             contents=waveform,
             desired_channels=1,
