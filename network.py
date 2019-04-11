@@ -8,7 +8,7 @@ def log(x, base):
 
 
 def lerp(a, b, t):
-    return t * a + (1 - t) * b
+    return t * a + (1.0 - t) * b
 
 
 class PGGAN(object):
@@ -45,7 +45,7 @@ class PGGAN(object):
                             inputs=inputs,
                             units=channels(depth) * resolution(depth).prod(),
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.reshape(
@@ -60,7 +60,7 @@ class PGGAN(object):
                             filters=channels(depth),
                             kernel_size=[3, 3],
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -74,7 +74,7 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             strides=[2, 2],
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -85,7 +85,7 @@ class PGGAN(object):
                             filters=channels(depth),
                             kernel_size=[3, 3],
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -100,7 +100,7 @@ class PGGAN(object):
                         filters=2,
                         kernel_size=[1, 1],
                         use_bias=True,
-                        variance_scale=1,
+                        variance_scale=1.0,
                         scale_weight=True
                     )
                     inputs = tf.nn.tanh(inputs)
@@ -155,7 +155,7 @@ class PGGAN(object):
             labels = embedding(
                 inputs=labels,
                 units=latents.shape[1],
-                variance_scale=1,
+                variance_scale=1.0,
                 scale_weight=True
             )
             return grow(tf.concat([latents, labels], axis=1), self.min_depth)
@@ -178,7 +178,7 @@ class PGGAN(object):
                             filters=channels(depth),
                             kernel_size=[3, 3],
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -188,7 +188,7 @@ class PGGAN(object):
                             inputs=inputs,
                             units=channels(depth - 1),
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         features = tf.nn.leaky_relu(features)
@@ -200,7 +200,7 @@ class PGGAN(object):
                             inputs=features,
                             units=labels.shape[1],
                             use_bias=True,
-                            variance_scale=1,
+                            variance_scale=1.0,
                             scale_weight=True
                         )
                         logits = tf.gather_nd(
@@ -215,7 +215,7 @@ class PGGAN(object):
                             filters=channels(depth),
                             kernel_size=[3, 3],
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -226,7 +226,7 @@ class PGGAN(object):
                             kernel_size=[3, 3],
                             strides=[2, 2],
                             use_bias=True,
-                            variance_scale=2,
+                            variance_scale=2.0,
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
@@ -240,7 +240,7 @@ class PGGAN(object):
                         filters=channels(depth),
                         kernel_size=[1, 1],
                         use_bias=True,
-                        variance_scale=2,
+                        variance_scale=2.0,
                         scale_weight=True
                     )
                     inputs = tf.nn.leaky_relu(inputs)

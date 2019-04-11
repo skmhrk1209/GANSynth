@@ -44,20 +44,20 @@ def linear_to_mel_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate,
     upper_edge_mel = band_edges_mel[2:]
 
     freq_res = nyquist_hertz / num_spectrogram_bins
-    freq_th = 1.5 * freq_res
+    freq_th = freq_res * 1.5
     for i in range(num_mel_bins):
         center_hz = mel_to_hertz(center_mel[i])
         lower_hz = mel_to_hertz(lower_edge_mel[i])
         upper_hz = mel_to_hertz(upper_edge_mel[i])
         if upper_hz - lower_hz < freq_th:
-            rhs = 0.5 * freq_th / (center_hz + MEL_BREAK_FREQUENCY_HERTZ)
+            rhs = freq_th * 0.5 / (center_hz + MEL_BREAK_FREQUENCY_HERTZ)
             dm = MEL_HIGH_FREQUENCY_Q * np.log(rhs + np.sqrt(1.0 + rhs ** 2))
             lower_edge_mel[i] = center_mel[i] - dm
             upper_edge_mel[i] = center_mel[i] + dm
 
-    lower_edge_hz = mel_to_hertz(lower_edge_mel)[np.newaxis, :]
-    center_hz = mel_to_hertz(center_mel)[np.newaxis, :]
-    upper_edge_hz = mel_to_hertz(upper_edge_mel)[np.newaxis, :]
+    lower_edge_hz = mel_to_hertz(lower_edge_mel)[np.newaxis]
+    center_hz = mel_to_hertz(center_mel)[np.newaxis]
+    upper_edge_hz = mel_to_hertz(upper_edge_mel)[np.newaxis]
 
     # Calculate lower and upper slopes for every spectrogram bin.
     # Line segments are linear in the mel domain, not Hertz.
@@ -99,11 +99,11 @@ def diff(inputs, axis=-1):
     return diffs
 
 
-def unwrap(phases, discont=np.pi, axis=-1):
+def unwrap(phases, axis=-1):
 
     diffs = diff(phases, axis=axis)
-    mods = tf.mod(diffs + np.pi, 2 * np.pi) - np.pi
-    indices = tf.logical_and(tf.equal(mods, -np.pi), tf.greater(diffs, 0))
+    mods = tf.mod(diffs + np.pi, np.pi * 2.0) - np.pi
+    indices = tf.logical_and(tf.equal(mods, -np.pi), tf.greater(diffs, 0.0))
     mods = tf.where(indices, tf.ones_like(mods) * np.pi, mods)
     corrects = mods - diffs
     cumsums = tf.cumsum(corrects, axis=axis)
@@ -140,7 +140,7 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
-    frame_step = int((1 - overlap) * frame_length)
+    frame_step = int((1.0 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
 
     # For Nsynth dataset, we are putting all padding in the front
@@ -167,8 +167,8 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
         sample_rate=sample_rate,
-        lower_edge_hertz=0,
-        upper_edge_hertz=sample_rate / 2
+        lower_edge_hertz=0.0,
+        upper_edge_hertz=sample_rate / 2.0
     )
     weight_matrix = tf.cast(weight_matrix, tf.float32)
     mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, weight_matrix, axes=1)
@@ -176,7 +176,7 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
     mel_phase_spectrograms = tf.tensordot(phase_spectrograms, weight_matrix, axes=1)
     mel_phase_spectrograms.set_shape(phase_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
 
-    log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1e-6)
+    log_mel_magnitude_spectrograms = tf.log(mel_magnitude_spectrograms + 1.0e-6)
     mel_instantaneous_frequencies = instantaneous_frequency(mel_phase_spectrograms, axis=-2)
 
     log_mel_magnitude_spectrograms = normalize(log_mel_magnitude_spectrograms, -3.76, 10.05)
@@ -192,7 +192,7 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
-    frame_step = int((1 - overlap) * frame_length)
+    frame_step = int((1.0 - overlap) * frame_length)
     num_samples = frame_step * (time_steps - 1) + frame_length
 
     log_mel_magnitude_spectrograms = unnormalize(log_mel_magnitude_spectrograms, -3.76, 10.05)
@@ -205,8 +205,8 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
         sample_rate=sample_rate,
-        lower_edge_hertz=0,
-        upper_edge_hertz=sample_rate / 2
+        lower_edge_hertz=0.0,
+        upper_edge_hertz=sample_rate / 2.0
     )
     weight_matrix = tf.cast(weight_matrix, tf.float32)
     magnitudes = tf.tensordot(mel_magnitude_spectrograms, weight_matrix, axes=1)

@@ -33,7 +33,7 @@ class GANSynth(object):
         # gradient-based mode-seeking loss
         if hyper_params.mode_seeking_loss_weight:
             latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
-            mode_seeking_losses = 1 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1e-6)
+            mode_seeking_losses = 1.0 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1.0e-6)
             generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
         # -----------------------------------------------------------------------------------------
         # non-saturating loss

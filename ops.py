@@ -2,19 +2,19 @@ import tensorflow as tf
 import numpy as np
 
 
-def get_weight(shape, variance_scale=2, scale_weight=False):
+def get_weight(shape, variance_scale=2.0, scale_weight=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
         weight = tf.get_variable(
             name="weight",
             shape=shape,
-            initializer=tf.initializers.truncated_normal(0, 1)
+            initializer=tf.initializers.truncated_normal(0.0, 1.0)
         ) * stddev
     else:
         weight = tf.get_variable(
             name="weight",
             shape=shape,
-            initializer=tf.initializers.truncated_normal(0, stddev)
+            initializer=tf.initializers.truncated_normal(0.0, stddev)
         )
     return weight
 
@@ -28,7 +28,7 @@ def get_bias(shape):
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False):
+def dense(inputs, units, use_bias=True, variance_scale=2.0, scale_weight=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -42,7 +42,7 @@ def dense(inputs, units, use_bias=True, variance_scale=2, scale_weight=False):
 
 
 def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-           variance_scale=2, scale_weight=True):
+           variance_scale=2.0, scale_weight=True):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -62,7 +62,7 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
 
 
 def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-                     variance_scale=2, scale_weight=True):
+                     variance_scale=2.0, scale_weight=True):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
@@ -111,7 +111,7 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
-def embedding(inputs, units, variance_scale=2, scale_weight=False):
+def embedding(inputs, units, variance_scale=2.0, scale_weight=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
@@ -121,12 +121,12 @@ def embedding(inputs, units, variance_scale=2, scale_weight=False):
     return inputs
 
 
-def pixel_norm(inputs, epsilon=1e-8):
-    inputs *= tf.rsqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
+def pixel_norm(inputs, epsilon=1.0e-8):
+    inputs /= tf.sqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     return inputs
 
 
-def batch_stddev(inputs, group_size=4, epsilon=1e-8):
+def batch_stddev(inputs, group_size=4, epsilon=1.0e-8):
     shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [group_size, -1, *shape[1:]])
     inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
