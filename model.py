@@ -196,4 +196,4 @@ class GANSynth(object):
                         break
 
             frechet_inception_distance = metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator())))
-            tf.logging.info("frechet_inception_distance: {}".format(frechet_inception_distance))
+            tf.logging.info(f"frechet_inception_distance: {frechet_inception_distance}")

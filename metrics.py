@@ -26,7 +26,7 @@ def frechet_inception_distance(real_features, fake_features):
     mean_cov = sp.linalg.sqrtm(np.dot(real_cov, fake_cov))
     if np.iscomplexobj(mean_cov):
         if not np.allclose(np.diagonal(mean_cov).imag, 0.0, atol=1.0e-3):
-            raise ValueError("Imaginary component {}".format(np.max(np.abs(mean_cov.imag))))
+            raise ValueError(f"Imaginary component {np.max(np.abs(mean_cov.imag))}")
         mean_cov = mean_cov.real
     return np.sum((real_mean - fake_mean) ** 2) + np.trace(real_cov + fake_cov - mean_cov * 2)
 
