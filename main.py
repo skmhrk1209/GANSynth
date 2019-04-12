@@ -39,17 +39,15 @@ with tf.Graph().as_default():
 
     tf.set_random_seed(0)
 
-    g = tf.cast(tf.divide(
-        x=tf.train.create_global_step(),
-        y=args.growing_steps
-    ), tf.float32)
-
     pggan = PGGAN(
         min_resolution=[2, 16],
         max_resolution=[128, 1024],
         min_channels=32,
         max_channels=256,
-        growing_level=10.0
+        growing_level=tf.cast(tf.divide(
+            x=tf.train.create_global_step(),
+            y=args.growing_steps
+        ), tf.float32)
     )
 
     gan_synth = GANSynth(
@@ -73,6 +71,8 @@ with tf.Graph().as_default():
             spectrogram_shape=[128, 1024],
             overlap=0.75
         ),
+        # [Don't Decay the Learning Rate, Increase the Batch Size]
+        # (https://arxiv.org/pdf/1711.00489.pdf)
         hyper_params=Struct(
             generator_learning_rate=args.batch_size * 8e-4 / 8,
             generator_beta1=0.0,
