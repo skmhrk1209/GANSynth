@@ -14,7 +14,7 @@ class GANSynth(object):
         # apply generator to split batch to avoid OOM
         fake_images = tf.concat(
             values=tf.map_fn(
-                fn=lambda inputs: print(inputs) or generator(*inputs),
+                fn=lambda inputs: generator(*inputs),
                 elems=(
                     tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
                     for tensor in (fake_latents, labels)
