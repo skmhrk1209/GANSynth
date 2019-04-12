@@ -201,7 +201,7 @@ class GANSynth(object):
         ) as session:
 
             def generator():
-                while True:
+                for _ in range(10):
                     try:
                         yield session.run([real_features, real_logits, fake_features, fake_logits])
                     except tf.errors.OutOfRangeError:
