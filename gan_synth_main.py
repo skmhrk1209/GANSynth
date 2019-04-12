@@ -27,7 +27,7 @@ parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--growing_steps", type=int, default=1000000)
-parser.add_argument('--pitch_classifier', type=str, default="pitch_classifier.pb")
+parser.add_argument('--classifier', type=str, default="pitch_classifier.pb")
 parser.add_argument('--train', action="store_true")
 parser.add_argument('--evaluate', action="store_true")
 parser.add_argument('--generate', action="store_true")
@@ -104,7 +104,7 @@ with tf.Graph().as_default():
 
     if args.evaluate:
 
-        with open("pitch_classifier.pb", "rb") as file:
+        with open(args.classifier, "rb") as file:
             classifier = tf.GraphDef.FromString(file.read())
 
         gan_synth.evaluate(
