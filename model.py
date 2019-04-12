@@ -19,8 +19,8 @@ class GANSynth(object):
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
         fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
 
-        real_features, real_logits = discriminator(real_images, labels)
-        fake_features, fake_logits = discriminator(fake_images, labels)
+        real_logits = discriminator(real_images, labels)
+        fake_logits = discriminator(fake_images, labels)
 
         # -----------------------------------------------------------------------------------------
         # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
@@ -85,8 +85,6 @@ class GANSynth(object):
         self.fake_magnitude_spectrograms = fake_magnitude_spectrograms
         self.real_instantaneous_frequencies = real_instantaneous_frequencies
         self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
-        self.real_features = real_features
-        self.fake_features = fake_features
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
         self.generator_train_op = generator_train_op
@@ -174,27 +172,3 @@ class GANSynth(object):
             while not session.should_stop():
                 session.run(self.discriminator_train_op)
                 session.run(self.generator_train_op)
-
-    def evaluate(self, model_dir, config):
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=tf.train.Scaffold(
-                init_op=tf.global_variables_initializer(),
-                local_init_op=tf.group(
-                    tf.local_variables_initializer(),
-                    tf.tables_initializer()
-                )
-            ),
-            checkpoint_dir=model_dir,
-            config=config
-        ) as session:
-
-            def generator():
-                while True:
-                    try:
-                        yield session.run([self.real_features, self.fake_features])
-                    except tf.errors.OutOfRangeError:
-                        break
-
-            frechet_inception_distance = metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator())))
-            tf.logging.info(f"frechet_inception_distance: {frechet_inception_distance}")
