@@ -10,7 +10,6 @@ class GANSynth(object):
 
         real_waveforms, labels = real_input_fn()
         fake_latents = fake_input_fn()
-
         fake_images = generator(fake_latents, labels)
 
         real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
