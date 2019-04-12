@@ -201,7 +201,7 @@ class GANSynth(object):
         ) as session:
 
             def generator():
-                for _ in range(10):
+                while True:
                     try:
                         yield session.run([real_features, real_logits, fake_features, fake_logits])
                     except tf.errors.OutOfRangeError:
@@ -264,7 +264,7 @@ class PitchClassifier(object):
         self.train_op = train_op
         self.update_op = update_op
 
-        images = tf.placeholder(tf.float32, shape=images.shape, name="images")
+        images = tf.placeholder(tf.float32, shape=[None, *images.shape[1:]], name="images")
         features, logits = network(images)
         features = tf.identity(features, name="features")
         logits = tf.identity(logits, name="logits")
