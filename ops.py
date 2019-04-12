@@ -5,8 +5,7 @@ import numpy as np
 def weight_standardization(weight, epsilon=1.0e-8):
     shape = weight.shape.as_list()
     weight = tf.reshape(weight, [-1, shape[-1]])
-    mean = tf.reduce_mean(weight, axis=0, keepdims=True)
-    variance = tf.reduce_mean(tf.square(weight - mean), axis=0, keepdims=True)
+    mean, variance = tf.nn.moments(weight, axes=[0], keep_dims=True)
     std = tf.sqrt(variance + epsilon)
     weight = (weight - mean) / std
     weight = tf.reshape(weight, shape)
