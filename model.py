@@ -1,73 +1,26 @@
 import tensorflow as tf
 import numpy as np
-import functools
 import metrics
 import spectral_ops
 
 
-def split_batch(inputs, batch_splits):
-    assert inputs.shape[0] % batch_splits == 0
-    return tf.reshape(inputs, [batch_splits, -1, *inputs.shape[1:]])
-
-
-def unsplit_batch(inputs, batch_splits):
-    assert inputs.shape[0] == batch_splits
-    return tf.reshape(inputs, [-1, *inputs.shape[2:]])
-
-
 class GANSynth(object):
 
-    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, batch_splits, spectral_params, hyper_params):
+    def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, spectral_params, hyper_params):
 
-        # data input
         real_waveforms, labels = real_input_fn()
         fake_latents = fake_input_fn()
-        # apply generator to split batch to avoid OOM
-        fake_images = unsplit_batch(tf.map_fn(
-            fn=lambda inputs: generator(*inputs),
-            elems=tuple(
-                split_batch(tensor, batch_splits)
-                for tensor in (fake_latents, labels)
-            ),
-            dtype=tf.float32,
-            parallel_iterations=1,
-            back_prop=True,
-            swap_memory=True
-        ), batch_splits)
-        # convert waveform to spectrogram
+
+        fake_images = generator(fake_latents, labels)
+
         real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
         real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
-        # convert spactrogram to waveform
+
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
         fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
-        # apply discriminator to split batch to avoid OOM
-        real_logits = unsplit_batch(tf.map_fn(
-            fn=lambda inputs: discriminator(*inputs),
-            elems=tuple(
-                split_batch(tensor, batch_splits)
-                for tensor in (real_images, labels)
-            ),
-            dtype=tf.float32,
-            parallel_iterations=1,
-            back_prop=True,
-            swap_memory=True
-        ), batch_splits)
-        # apply discriminator to split batch to avoid OOM
-        fake_logits = unsplit_batch(tf.map_fn(
-            fn=lambda inputs: discriminator(*inputs),
-            elems=tuple(
-                split_batch(tensor, batch_splits)
-                for tensor in (fake_images, labels)
-            ),
-            dtype=tf.float32,
-            parallel_iterations=1,
-            back_prop=True,
-            swap_memory=True
-        ), batch_splits)
 
-        print(fake_images)
-        print(real_logits)
-        print(fake_logits)
+        real_features, real_logits = discriminator(real_images, labels)
+        fake_features, fake_logits = discriminator(fake_images, labels)
 
         # -----------------------------------------------------------------------------------------
         # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
@@ -132,6 +85,8 @@ class GANSynth(object):
         self.fake_magnitude_spectrograms = fake_magnitude_spectrograms
         self.real_instantaneous_frequencies = real_instantaneous_frequencies
         self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
+        self.real_features = real_features
+        self.fake_features = fake_features
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
         self.generator_train_op = generator_train_op
@@ -219,3 +174,27 @@ class GANSynth(object):
             while not session.should_stop():
                 session.run(self.discriminator_train_op)
                 session.run(self.generator_train_op)
+
+    def evaluate(self, model_dir, config):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            def generator():
+                while True:
+                    try:
+                        yield session.run([self.real_features, self.fake_features])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            frechet_inception_distance = metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator())))
+            tf.logging.info(f"frechet_inception_distance: {frechet_inception_distance}")

@@ -25,7 +25,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, default="nsynth*.tfrecord")
 parser.add_argument("--batch_size", type=int, default=8)
-parser.add_argument("--batch_splits", type=int, default=2)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
 parser.add_argument("--growing_steps", type=int, default=100000)
@@ -40,15 +39,17 @@ with tf.Graph().as_default():
 
     tf.set_random_seed(0)
 
+    growing_level = tf.cast(tf.divide(
+        x=tf.train.create_global_step(),
+        y=args.growing_steps
+    ), tf.float32)
+
     pggan = PGGAN(
         min_resolution=[2, 16],
         max_resolution=[128, 1024],
         min_channels=32,
         max_channels=256,
-        growing_level=tf.cast(tf.divide(
-            x=tf.train.create_global_step(),
-            y=args.growing_steps
-        ), tf.float32)
+        growing_level=10.0
     )
 
     gan_synth = GANSynth(
@@ -66,7 +67,6 @@ with tf.Graph().as_default():
         fake_input_fn=lambda: (
             tf.random.normal([args.batch_size, 256])
         ),
-        batch_splits=args.batch_splits,
         spectral_params=Struct(
             waveform_length=64000,
             sample_rate=16000,
