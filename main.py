@@ -66,7 +66,7 @@ with tf.Graph().as_default():
         fake_input_fn=lambda: (
             tf.random.normal([args.batch_size, 256])
         ),
-        batch_splits=2,
+        batch_splits=args.batch_splits,
         spectral_params=Struct(
             waveform_length=64000,
             sample_rate=16000,

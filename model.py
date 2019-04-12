@@ -15,11 +15,10 @@ class GANSynth(object):
         fake_images = tf.concat(
             values=tf.map_fn(
                 fn=lambda inputs: print(inputs) or generator(*inputs),
-                elems=tuple(map(functools.partial(
-                    tf.split,
-                    num_or_size_splits=batch_splits,
-                    axis=0
-                ), (fake_latents, labels))),
+                elems=(
+                    tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
+                    for tensor in (fake_latents, labels)
+                ),
                 dtype=tf.float32,
                 parallel_iterations=1,
                 back_prop=True,
@@ -37,11 +36,10 @@ class GANSynth(object):
         real_logits = tf.concat(
             values=tf.map_fn(
                 fn=lambda inputs: discriminator(*inputs),
-                elems=tuple(map(functools.partial(
-                    tf.split,
-                    num_or_size_splits=batch_splits,
-                    axis=0
-                ), (real_images, labels))),
+                elems=(
+                    tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
+                    for tensor in (real_images, labels)
+                ),
                 dtype=tf.float32,
                 parallel_iterations=1,
                 back_prop=True,
@@ -52,11 +50,10 @@ class GANSynth(object):
         fake_logits = tf.concat(
             values=tf.map_fn(
                 fn=lambda inputs: discriminator(*inputs),
-                elems=tuple(map(functools.partial(
-                    tf.split,
-                    num_or_size_splits=batch_splits,
-                    axis=0
-                ), (fake_images, labels))),
+                elems=(
+                    tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
+                    for tensor in (fake_images, labels)
+                ),
                 dtype=tf.float32,
                 parallel_iterations=1,
                 back_prop=True,
