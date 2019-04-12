@@ -264,7 +264,7 @@ class PitchClassifier(object):
         self.train_op = train_op
         self.update_op = update_op
 
-        images = tf.placeholder(tf.float32, shape=tf.TensorShape([None, *images.shape[1:]]), name="images")
+        images = tf.placeholder(tf.float32, shape=tf.TensorShape([None, *images.shape.as_list()[1:]]), name="images")
         features, logits = network(images)
         features = tf.identity(features, name="features")
         logits = tf.identity(logits, name="logits")
