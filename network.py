@@ -184,30 +184,30 @@ class PGGAN(object):
                         inputs = tf.nn.leaky_relu(inputs)
                     with tf.variable_scope("dense"):
                         inputs = tf.layers.flatten(inputs)
-                        features = dense(
+                        inputs = dense(
                             inputs=inputs,
                             units=channels(depth - 1),
                             use_bias=True,
                             variance_scale=2.0,
                             scale_weight=True
                         )
-                        features = tf.nn.leaky_relu(features)
+                        inputs = tf.nn.leaky_relu(inputs)
                     with tf.variable_scope("logits"):
                         # label conditioning from
                         # [Which Training Methods for GANs do actually Converge?]
                         # (https://arxiv.org/pdf/1801.04406.pdf)
-                        logits = dense(
-                            inputs=features,
+                        inputs = dense(
+                            inputs=inputs,
                             units=labels.shape[1],
                             use_bias=True,
                             variance_scale=1.0,
                             scale_weight=True
                         )
-                        logits = tf.gather_nd(
-                            params=logits,
+                        inputs = tf.gather_nd(
+                            params=inputs,
                             indices=tf.where(labels)
                         )
-                    return features, logits
+                    return inputs
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(

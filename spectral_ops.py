@@ -133,7 +133,7 @@ def instantaneous_frequency(phases, axis=-2):
     return diffs
 
 
-def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     def normalize(inputs, mean, std):
         return (inputs - mean) / std
@@ -185,7 +185,7 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
     return log_mel_magnitude_spectrograms, mel_instantaneous_frequencies
 
 
-def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequencies, waveform_length, sample_rate, spectrogram_shape, overlap):
+def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_frequencies, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     def unnormalize(inputs, mean, std):
         return inputs * std + mean
@@ -278,8 +278,8 @@ if __name__ == "__main__":
         sources=[0]
     )
 
-    reconstructions = convert_to_waveforms(
-        *convert_to_spectrograms(
+    reconstructions = convert_to_waveform(
+        *convert_to_spectrogram(
             waveforms=originals,
             waveform_length=64000,
             sample_rate=16000,
