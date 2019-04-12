@@ -20,6 +20,7 @@ class GANSynth(object):
                     num_or_size_splits=batch_splits,
                     axis=0
                 ), (fake_latents, labels))),
+                dtype=tf.float32,
                 parallel_iterations=1,
                 back_prop=True,
                 swap_memory=True
@@ -41,6 +42,7 @@ class GANSynth(object):
                     num_or_size_splits=batch_splits,
                     axis=0
                 ), (real_images, labels))),
+                dtype=tf.float32,
                 parallel_iterations=1,
                 back_prop=True,
                 swap_memory=True
@@ -55,6 +57,7 @@ class GANSynth(object):
                     num_or_size_splits=batch_splits,
                     axis=0
                 ), (fake_images, labels))),
+                dtype=tf.float32,
                 parallel_iterations=1,
                 back_prop=True,
                 swap_memory=True
