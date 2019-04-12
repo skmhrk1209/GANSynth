@@ -104,7 +104,7 @@ with tf.Graph().as_default():
 
     if args.evaluate:
 
-        with open("pitch_classifier.bp", "rb") as file:
+        with open("pitch_classifier.pb", "rb") as file:
             classifier = tf.GraphDef.FromString(file.read())
 
         gan_synth.evaluate(

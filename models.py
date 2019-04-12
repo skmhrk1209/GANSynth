@@ -234,7 +234,7 @@ class PitchClassifier(object):
         loss += tf.add_n([
             tf.nn.l2_loss(variable)
             for variable in tf.trainable_variables()
-            if "batch_norm" not in variable.name or "group_norm" not in variable.name
+            if "norm" not in variable.name
         ]) * hyper_params.weight_decay
 
         accuracy, update_op = tf.metrics.accuracy(
