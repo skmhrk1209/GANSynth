@@ -39,15 +39,17 @@ with tf.Graph().as_default():
 
     tf.set_random_seed(0)
 
+    g = tf.cast(tf.divide(
+        x=tf.train.create_global_step(),
+        y=args.growing_steps
+    ), tf.float32)
+
     pggan = PGGAN(
         min_resolution=[2, 16],
         max_resolution=[128, 1024],
         min_channels=32,
         max_channels=256,
-        growing_level=tf.cast(tf.divide(
-            x=tf.train.create_global_step(),
-            y=args.growing_steps
-        ), tf.float32)
+        growing_level=10.0
     )
 
     gan_synth = GANSynth(
