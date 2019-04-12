@@ -13,6 +13,27 @@ def weight_standardization(weight, epsilon=1.0e-8):
     return weight
 
 
+def group_normalization(inputs, groups, epsilon=1.0e-8):
+    shape = inputs.shape.as_list()
+    inputs = tf.reshape(inputs, [-1, groups, shape[1] // groups, *shape[2:]])
+    mean, variance = tf.nn.moments(inputs, axes=[2, 3, 4], keep_dims=True)
+    std = tf.sqrt(variance + epsilon)
+    inputs = (inputs - mean) / std
+    inputs = tf.reshape(inputs, [-1, *shape[1:]])
+    gamma = tf.get_variable(
+        name="gamma",
+        shape=[1, shape[1], 1, 1],
+        initializer=tf.initializers.ones()
+    )
+    beta = tf.get_variable(
+        name="beta",
+        shape=[1, shape[1], 1, 1],
+        initializer=tf.initializers.zeros()
+    )
+    inputs = inputs * gamma + beta
+    return inputs
+
+
 def get_weight(shape, variance_scale=2.0, scale_weight=False, apply_weight_standardization=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
@@ -174,30 +195,4 @@ def average_pooling2d(inputs, kernel_size, strides):
         padding="SAME",
         data_format="NCHW"
     )
-    return inputs
-
-
-def group_normalization(inputs, groups, epsilon=1.0e-8):
-
-    shape = inputs.shape.as_list()
-    inputs = tf.reshape(inputs, [-1, groups, shape[1] // groups, *shape[2:]])
-
-    mean, variance = tf.nn.moments(inputs, axes=[2, 3, 4], keep_dims=True)
-    std = tf.sqrt(variance + epsilon)
-    inputs = (inputs - mean) / std
-
-    inputs = tf.reshape(inputs, [-1, *shape[1:]])
-
-    gamma = tf.get_variable(
-        name="gamma",
-        shape=[1, shape[1], 1, 1],
-        initializer=tf.initializers.ones()
-    )
-    beta = tf.get_variable(
-        name="beta",
-        shape=[1, shape[1], 1, 1],
-        initializer=tf.initializers.zeros()
-    )
-    inputs = inputs * gamma + beta
-
     return inputs
