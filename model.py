@@ -31,7 +31,7 @@ class GANSynth(object):
             ),
             dtype=tf.float32,
             parallel_iterations=1,
-            back_prop=False,
+            back_prop=True,
             swap_memory=True
         ), batch_splits)
         # convert waveform to spectrogram
@@ -49,7 +49,7 @@ class GANSynth(object):
             ),
             dtype=tf.float32,
             parallel_iterations=1,
-            back_prop=False,
+            back_prop=True,
             swap_memory=True
         ), batch_splits)
         # apply discriminator to split batch to avoid OOM
@@ -61,7 +61,7 @@ class GANSynth(object):
             ),
             dtype=tf.float32,
             parallel_iterations=1,
-            back_prop=False,
+            back_prop=True,
             swap_memory=True
         ), batch_splits)
 
