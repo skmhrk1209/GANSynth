@@ -293,3 +293,135 @@ class PGGAN(object):
 
         with tf.variable_scope(name, reuse=reuse):
             return grow(images, self.min_depth)
+
+
+class ResNet(object):
+
+    def __init__(self, conv_param, pool_param, residual_params, groups, classes):
+
+        self.conv_param = conv_param
+        self.pool_param = pool_param
+        self.residual_params = residual_params
+        self.groups = groups
+        self.classes = classes
+
+    def __call__(self, inputs, name="resnet", reuse=tf.AUTO_REUSE):
+
+        with tf.variable_scope(name, reuse=reuse):
+
+            if self.conv_param:
+                with tf.variable_scope("conv"):
+                    inputs = conv2d(
+                        inputs=inputs,
+                        filters=self.conv_param.filters,
+                        kernel_size=self.conv_param.kernel_size,
+                        strides=self.conv_param.strides,
+                        use_bias=True,
+                        variance_scale=2.0,
+                        apply_weight_standardization=True
+                    )
+
+            if self.pool_param:
+                inputs = max_pooling2d(
+                    inputs=inputs,
+                    kernel_size=self.pool_param.kernel_size,
+                    strides=self.pool_param.strides
+                )
+
+            for i, residual_param in enumerate(self.residual_params):
+
+                for j in range(residual_param.blocks)[:1]:
+                    with tf.variable_scope(f"residual_block_{i}_{j}"):
+                        inputs = self.residual_block(
+                            inputs=inputs,
+                            filters=residual_param.filters,
+                            strides=residual_param.strides,
+                            projection_shortcut=True,
+                            groups=self.groups
+                        )
+
+                for j in range(residual_param.blocks)[1:]:
+                    with tf.variable_scope(f"residual_block_{i}_{j}"):
+                        inputs = self.residual_block(
+                            inputs=inputs,
+                            filters=residual_param.filters,
+                            strides=[1, 1],
+                            projection_shortcut=False,
+                            groups=self.groups
+                        )
+
+            with tf.variable_scope("group_norm"):
+                inputs = group_norm(inputs, groups=self.groups)
+
+            inputs = tf.nn.relu(inputs)
+
+            features = tf.reduce_mean(inputs, axis=[2, 3])
+
+            with tf.variable_scope("logits"):
+                logits = dense(
+                    inputs=features,
+                    units=self.classes,
+                    use_bias=True,
+                    variance_scale=1.0,
+                    apply_weight_standardization=False
+                )
+
+            return features, logits
+
+    def residual_block(self, inputs, filters, strides, projection_shortcut, groups):
+        """ A single block for ResNet v2, without a bottleneck.
+        Batch normalization then ReLu then convolution as described by:
+        Identity Mappings in Deep Residual Networks
+        (https://arxiv.org/pdf/1603.05027.pdf)
+        by Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun, Jul 2016.
+        """
+
+        shortcut = inputs
+
+        with tf.variable_scope("group_norm_1st"):
+            inputs = group_norm(inputs, groups=groups)
+
+        inputs = tf.nn.relu(inputs)
+
+        if projection_shortcut:
+            with tf.variable_scope("projection_shortcut"):
+                shortcut = conv2d(
+                    inputs=inputs,
+                    filters=filters,
+                    kernel_size=[1, 1],
+                    strides=strides,
+                    use_bias=False,
+                    variance_scale=2.0,
+                    apply_weight_standardization=True
+                )
+
+        with tf.variable_scope("conv_1st"):
+            inputs = conv2d(
+                inputs=inputs,
+                filters=filters,
+                kernel_size=[3, 3],
+                strides=strides,
+                use_bias=True,
+                variance_scale=2.0,
+                apply_weight_standardization=True
+            )
+
+        with tf.variable_scope("group_norm_2nd"):
+            inputs = group_norm(inputs, groups=groups)
+
+        inputs = tf.nn.relu(inputs)
+
+        with tf.variable_scope("conv_2nd"):
+            inputs = conv2d(
+                inputs=inputs,
+                filters=filters,
+                kernel_size=[3, 3],
+                strides=[1, 1],
+                use_bias=True,
+                variance_scale=2.0,
+                apply_weight_standardization=True
+            )
+
+        inputs += shortcut
+
+        return inputs

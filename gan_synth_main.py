@@ -16,8 +16,8 @@ import functools
 import argparse
 import glob
 from dataset import nsynth_input_fn
-from model import GANSynth
-from network import PGGAN
+from models import GANSynth
+from networks import PGGAN
 from utils import Struct
 
 parser = argparse.ArgumentParser()
@@ -26,7 +26,8 @@ parser.add_argument('--filenames', type=str, default="nsynth*.tfrecord")
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--num_epochs", type=int, default=None)
 parser.add_argument("--total_steps", type=int, default=1000000)
-parser.add_argument("--growing_steps", type=int, default=100000)
+parser.add_argument("--growing_steps", type=int, default=1000000)
+parser.add_argument('--pitch_classifier', type=str, default="pitch_classifier.pb")
 parser.add_argument('--train', action="store_true")
 parser.add_argument('--evaluate', action="store_true")
 parser.add_argument('--generate', action="store_true")
@@ -73,10 +74,10 @@ with tf.Graph().as_default():
         # [Don't Decay the Learning Rate, Increase the Batch Size]
         # (https://arxiv.org/pdf/1711.00489.pdf)
         hyper_params=Struct(
-            generator_learning_rate=args.batch_size * 8e-4 / 8,
+            generator_learning_rate=8e-4 * args.batch_size / 8,
             generator_beta1=0.0,
             generator_beta2=0.99,
-            discriminator_learning_rate=args.batch_size * 8e-4 / 8,
+            discriminator_learning_rate=8e-4 * args.batch_size / 8,
             discriminator_beta1=0.0,
             discriminator_beta2=0.99,
             mode_seeking_loss_weight=0.1,
@@ -102,13 +103,15 @@ with tf.Graph().as_default():
         )
 
     if args.evaluate:
+
+        with open("pitch_classifier.bp", "rb") as file:
+            classifier = tf.GraphDef.FromString(file.read())
+
         gan_synth.evaluate(
             model_dir=args.model_dir,
-            config=config
-        )
-
-    if args.generate:
-        gan_synth.generate(
-            model_dir=args.model_dir,
-            config=config
+            config=config,
+            classifier=classifier,
+            images="images:0",
+            features="features:0",
+            logits="logits:0"
         )

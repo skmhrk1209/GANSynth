@@ -2,7 +2,18 @@ import tensorflow as tf
 import numpy as np
 
 
-def get_weight(shape, variance_scale=2.0, scale_weight=False):
+def weight_standardization(weight, epsilon=1.0e-8):
+    shape = weight.shape.as_list()
+    weight = tf.reshape(weight, [-1, shape[-1]])
+    mean = tf.reduce_mean(weight, axis=0, keepdims=True)
+    variance = tf.reduce_mean(tf.square(weight - mean), axis=0, keepdims=True)
+    std = tf.sqrt(variance + epsilon)
+    weight = (weight - mean) / std
+    weight = tf.reshape(weight, shape)
+    return weight
+
+
+def get_weight(shape, variance_scale=2.0, scale_weight=False, apply_weight_standardization=False):
     stddev = np.sqrt(variance_scale / np.prod(shape[:-1]))
     if scale_weight:
         weight = tf.get_variable(
@@ -16,6 +27,8 @@ def get_weight(shape, variance_scale=2.0, scale_weight=False):
             shape=shape,
             initializer=tf.initializers.truncated_normal(0.0, stddev)
         )
+    if apply_weight_standardization:
+        weight = weight_standardization(weight)
     return weight
 
 
@@ -28,11 +41,12 @@ def get_bias(shape):
     return bias
 
 
-def dense(inputs, units, use_bias=True, variance_scale=2.0, scale_weight=False):
+def dense(inputs, units, use_bias=True, variance_scale=2.0, scale_weight=False, apply_weight_standardization=False):
     weight = get_weight(
         shape=[inputs.shape[1].value, units],
         variance_scale=variance_scale,
-        scale_weight=scale_weight
+        scale_weight=scale_weight,
+        apply_weight_standardization=apply_weight_standardization
     )
     inputs = tf.matmul(inputs, weight)
     if use_bias:
@@ -41,12 +55,24 @@ def dense(inputs, units, use_bias=True, variance_scale=2.0, scale_weight=False):
     return inputs
 
 
+def embedding(inputs, units, variance_scale=2.0, scale_weight=False, apply_weight_standardization=False):
+    weight = get_weight(
+        shape=[inputs.shape[1].value, units],
+        variance_scale=variance_scale,
+        scale_weight=scale_weight,
+        apply_weight_standardization=apply_weight_standardization
+    )
+    inputs = tf.nn.embedding_lookup(weight, tf.argmax(inputs, axis=1))
+    return inputs
+
+
 def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-           variance_scale=2.0, scale_weight=True):
+           variance_scale=2.0, scale_weight=False, apply_weight_standardization=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
-        scale_weight=scale_weight
+        scale_weight=scale_weight,
+        apply_weight_standardization=apply_weight_standardization
     )
     inputs = tf.nn.conv2d(
         input=inputs,
@@ -62,11 +88,12 @@ def conv2d(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
 
 
 def conv2d_transpose(inputs, filters, kernel_size, strides=[1, 1], use_bias=True,
-                     variance_scale=2.0, scale_weight=True):
+                     variance_scale=2.0, scale_weight=False, apply_weight_standardization=False):
     weight = get_weight(
         shape=[*kernel_size, inputs.shape[1].value, filters],
         variance_scale=variance_scale,
-        scale_weight=scale_weight
+        scale_weight=scale_weight,
+        apply_weight_standardization=apply_weight_standardization
     )
     weight = tf.transpose(weight, [0, 1, 3, 2])
     input_shape = np.array(inputs.shape.as_list())
@@ -111,16 +138,6 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
-def embedding(inputs, units, variance_scale=2.0, scale_weight=False):
-    weight = get_weight(
-        shape=[inputs.shape[1].value, units],
-        variance_scale=variance_scale,
-        scale_weight=scale_weight
-    )
-    inputs = tf.nn.embedding_lookup(weight, tf.argmax(inputs, axis=1))
-    return inputs
-
-
 def pixel_norm(inputs, epsilon=1.0e-8):
     inputs /= tf.sqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     return inputs
@@ -135,4 +152,49 @@ def batch_stddev(inputs, group_size=4, epsilon=1.0e-8):
     inputs = tf.sqrt(inputs + epsilon)
     inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
     inputs = tf.tile(inputs, [group_size, 1, *shape[2:]])
+    return inputs
+
+
+def max_pooling2d(inputs, kernel_size, strides):
+    inputs = tf.nn.max_pool(
+        value=inputs,
+        ksize=[1, 1, *kernel_size],
+        strides=[1, 1, *strides],
+        padding="SAME",
+        data_format="NCHW"
+    )
+    return inputs
+
+
+def average_pooling2d(inputs, kernel_size, strides):
+    inputs = tf.nn.avg_pool(
+        value=inputs,
+        ksize=[1, 1, *kernel_size],
+        strides=[1, 1, *strides],
+        padding="SAME",
+        data_format="NCHW"
+    )
+    return inputs
+
+
+def batch_norm(inputs, training):
+    inputs = tf.contrib.layers.batch_norm(
+        inputs=inputs,
+        center=True,
+        scale=True,
+        is_training=training,
+        data_format="NCHW"
+    )
+    return inputs
+
+
+def group_norm(inputs, groups):
+    inputs = tf.contrib.layers.group_norm(
+        inputs=inputs,
+        groups=groups,
+        channels_axis=1,
+        reduction_axes=[2, 3],
+        center=True,
+        scale=True
+    )
     return inputs

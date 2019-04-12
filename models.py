@@ -84,6 +84,8 @@ class GANSynth(object):
         self.fake_magnitude_spectrograms = fake_magnitude_spectrograms
         self.real_instantaneous_frequencies = real_instantaneous_frequencies
         self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
+        self.real_images = real_images
+        self.fake_images = fake_images
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
         self.generator_train_op = generator_train_op
@@ -171,3 +173,198 @@ class GANSynth(object):
             while not session.should_stop():
                 session.run(self.discriminator_train_op)
                 session.run(self.generator_train_op)
+
+    def evaluate(self, model_dir, config, classifier, images, features, logits):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            real_features, real_logits = tf.import_graph_def(
+                graph_def=classifier,
+                input_map={images: self.real_images},
+                return_elements=[features, logits]
+            )
+
+            fake_features, fake_logits = tf.import_graph_def(
+                graph_def=classifier,
+                input_map={images: self.fake_images},
+                return_elements=[features, logits]
+            )
+
+            def generator():
+                while True:
+                    try:
+                        yield session.run([real_features, real_logits, fake_features, fake_logits])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
+
+            tf.logging.info(
+                f"frechet_inception_distance: {metrics.frechet_inception_distance(real_features, fake_features)}"
+                f"inception_score: {metrics.inception_score(real_logits), metrics.inception_score(fake_logits)}"
+                f"num_different_bins: {metrics.num_different_bins(real_features, fake_features)}"
+            )
+
+
+class PitchClassifier(object):
+
+    def __init__(self, network, input_fn, spectral_params, hyper_params):
+
+        waveforms, labels = input_fn()
+
+        magnitude_spectrograms, instantaneous_frequencies = spectral_ops.convert_to_spectrogram(waveforms, **spectral_params)
+        images = tf.stack([magnitude_spectrograms, instantaneous_frequencies], axis=1)
+
+        features, logits = network(images)
+
+        loss = tf.losses.softmax_cross_entropy(
+            logits=logits,
+            onehot_labels=labels
+        )
+        loss += tf.add_n([
+            tf.nn.l2_loss(variable)
+            for variable in tf.trainable_variables()
+            if "batch_norm" not in variable.name or "group_norm" not in variable.name
+        ]) * hyper_params.weight_decay
+
+        accuracy, update_op = tf.metrics.accuracy(
+            predictions=tf.argmax(logits, axis=-1),
+            labels=tf.argmax(labels, axis=-1)
+        )
+
+        optimizer = tf.train.MomentumOptimizer(
+            learning_rate=(
+                hyper_params.learning_rate(tf.train.get_or_create_global_step())
+                if callable(hyper_params.learning_rate) else hyper_params.learning_rate
+            ),
+            momentum=hyper_params.momentum,
+            use_nesterov=hyper_params.use_nesterov
+        )
+        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+            train_op = optimizer.minimize(
+                loss=loss,
+                global_step=tf.train.get_or_create_global_step()
+            )
+
+        self.waveforms = waveforms
+        self.magnitude_spectrograms = magnitude_spectrograms
+        self.instantaneous_frequencies = instantaneous_frequencies
+        self.loss = loss
+        self.accuracy = accuracy
+        self.train_op = train_op
+        self.update_op = update_op
+
+        images = tf.placeholder(tf.float32, shape=images.shape, name="images")
+        features, logits = network(images)
+        features = tf.identity(features, name="features")
+        logits = tf.identity(logits, name="logits")
+
+    def train(self, model_dir, config, total_steps, save_checkpoint_steps, save_summary_steps, log_tensor_steps):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config,
+            hooks=[
+                tf.train.CheckpointSaverHook(
+                    checkpoint_dir=model_dir,
+                    save_steps=save_checkpoint_steps,
+                    saver=tf.train.Saver(
+                        max_to_keep=10,
+                        keep_checkpoint_every_n_hours=12,
+                    ),
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=save_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.audio(
+                            name=name,
+                            tensor=tensor,
+                            sample_rate=16000,
+                            max_outputs=4
+                        ) for name, tensor in dict(
+                            waveforms=self.waveforms
+                        ).items()
+                    ]),
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=save_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.image(
+                            name=name,
+                            tensor=tensor,
+                            max_outputs=4
+                        ) for name, tensor in dict(
+                            magnitude_spectrograms=self.magnitude_spectrograms[..., tf.newaxis],
+                            instantaneous_frequencies=self.instantaneous_frequencies[..., tf.newaxis]
+                        ).items()
+                    ]),
+                ),
+                tf.train.SummarySaverHook(
+                    output_dir=model_dir,
+                    save_steps=save_summary_steps,
+                    summary_op=tf.summary.merge([
+                        tf.summary.scalar(
+                            name=name,
+                            tensor=tensor
+                        ) for name, tensor in dict(
+                            loss=self.loss,
+                            accuracy=self.accuracy
+                        ).items()
+                    ]),
+                ),
+                tf.train.LoggingTensorHook(
+                    tensors=dict(
+                        global_step=tf.train.get_global_step(),
+                        loss=self.loss,
+                        accuracy=self.accuracy
+                    ),
+                    every_n_iter=log_tensor_steps,
+                ),
+                tf.train.StopAtStepHook(
+                    last_step=total_steps
+                )
+            ]
+        ) as session:
+
+            while not session.should_stop():
+                session.run(self.train_op)
+                session.run(self.update_op)
+
+    def evaluate(self, model_dir, config):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            while not session.should_stop():
+                accuracy = session.run(self.accuracy)
+                session.run(self.update_op)
+
+            tf.logging.info(f"accuracy: {accuracy}")
