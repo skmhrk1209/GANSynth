@@ -6,7 +6,6 @@
 # (https://openreview.net/pdf?id=H1xQVn09FX)
 #
 # based on following papers
-#
 # [Progressive Growing of GANs for Improved Quality, Stability, and Variation]
 # (https://arxiv.org/pdf/1710.10196.pdf)
 #=================================================================================================#
