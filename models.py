@@ -234,7 +234,7 @@ class PitchClassifier(object):
         loss += tf.add_n([
             tf.nn.l2_loss(variable)
             for variable in tf.trainable_variables()
-            if "norm" not in variable.name
+            if "normalization" not in variable.name
         ]) * hyper_params.weight_decay
 
         accuracy, update_op = tf.metrics.accuracy(
@@ -264,7 +264,7 @@ class PitchClassifier(object):
         self.train_op = train_op
         self.update_op = update_op
 
-        images = tf.placeholder(tf.float32, shape=[-1, *images.shape.as_list()[1:]], name="images")
+        images = tf.placeholder(tf.float32, shape=[None, *images.shape[1:]], name="images")
         features, logits = network(images)
         features = tf.identity(features, name="features")
         logits = tf.identity(logits, name="logits")

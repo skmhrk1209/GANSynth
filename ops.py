@@ -177,24 +177,27 @@ def average_pooling2d(inputs, kernel_size, strides):
     return inputs
 
 
-def batch_norm(inputs, training):
-    inputs = tf.contrib.layers.batch_norm(
-        inputs=inputs,
-        center=True,
-        scale=True,
-        is_training=training,
-        data_format="NCHW"
-    )
-    return inputs
+def group_normalization(inputs, groups, epsilon=1.0e-8):
 
+    shape = inputs.shape.as_list()
+    inputs = tf.reshape(inputs, [-1, groups, shape[1] // groups, *shape[2:]])
 
-def group_norm(inputs, groups):
-    inputs = tf.contrib.layers.group_norm(
-        inputs=inputs,
-        groups=groups,
-        channels_axis=1,
-        reduction_axes=[2, 3],
-        center=True,
-        scale=True
+    mean, variance = tf.nn.moments(inputs, axes=[2, 3, 4], keep_dims=True)
+    std = tf.sqrt(variance + epsilon)
+    inputs = (inputs - mean) / std
+
+    inputs = tf.reshape(inputs, [-1, *shape[1:]])
+
+    gamma = tf.get_variable(
+        name="gamma",
+        shape=[1, shape[1], 1, 1],
+        initializer=tf.initializers.ones()
     )
+    beta = tf.get_variable(
+        name="beta",
+        shape=[1, shape[1], 1, 1],
+        initializer=tf.initializers.zeros()
+    )
+    inputs = inputs * gamma + beta
+
     return inputs

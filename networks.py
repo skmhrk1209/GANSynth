@@ -350,8 +350,8 @@ class ResNet(object):
                             groups=self.groups
                         )
 
-            with tf.variable_scope("group_norm"):
-                inputs = group_norm(inputs, groups=self.groups)
+            with tf.variable_scope("group_normalization"):
+                inputs = group_normalization(inputs, groups=self.groups)
 
             inputs = tf.nn.relu(inputs)
 
@@ -378,8 +378,8 @@ class ResNet(object):
 
         shortcut = inputs
 
-        with tf.variable_scope("group_norm_1st"):
-            inputs = group_norm(inputs, groups=groups)
+        with tf.variable_scope("group_normalization_1st"):
+            inputs = group_normalization(inputs, groups=groups)
 
         inputs = tf.nn.relu(inputs)
 
@@ -406,8 +406,8 @@ class ResNet(object):
                 apply_weight_standardization=True
             )
 
-        with tf.variable_scope("group_norm_2nd"):
-            inputs = group_norm(inputs, groups=groups)
+        with tf.variable_scope("group_normalization_2nd"):
+            inputs = group_normalization(inputs, groups=groups)
 
         inputs = tf.nn.relu(inputs)
 
