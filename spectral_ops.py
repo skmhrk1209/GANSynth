@@ -170,7 +170,7 @@ def convert_to_spectrograms(waveforms, waveform_length, sample_rate, spectrogram
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
     )
-    weight_matrix = tf.cast(weight_matrix, tf.float32)
+    weight_matrix = tf.convert_to_tensor(weight_matrix, tf.float32)
     mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, weight_matrix, axes=1)
     mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
     mel_phase_spectrograms = tf.tensordot(phase_spectrograms, weight_matrix, axes=1)
@@ -208,7 +208,7 @@ def convert_to_waveforms(log_mel_magnitude_spectrograms, mel_instantaneous_frequ
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
     )
-    weight_matrix = tf.cast(weight_matrix, tf.float32)
+    weight_matrix = tf.convert_to_tensor(weight_matrix, tf.float32)
     magnitudes = tf.tensordot(mel_magnitude_spectrograms, weight_matrix, axes=1)
     magnitudes.set_shape(mel_magnitude_spectrograms.shape[:-1].concatenate(weight_matrix.shape[-1:]))
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, weight_matrix, axes=1)
