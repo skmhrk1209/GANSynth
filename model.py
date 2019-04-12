@@ -14,7 +14,7 @@ class GANSynth(object):
         # apply generator to split batch to avoid OOM
         fake_images = tf.concat(
             values=tf.map_fn(
-                fn=lambda inputs: generator(*inputs),
+                fn=lambda inputs: print(inputs) or generator(*inputs),
                 elems=tuple(map(functools.partial(
                     tf.split,
                     num_or_size_splits=batch_splits,
