@@ -8,24 +8,25 @@ import spectral_ops
 class GANSynth(object):
 
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, batch_splits, spectral_params, hyper_params):
+
+        def split(inputs):
+            return tf.reshape(inputs, [batch_splits, -1, *inputs.shape[1:]])
+
+        def unsplit(inputs):
+            return tf.reshape(inputs, [-1, *inputs.shape[2:]])
+
         # data input
         real_waveforms, labels = real_input_fn()
         fake_latents = fake_input_fn()
         # apply generator to split batch to avoid OOM
-        fake_images = tf.concat(
-            values=tf.map_fn(
-                fn=lambda inputs: generator(*inputs),
-                elems=[
-                    tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
-                    for tensor in (fake_latents, labels)
-                ],
-                dtype=tf.float32,
-                parallel_iterations=1,
-                back_prop=True,
-                swap_memory=True
-            ),
-            axis=0
-        )
+        fake_images = unsplit(tf.map_fn(
+            fn=lambda inputs: generator(*inputs),
+            elems=tuple(map(split, (fake_latents, labels))),
+            dtype=tf.float32,
+            parallel_iterations=1,
+            back_prop=True,
+            swap_memory=True
+        ))
         # convert waveform to spectrogram
         real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
         real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
@@ -33,34 +34,22 @@ class GANSynth(object):
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
         fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
         # apply discriminator to split batch to avoid OOM
-        real_logits = tf.concat(
-            values=tf.map_fn(
-                fn=lambda inputs: discriminator(*inputs),
-                elems=[
-                    tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
-                    for tensor in (real_images, labels)
-                ],
-                dtype=tf.float32,
-                parallel_iterations=1,
-                back_prop=True,
-                swap_memory=True
-            ),
-            axis=0
-        )
-        fake_logits = tf.concat(
-            values=tf.map_fn(
-                fn=lambda inputs: discriminator(*inputs),
-                elems=[
-                    tf.reshape(tensor, [batch_splits, -1, *tensor.shape[1:]])
-                    for tensor in (fake_images, labels)
-                ],
-                dtype=tf.float32,
-                parallel_iterations=1,
-                back_prop=True,
-                swap_memory=True
-            ),
-            axis=0
-        )
+        real_logits = unsplit(tf.map_fn(
+            fn=lambda inputs: discriminator(*inputs),
+            elems=tuple(map(split, (real_images, labels))),
+            dtype=tf.float32,
+            parallel_iterations=1,
+            back_prop=True,
+            swap_memory=True
+        ))
+        fake_logits = unsplit(tf.map_fn(
+            fn=lambda inputs: discriminator(*inputs),
+            elems=tuple(map(split, (fake_images, labels))),
+            dtype=tf.float32,
+            parallel_iterations=1,
+            back_prop=True,
+            swap_memory=True
+        ))
         # -----------------------------------------------------------------------------------------
         # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
