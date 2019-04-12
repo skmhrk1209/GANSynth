@@ -64,6 +64,11 @@ class GANSynth(object):
             back_prop=False,
             swap_memory=True
         ), batch_splits)
+
+        print(fake_images)
+        print(real_logits)
+        print(fake_logits)
+
         # -----------------------------------------------------------------------------------------
         # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
