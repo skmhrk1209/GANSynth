@@ -176,6 +176,18 @@ class GANSynth(object):
 
     def evaluate(self, model_dir, config, classifier, images, features, logits):
 
+        real_features, real_logits = tf.import_graph_def(
+            graph_def=classifier,
+            input_map={images: self.real_images},
+            return_elements=[features, logits]
+        )
+
+        fake_features, fake_logits = tf.import_graph_def(
+            graph_def=classifier,
+            input_map={images: self.fake_images},
+            return_elements=[features, logits]
+        )
+
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
                 init_op=tf.global_variables_initializer(),
@@ -187,18 +199,6 @@ class GANSynth(object):
             checkpoint_dir=model_dir,
             config=config
         ) as session:
-
-            real_features, real_logits = tf.import_graph_def(
-                graph_def=classifier,
-                input_map={images: self.real_images},
-                return_elements=[features, logits]
-            )
-
-            fake_features, fake_logits = tf.import_graph_def(
-                graph_def=classifier,
-                input_map={images: self.fake_images},
-                return_elements=[features, logits]
-            )
 
             def generator():
                 while True:
