@@ -4,18 +4,24 @@ import numpy as np
 
 def weight_standardization(weight, epsilon=1.0e-8):
     shape = weight.shape.as_list()
-    weight = tf.reshape(weight, [-1, shape[-1]])
-    mean, variance = tf.nn.moments(weight, axes=[0], keep_dims=True)
+    mean, variance = tf.nn.moments(
+        x=weight,
+        axes=list(range(0, len(shape) - 1)),
+        keep_dims=True
+    )
     std = tf.sqrt(variance + epsilon)
     weight = (weight - mean) / std
-    weight = tf.reshape(weight, shape)
     return weight
 
 
 def group_normalization(inputs, groups, epsilon=1.0e-8):
     shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [-1, groups, shape[1] // groups, *shape[2:]])
-    mean, variance = tf.nn.moments(inputs, axes=[2, 3, 4], keep_dims=True)
+    mean, variance = tf.nn.moments(
+        x=inputs,
+        axes=list(range(2, len(shape) + 1)),
+        keep_dims=True
+    )
     std = tf.sqrt(variance + epsilon)
     inputs = (inputs - mean) / std
     inputs = tf.reshape(inputs, [-1, *shape[1:]])
