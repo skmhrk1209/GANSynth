@@ -158,23 +158,6 @@ def downscale2d(inputs, factors=[2, 2]):
     return inputs
 
 
-def pixel_norm(inputs, epsilon=1.0e-8):
-    inputs /= tf.sqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
-    return inputs
-
-
-def batch_stddev(inputs, groups=4, epsilon=1.0e-8):
-    shape = inputs.shape.as_list()
-    inputs = tf.reshape(inputs, [groups, -1, *shape[1:]])
-    inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
-    inputs = tf.square(inputs)
-    inputs = tf.reduce_mean(inputs, axis=0)
-    inputs = tf.sqrt(inputs + epsilon)
-    inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
-    inputs = tf.tile(inputs, [groups, 1, *shape[2:]])
-    return inputs
-
-
 def max_pooling2d(inputs, kernel_size, strides):
     inputs = tf.nn.max_pool(
         value=inputs,
@@ -194,4 +177,21 @@ def average_pooling2d(inputs, kernel_size, strides):
         padding="SAME",
         data_format="NCHW"
     )
+    return inputs
+
+
+def pixel_norm(inputs, epsilon=1.0e-8):
+    inputs /= tf.sqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
+    return inputs
+
+
+def batch_stddev(inputs, groups=4, epsilon=1.0e-8):
+    shape = inputs.shape.as_list()
+    inputs = tf.reshape(inputs, [groups, -1, *shape[1:]])
+    inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
+    inputs = tf.square(inputs)
+    inputs = tf.reduce_mean(inputs, axis=0)
+    inputs = tf.sqrt(inputs + epsilon)
+    inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
+    inputs = tf.tile(inputs, [groups, 1, *shape[2:]])
     return inputs
