@@ -318,7 +318,10 @@ class ResNet(object):
             shortcut = inputs
 
             with tf.variable_scope("group_normalization_1st"):
-                inputs = group_normalization(inputs, groups=groups)
+                inputs = group_normalization(
+                    inputs=inputs,
+                    groups=groups
+                )
 
             inputs = tf.nn.relu(inputs)
 
@@ -346,7 +349,10 @@ class ResNet(object):
                 )
 
             with tf.variable_scope("group_normalization_2nd"):
-                inputs = group_normalization(inputs, groups=groups)
+                inputs = group_normalization(
+                    inputs=inputs,
+                    groups=groups
+                )
 
             inputs = tf.nn.relu(inputs)
 
@@ -409,7 +415,10 @@ class ResNet(object):
                         )
 
             with tf.variable_scope("group_normalization"):
-                inputs = group_normalization(inputs, groups=self.groups)
+                inputs = group_normalization(
+                    inputs=inputs,
+                    groups=self.groups
+                )
 
             inputs = tf.nn.relu(inputs)
 
