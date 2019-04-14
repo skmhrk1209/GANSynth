@@ -39,7 +39,7 @@ class PGGAN(object):
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope(f"conv_block_{'x'.join(map(str, resolution(depth)))}", reuse=reuse):
                 if depth == self.min_depth:
-                    inputs = pixel_norm(inputs)
+                    inputs = pixel_normalization(inputs)
                     with tf.variable_scope("dense"):
                         inputs = dense(
                             inputs=inputs,
@@ -53,7 +53,7 @@ class PGGAN(object):
                             shape=[-1, channels(depth), *resolution(depth)]
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        inputs = pixel_normalization(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -64,7 +64,7 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        inputs = pixel_normalization(inputs)
                     return inputs
                 else:
                     with tf.variable_scope("upscale_conv"):
@@ -78,7 +78,7 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        inputs = pixel_normalization(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,
@@ -89,7 +89,7 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
-                        inputs = pixel_norm(inputs)
+                        inputs = pixel_normalization(inputs)
                     return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
@@ -171,7 +171,7 @@ class PGGAN(object):
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
             with tf.variable_scope(f"conv_block_{'x'.join(map(str, resolution(depth)))}", reuse=reuse):
                 if depth == self.min_depth:
-                    inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
+                    inputs = concat_batch_stddev(inputs)
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
                             inputs=inputs,

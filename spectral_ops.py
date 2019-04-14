@@ -84,52 +84,39 @@ def mel_to_linear_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate,
 
 
 def diff(inputs, axis=-1):
-
     begin_back = [0] * inputs.shape.rank
     begin_front = [0] * inputs.shape.rank
     begin_front[axis] = 1
-
     size = inputs.shape.as_list()
     size[axis] -= 1
-
     back = tf.slice(inputs, begin_back, size)
     front = tf.slice(inputs, begin_front, size)
     diffs = front - back
-
     return diffs
 
 
 def unwrap(phases, axis=-1):
-
     diffs = diff(phases, axis=axis)
     mods = tf.mod(diffs + np.pi, np.pi * 2.0) - np.pi
     indices = tf.logical_and(tf.equal(mods, -np.pi), tf.greater(diffs, 0.0))
     mods = tf.where(indices, tf.ones_like(mods) * np.pi, mods)
     corrects = mods - diffs
     cumsums = tf.cumsum(corrects, axis=axis)
-
     shape = phases.shape.as_list()
     shape[axis] = 1
-
     cumsums = tf.concat([tf.zeros(shape), cumsums], axis=axis)
     unwrapped = phases + cumsums
-
     return unwrapped
 
 
 def instantaneous_frequency(phases, axis=-2):
-
     unwrapped = unwrap(phases, axis=axis)
     diffs = diff(unwrapped, axis=axis)
-
     begin = [0] * unwrapped.shape.rank
-
     size = unwrapped.shape.as_list()
     size[axis] = 1
-
     unwrapped = tf.slice(unwrapped, begin, size)
     diffs = tf.concat([unwrapped, diffs], axis=axis) / np.pi
-
     return diffs
 
 
