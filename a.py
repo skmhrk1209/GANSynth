@@ -7,6 +7,15 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 
 def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
+    return tf.layers.batch_normalization(
+        inputs=inputs,
+        axis=1,
+        momentum=decay,
+        epsilon=epsilon
+    )
+
+
+def _batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
     training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
     mean = tf.get_variable(
@@ -121,6 +130,8 @@ def conv_net(features, labels, mode):
             loss=loss,
             global_step=tf.train.get_global_step()
         )
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        train_op = tf.group([train_op, update_ops])
         return tf.estimator.EstimatorSpec(
             mode=mode,
             loss=loss,
