@@ -3,30 +3,29 @@ import numpy as np
 
 
 def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
-    with tf.variable_scope(weight.name.split("/")[-1].split(":")[0]):
-        shape = weight.shape.as_list()
-        w = tf.reshape(weight, [-1, shape[-1]])
-        # Persist the first right singular vector.
-        u_var = tf.get_variable(
-            name="u_var",
-            shape=[1, shape[-1]],
-            initializer=tf.initializers.random_normal(),
-            trainable=False
-        )
-        u = u_var
-        # Use power iteration method to approximate the spectral norm.
-        for _ in range(iterations):
-            v = tf.matmul(u, w, transpose_b=True)
-            v = tf.math.l2_normalize(v, epsilon=epsilon)
-            u = tf.matmul(v, w)
-            u = tf.math.l2_normalize(u, epsilon=epsilon)
-        # Update the approximation.
-        u_var = tf.assign(u_var, u)
-        u = tf.stop_gradient(u)
-        v = tf.stop_gradient(v)
-        spectral_norm = tf.matmul(tf.matmul(v, w), u, transpose_b=True)
-        weight = weight / spectral_norm
-        return weight
+    shape = weight.shape.as_list()
+    w = tf.reshape(weight, [-1, shape[-1]])
+    # Persist the first right singular vector.
+    u_var = tf.get_variable(
+        name="u_var",
+        shape=[1, shape[-1]],
+        initializer=tf.initializers.random_normal(),
+        trainable=False
+    )
+    u = u_var
+    # Use power iteration method to approximate the spectral norm.
+    for _ in range(iterations):
+        v = tf.matmul(u, w, transpose_b=True)
+        v = tf.math.l2_normalize(v, epsilon=epsilon)
+        u = tf.matmul(v, w)
+        u = tf.math.l2_normalize(u, epsilon=epsilon)
+    # Update the approximation.
+    u_var = tf.assign(u_var, u)
+    u = tf.stop_gradient(u)
+    v = tf.stop_gradient(v)
+    spectral_norm = tf.matmul(tf.matmul(v, w), u, transpose_b=True)
+    weight = weight / spectral_norm
+    return weight
 
 
 def weight_standardization(weight, epsilon=1.0e-12):
@@ -41,28 +40,48 @@ def weight_standardization(weight, epsilon=1.0e-12):
     return weight
 
 
-def batch_normalization(inputs, groups, epsilon=1.0e-12):
+def batch_normalization(inputs, training, decay=0.9, epsilon=1.0e-12):
     shape = inputs.shape.as_list()
-    inputs = tf.reshape(inputs, [-1, groups, shape[1] // groups, *shape[2:]])
-    mean, variance = tf.nn.moments(
+    mean = tf.get_variable(
+        name="mean",
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        initializer=tf.initializers.zeros(),
+        trainable=False
+    )
+    variance = tf.get_variable(
+        name="variance",
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        initializer=tf.initializers.ones(),
+        trainable=False
+    )
+    ema = tf.train.ExponentialMovingAverage(decay=decay)
+    ema_apply_op = ema.apply([mean, variance])
+    batch_mean, batch_variance = tf.nn.moments(
         x=inputs,
-        axes=list(range(0, len(shape) - 1)),
+        axes=[0] + list(range(2, len(shape))),
         keep_dims=True
     )
-    stddev = tf.sqrt(variance + epsilon)
-    inputs = (inputs - mean) / stddev
-    inputs = tf.reshape(inputs, [-1, *shape[1:]])
-    gamma = tf.get_variable(
-        name="gamma",
-        shape=[1, shape[1], 1, 1],
-        initializer=tf.initializers.ones()
-    )
-    beta = tf.get_variable(
-        name="beta",
-        shape=[1, shape[1], 1, 1],
-        initializer=tf.initializers.zeros()
-    )
-    inputs = inputs * gamma + beta
+    moving_mean = ema.average(mean)
+    moving_variance = ema.average(variance)
+    mean_assign_op = tf.assign(mean, batch_mean)
+    variance_assign_op = tf.assign(variance, batch_variance)
+    with tf.control_dependencies([mean_assign_op, variance_assign_op]):
+        with tf.control_dependencies([tf.cond(training, lambda: ema_apply_op, lambda: tf.no_op())]):
+            mean = tf.cond(training, lambda: batch_mean, lambda: moving_mean)
+            variance = tf.cond(training, lambda: batch_variance, lambda: moving_variance)
+            stddev = tf.sqrt(variance + epsilon)
+            inputs = (inputs - mean) / stddev
+            beta = tf.get_variable(
+                name="beta",
+                shape=[1, shape[1]] + [1] * len(shape[2:]),
+                initializer=tf.initializers.zeros()
+            )
+            gamma = tf.get_variable(
+                name="gamma",
+                shape=[1, shape[1]] + [1] * len(shape[2:]),
+                initializer=tf.initializers.ones()
+            )
+            inputs = inputs * gamma + beta
     return inputs
 
 
@@ -77,15 +96,15 @@ def group_normalization(inputs, groups, epsilon=1.0e-12):
     stddev = tf.sqrt(variance + epsilon)
     inputs = (inputs - mean) / stddev
     inputs = tf.reshape(inputs, [-1, *shape[1:]])
-    gamma = tf.get_variable(
-        name="gamma",
-        shape=[1, shape[1], 1, 1],
-        initializer=tf.initializers.ones()
-    )
     beta = tf.get_variable(
         name="beta",
-        shape=[1, shape[1], 1, 1],
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.zeros()
+    )
+    gamma = tf.get_variable(
+        name="gamma",
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        initializer=tf.initializers.ones()
     )
     inputs = inputs * gamma + beta
     return inputs
