@@ -6,16 +6,17 @@ import time
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-def _batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
+def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
     return tf.layers.batch_normalization(
         inputs=inputs,
         axis=1,
         momentum=decay,
-        epsilon=epsilon
+        epsilon=epsilon,
+        fused=False
     )
 
 
-def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
+def _batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
     training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
     mean = tf.get_variable(
