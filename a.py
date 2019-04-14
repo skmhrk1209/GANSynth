@@ -68,7 +68,7 @@ def conv_net(features, labels, mode):
         data_format="channels_first"
     )
     with tf.variable_scope("a"):
-        inputs = tf.layers.batch_normalization(
+        inputs = batch_normalization(
             inputs=inputs,
             training=mode == tf.estimator.ModeKeys.TRAIN,
             axis=1
@@ -88,7 +88,7 @@ def conv_net(features, labels, mode):
         data_format="channels_first"
     )
     with tf.variable_scope("b"):
-        inputs = tf.layers.batch_normalization(
+        inputs = batch_normalization(
             inputs=inputs,
             training=mode == tf.estimator.ModeKeys.TRAIN,
             axis=1
