@@ -40,7 +40,7 @@ def weight_standardization(weight, epsilon=1.0e-12):
     return weight
 
 
-def batch_normalization(inputs, training, decay=0.9, epsilon=1.0e-12):
+def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
     training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
     mean = tf.get_variable(
