@@ -116,13 +116,16 @@ def conv_net(features, labels, mode):
         logits=logits
     )
     if mode == tf.estimator.ModeKeys.TRAIN:
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        train_op = tf.train.AdamOptimizer().minimize(
+            loss=loss,
+            global_step=tf.train.get_global_step()
+        )
+        train_op = tf.group([train_op, update_ops])
         return tf.estimator.EstimatorSpec(
             mode=mode,
             loss=loss,
-            train_op=tf.train.AdamOptimizer().minimize(
-                loss=loss,
-                global_step=tf.train.get_global_step()
-            )
+            train_op=train_op
         )
     if mode == tf.estimator.ModeKeys.EVAL:
         return tf.estimator.EstimatorSpec(
