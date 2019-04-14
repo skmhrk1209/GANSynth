@@ -64,7 +64,7 @@ def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
     )
     moving_mean = ema.average(mean)
     moving_variance = ema.average(variance)
-    batch_mean = tf.cond(training, lambda: tf.assign(mean, batch_mean), lambda: batch_mean)
+    batch_mean = tf.cond(training, lambda: tf.assign(mean, batch_mean), lambda: batch_mean),
     batch_variance = tf.cond(training, lambda: tf.assign(variance, batch_variance), lambda: batch_variance)
     update_op = tf.cond(training, lambda: ema_apply_op, lambda: tf.no_op())
     with tf.control_dependencies([batch_mean, batch_variance]):

@@ -39,8 +39,11 @@ def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
     )
     moving_mean = ema.average(mean)
     moving_variance = ema.average(variance)
-    with tf.control_dependencies([tf.assign(mean, batch_mean), tf.assign(variance, batch_variance)]):
-        with tf.control_dependencies([tf.cond(training, lambda: ema_apply_op, lambda: tf.no_op())]):
+    batch_mean = tf.cond(training, lambda: tf.assign(mean, batch_mean), lambda: batch_mean),
+    batch_variance = tf.cond(training, lambda: tf.assign(variance, batch_variance), lambda: batch_variance)
+    update_op = tf.cond(training, lambda: ema_apply_op, lambda: tf.no_op())
+    with tf.control_dependencies([batch_mean, batch_variance]):
+        with tf.control_dependencies([update_op]):
             mean = tf.cond(training, lambda: batch_mean, lambda: moving_mean)
             variance = tf.cond(training, lambda: batch_variance, lambda: moving_variance)
             stddev = tf.sqrt(variance + epsilon)
@@ -161,7 +164,8 @@ if __name__ == "__main__":
         config=tf.estimator.RunConfig(
             save_summary_steps=1000,
             save_checkpoints_steps=1000,
-            log_step_count_steps=100
+            log_step_count_steps=100,
+            tf_random_seed=0
         )
     )
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
