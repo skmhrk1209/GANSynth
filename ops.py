@@ -64,9 +64,9 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
     )
     moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
     moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
+    mean = tf.cond(training, lambda: mean, lambda: moving_mean)
+    variance = tf.cond(training, lambda: variance, lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
-        mean = tf.cond(training, lambda: mean, lambda: moving_mean)
-        variance = tf.cond(training, lambda: variance, lambda: moving_variance)
         stddev = tf.sqrt(variance + epsilon)
         inputs = (inputs - mean) / stddev
         beta = tf.get_variable(
