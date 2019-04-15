@@ -25,7 +25,7 @@ def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
     weight = weight / spectral_norm
     # Update the approximation.
     with tf.control_dependencies([tf.assign(u_var, u)]):
-        tf.no_op()
+        weight = tf.indentity(weight)
     return weight
 
 
@@ -86,7 +86,7 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
     moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
     moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
-        tf.no_op()
+        inputs = tf.indentity(inputs)
     return inputs
 
 
