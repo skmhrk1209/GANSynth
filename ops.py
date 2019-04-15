@@ -40,50 +40,46 @@ def weight_standardization(weight, epsilon=1.0e-12):
     return weight
 
 
-def batch_normalization(inputs, training, decay=0.99, epsilon=1.0e-12):
+def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
+    def assign_moving_average(variable, value):
+        return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
     training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
-    mean = tf.get_variable(
-        name="mean",
+    moving_mean = tf.get_variable(
+        name="moving_mean",
         shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.zeros(),
         trainable=False
     )
-    variance = tf.get_variable(
-        name="variance",
+    moving_variance = tf.get_variable(
+        name="moving_variance",
         shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.ones(),
         trainable=False
     )
-    ema = tf.train.ExponentialMovingAverage(decay=decay)
-    ema_apply_op = ema.apply([mean, variance])
-    batch_mean, batch_variance = tf.nn.moments(
+    mean, variance = tf.nn.moments(
         x=inputs,
         axes=[0] + list(range(2, len(shape))),
         keep_dims=True
     )
-    moving_mean = ema.average(mean)
-    moving_variance = ema.average(variance)
-    batch_mean = tf.cond(training, lambda: tf.assign(mean, batch_mean), lambda: batch_mean)
-    batch_variance = tf.cond(training, lambda: tf.assign(variance, batch_variance), lambda: batch_variance)
-    update_op = tf.cond(training, lambda: ema_apply_op, lambda: tf.no_op())
-    with tf.control_dependencies([batch_mean, batch_variance]):
-        with tf.control_dependencies([update_op]):
-            mean = tf.cond(training, lambda: batch_mean, lambda: moving_mean)
-            variance = tf.cond(training, lambda: batch_variance, lambda: moving_variance)
-            stddev = tf.sqrt(variance + epsilon)
-            inputs = (inputs - mean) / stddev
-            beta = tf.get_variable(
-                name="beta",
-                shape=[1, shape[1]] + [1] * len(shape[2:]),
-                initializer=tf.initializers.zeros()
-            )
-            gamma = tf.get_variable(
-                name="gamma",
-                shape=[1, shape[1]] + [1] * len(shape[2:]),
-                initializer=tf.initializers.ones()
-            )
-            inputs = inputs * gamma + beta
+    moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
+    moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
+    with tf.control_dependencies([moving_mean, moving_variance]):
+        mean = tf.cond(training, lambda: mean, lambda: moving_mean)
+        variance = tf.cond(training, lambda: variance, lambda: moving_variance)
+        stddev = tf.sqrt(variance + epsilon)
+        inputs = (inputs - mean) / stddev
+        beta = tf.get_variable(
+            name="beta",
+            shape=[1, shape[1]] + [1] * len(shape[2:]),
+            initializer=tf.initializers.zeros()
+        )
+        gamma = tf.get_variable(
+            name="gamma",
+            shape=[1, shape[1]] + [1] * len(shape[2:]),
+            initializer=tf.initializers.ones()
+        )
+        inputs = inputs * gamma + beta
     return inputs
 
 
