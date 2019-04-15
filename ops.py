@@ -2,6 +2,10 @@ import tensorflow as tf
 import numpy as np
 
 
+def assign_moving_average(variable, value, momentum):
+    return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
+
+
 def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
     shape = weight.shape.as_list()
     w = tf.reshape(weight, [-1, shape[-1]])
@@ -39,10 +43,6 @@ def weight_standardization(weight, epsilon=1.0e-12):
     stddev = tf.sqrt(variance + epsilon)
     weight = (weight - mean) / stddev
     return weight
-
-
-def assign_moving_average(variable, value, momentum):
-    return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
 
 
 def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
