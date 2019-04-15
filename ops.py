@@ -66,20 +66,25 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
     moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
     mean = tf.cond(training, lambda: mean, lambda: moving_mean)
     variance = tf.cond(training, lambda: variance, lambda: moving_variance)
+    beta = tf.get_variable(
+        name="beta",
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        initializer=tf.initializers.zeros()
+    )
+    gamma = tf.get_variable(
+        name="gamma",
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        initializer=tf.initializers.ones()
+    )
     with tf.control_dependencies([moving_mean, moving_variance]):
-        stddev = tf.sqrt(variance + epsilon)
-        inputs = (inputs - mean) / stddev
-        beta = tf.get_variable(
-            name="beta",
-            shape=[1, shape[1]] + [1] * len(shape[2:]),
-            initializer=tf.initializers.zeros()
+        inputs = tf.nn.batch_normalization(
+            x=inputs,
+            mean=mean,
+            variance=variance,
+            offset=beta,
+            scale=gamma,
+            variance_epsilon=epsilon
         )
-        gamma = tf.get_variable(
-            name="gamma",
-            shape=[1, shape[1]] + [1] * len(shape[2:]),
-            initializer=tf.initializers.ones()
-        )
-        inputs = inputs * gamma + beta
     return inputs
 
 
@@ -91,20 +96,25 @@ def group_normalization(inputs, groups, epsilon=1.0e-12):
         axes=list(range(2, len(shape) + 1)),
         keep_dims=True
     )
-    stddev = tf.sqrt(variance + epsilon)
-    inputs = (inputs - mean) / stddev
-    inputs = tf.reshape(inputs, [-1, *shape[1:]])
     beta = tf.get_variable(
         name="beta",
-        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        shape=[1, groups, shape[1] // groups] + [1] * len(shape[2:]),
         initializer=tf.initializers.zeros()
     )
     gamma = tf.get_variable(
         name="gamma",
-        shape=[1, shape[1]] + [1] * len(shape[2:]),
+        shape=[1, groups, shape[1] // groups] + [1] * len(shape[2:]),
         initializer=tf.initializers.ones()
     )
-    inputs = inputs * gamma + beta
+    inputs = tf.nn.batch_normalization(
+        x=inputs,
+        mean=mean,
+        variance=variance,
+        offset=beta,
+        scale=gamma,
+        variance_epsilon=epsilon
+    )
+    inputs = tf.reshape(inputs, [-1, *shape[1:]])
     return inputs
 
 
