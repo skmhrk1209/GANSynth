@@ -3,7 +3,8 @@ import numpy as np
 
 
 def assign_moving_average(variable, value, momentum):
-    return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
+    assigned = tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
+    return assigned
 
 
 def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
