@@ -16,9 +16,9 @@ def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
     # Use power iteration method to approximate the spectral norm.
     for _ in range(iterations):
         v = tf.matmul(u, w, transpose_b=True)
-        v = tf.math.l2_normalize(v, epsilon=epsilon)
+        v = tf.nn.l2_normalize(v, epsilon=epsilon)
         u = tf.matmul(v, w)
-        u = tf.math.l2_normalize(u, epsilon=epsilon)
+        u = tf.nn.l2_normalize(u, epsilon=epsilon)
     # Update the approximation.
     u_var = tf.assign(u_var, u)
     u = tf.stop_gradient(u)
