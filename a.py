@@ -56,8 +56,6 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
     inputs = inputs * gamma + beta
     moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
     moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
-    tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, moving_mean)
-    tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, moving_variance)
     return inputs
 
 
@@ -128,8 +126,8 @@ def conv_net(features, labels, mode):
             loss=loss,
             global_step=tf.train.get_global_step()
         )
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        train_op = tf.group([train_op, update_ops])
+        #update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        #train_op = tf.group([train_op, update_ops])
         return tf.estimator.EstimatorSpec(
             mode=mode,
             loss=loss,
