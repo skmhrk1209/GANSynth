@@ -19,12 +19,13 @@ def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
         v = tf.nn.l2_normalize(v, epsilon=epsilon)
         u = tf.matmul(v, w)
         u = tf.nn.l2_normalize(u, epsilon=epsilon)
-    # Update the approximation.
-    u_var = tf.assign(u_var, u)
     u = tf.stop_gradient(u)
     v = tf.stop_gradient(v)
     spectral_norm = tf.matmul(tf.matmul(v, w), u, transpose_b=True)
     weight = weight / spectral_norm
+    # Update the approximation.
+    with tf.control_dependencies([tf.assign(u_var, u)]):
+        tf.no_op()
     return weight
 
 
@@ -62,8 +63,6 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         axes=[0] + list(range(2, len(shape))),
         keep_dims=True
     )
-    moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
-    moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
     mean = tf.cond(training, lambda: mean, lambda: moving_mean)
     variance = tf.cond(training, lambda: variance, lambda: moving_variance)
     beta = tf.get_variable(
@@ -76,15 +75,18 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.ones()
     )
+    inputs = tf.nn.batch_normalization(
+        x=inputs,
+        mean=mean,
+        variance=variance,
+        offset=beta,
+        scale=gamma,
+        variance_epsilon=epsilon
+    )
+    moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
+    moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
-        inputs = tf.nn.batch_normalization(
-            x=inputs,
-            mean=mean,
-            variance=variance,
-            offset=beta,
-            scale=gamma,
-            variance_epsilon=epsilon
-        )
+        tf.no_op()
     return inputs
 
 
