@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import functools
 import glob
-import os
 
 
 def linear_to_mel_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):
@@ -239,8 +238,7 @@ def cross_correlation(x, y, padding="VALID", normalize=True):
         )),
         elems=(x, y),
         dtype=tf.float32,
-        parallel_iterations=os.cpu_count(),
-        swap_memory=True,
+        swap_memory=True
     )
 
     return cross_correlations
