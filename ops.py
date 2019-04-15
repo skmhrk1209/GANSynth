@@ -46,6 +46,11 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
     training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
+    mean, variance = tf.nn.moments(
+        x=inputs,
+        axes=[0] + list(range(2, len(shape))),
+        keep_dims=True
+    )
     moving_mean = tf.get_variable(
         name="moving_mean",
         shape=[1, shape[1]] + [1] * len(shape[2:]),
@@ -57,11 +62,6 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.ones(),
         trainable=False
-    )
-    mean, variance = tf.nn.moments(
-        x=inputs,
-        axes=[0] + list(range(2, len(shape))),
-        keep_dims=True
     )
     mean = tf.cond(training, lambda: mean, lambda: moving_mean)
     variance = tf.cond(training, lambda: variance, lambda: moving_variance)
