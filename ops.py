@@ -41,9 +41,11 @@ def weight_standardization(weight, epsilon=1.0e-12):
     return weight
 
 
+def assign_moving_average(variable, value, momentum):
+    return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
+
+
 def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
-    def assign_moving_average(variable, value):
-        return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
     training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
     mean, variance = tf.nn.moments(
@@ -83,8 +85,8 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         scale=gamma,
         variance_epsilon=epsilon
     )
-    moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean), lambda: moving_mean)
-    moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance), lambda: moving_variance)
+    moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean, momentum), lambda: moving_mean)
+    moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance, momentum), lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
         inputs = tf.indentity(inputs)
     return inputs
