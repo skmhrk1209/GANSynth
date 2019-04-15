@@ -7,6 +7,17 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 
 def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
+    return tf.layers.batch_normalization(
+        inputs=inputs,
+        axis=1,
+        momentum=momentum,
+        epsilon=epsilon,
+        training=training,
+        fused=False
+    )
+
+
+def _batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
     def assign_moving_average(variable, value):
         return tf.assign_sub(variable, (variable - value) * (1.0 - momentum))
     training = tf.convert_to_tensor(training)
