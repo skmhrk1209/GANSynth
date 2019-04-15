@@ -44,8 +44,8 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
     mean = tf.cond(training, lambda: mean, lambda: moving_mean)
     variance = tf.cond(training, lambda: variance, lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
-        stddev = tf.sqrt(variance + epsilon)
-        inputs = (inputs - mean) / stddev
+        #stddev = tf.sqrt(variance + epsilon)
+        #inputs = (inputs - mean) / stddev
         beta = tf.get_variable(
             name="beta",
             shape=[1, shape[1]] + [1] * len(shape[2:]),
@@ -56,7 +56,15 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
             shape=[1, shape[1]] + [1] * len(shape[2:]),
             initializer=tf.initializers.ones()
         )
-        inputs = inputs * gamma + beta
+        #inputs = inputs * gamma + beta
+        inputs = tf.nn.batch_normalization(
+            x=inputs,
+            mean=mean,
+            variance=variance,
+            offset=beta,
+            scale=gamma,
+            variance_epsilon=epsilon
+        )
     return inputs
 
 
