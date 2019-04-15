@@ -63,10 +63,11 @@ def conv_net(features, labels, mode):
         padding="same",
         data_format="channels_first"
     )
-    inputs = batch_normalization(
-        inputs=inputs,
-        training=mode == tf.estimator.ModeKeys.TRAIN
-    )
+    with tf.variable_scope("a"):
+        inputs = batch_normalization(
+            inputs=inputs,
+            training=mode == tf.estimator.ModeKeys.TRAIN
+        )
     inputs = tf.nn.relu(inputs)
     inputs = tf.layers.max_pooling2d(
         inputs=inputs,
