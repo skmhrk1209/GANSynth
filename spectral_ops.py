@@ -139,7 +139,6 @@ def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_
             periodic=True
         )
     )
-
     # discard_dc
     stfts = stfts[..., 1:]
 
@@ -201,7 +200,6 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
 
     # discard_dc
     stfts = tf.pad(stfts, [[0, 0], [0, 0], [1, 0]])
-
     waveforms = tf.signal.inverse_stft(
         stfts=stfts,
         frame_length=frame_length,
