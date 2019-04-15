@@ -303,7 +303,7 @@ def pixel_normalization(inputs, epsilon=1.0e-12):
 def concat_batch_stddev(inputs, group_size=4, epsilon=1.0e-12):
     shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [-1, group_size, *shape[1:]])
-    mean, variance = tf.nn.moments(inputs, axes=[1])[1]
+    mean, variance = tf.nn.moments(inputs, axes=[1])
     stddev = tf.sqrt(variance + epsilon)
     stddev = tf.reduce_mean(stddev, axis=[1, 2, 3], keepdims=True)
     stddev = tf.tile(stddev, [group_size, 1, *shape[2:]])
