@@ -73,13 +73,10 @@ def linear_to_mel_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate,
 
 
 def mel_to_linear_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):
-
     weight_matrix = linear_to_mel_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz)
     weight_matrix_t = np.transpose(weight_matrix)
-
     diagonal = [1.0 / x if np.abs(x) > 1.0e-8 else x for x in np.sum(np.matmul(weight_matrix, weight_matrix_t), axis=0)]
     weight_matrix = np.matmul(weight_matrix_t, np.diag(diagonal))
-
     return weight_matrix
 
 
