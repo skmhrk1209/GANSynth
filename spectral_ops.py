@@ -71,6 +71,8 @@ def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_
     magnitude_spectrograms = tf.abs(stfts)
     phase_spectrograms = tf.angle(stfts)
 
+    # this matrix can be constant by graph optimization `Constant Folding`
+    # since there are no Tensor inputs
     linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
@@ -108,6 +110,8 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
     mel_magnitude_spectrograms = tf.exp(log_mel_magnitude_spectrograms)
     mel_phase_spectrograms = tf.cumsum(mel_instantaneous_frequencies * np.pi, axis=-2)
 
+    # this matrix can be constant by graph optimization `Constant Folding`
+    # since there are no Tensor inputs
     linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
