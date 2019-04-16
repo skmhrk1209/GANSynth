@@ -152,8 +152,8 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
 def cross_correlation(x, y, padding="VALID", normalize=True):
 
     if normalize:
-        x /= tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1, keepdims=True))
-        y /= tf.sqrt(tf.reduce_sum(tf.square(y), axis=-1, keepdims=True))
+        x = tf.nn.l2_normalize(x, axis=-1)
+        y = tf.nn.l2_normalize(y, axis=-1)
 
     cross_correlations = tf.map_fn(
         fn=lambda inputs: tf.squeeze(tf.nn.conv2d(
