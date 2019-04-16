@@ -8,9 +8,20 @@ def assign_moving_average(variable, value, momentum):
 
 
 def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
+    ''' Spectral Normalization
+    [Spectral Normalization for Generative Adversarial Networks]
+    (https://arxiv.org/pdf/1802.05957.pdf)
+    '''
+    # the authors flatten convnet kernel weights
+    # from [C_out, C_in, KH, KW] to [C_out, C_in * KH * KW]
+    # we flatten convnet kernel weights
+    # from [KH, KW, C_in, C_out] to [KH * KW * C_in, C_out]
+    # this implies that w here is equivalent to w.T in the paper
+    # so we represent the first right singular vector as u
+    # and the first left singular vector as v
+    # we maintain the first right singular vector
     shape = weight.shape.as_list()
     w = tf.reshape(weight, [-1, shape[-1]])
-    # Persist the first right singular vector.
     u_var = tf.get_variable(
         name="u_var",
         shape=[1, shape[-1]],
@@ -18,23 +29,32 @@ def spectral_normalization(weight, iterations=1, epsilon=1.0e-12):
         trainable=False
     )
     u = u_var
-    # Use power iteration method to approximate the spectral norm.
+    # use power iteration method to approximate the spectral norm
+    # the authors suggest that one round of power iteration was sufficient
+    # in the actual experiment to achieve satisfactory performance
     for _ in range(iterations):
+        # `v` approximates the first left singular vector of matrix `w`
         v = tf.matmul(u, w, transpose_b=True)
         v = tf.nn.l2_normalize(v, epsilon=epsilon)
+        # `u` approximates the first right singular vector of matrix `w`
         u = tf.matmul(v, w)
         u = tf.nn.l2_normalize(u, epsilon=epsilon)
+    # the authors chose to stop gradient propagating through u and v
     u = tf.stop_gradient(u)
     v = tf.stop_gradient(v)
     spectral_norm = tf.matmul(tf.matmul(v, w), u, transpose_b=True)
     weight = weight / spectral_norm
-    # Update the approximation.
+    # update the approximation
     with tf.control_dependencies([tf.assign(u_var, u)]):
         weight = tf.indentity(weight)
     return weight
 
 
 def weight_standardization(weight, epsilon=1.0e-12):
+    ''' Weight Standardization
+    [Weight Standardization]
+    (https://arxiv.org/pdf/1903.10520.pdf)
+    '''
     shape = weight.shape.as_list()
     mean, variance = tf.nn.moments(
         x=weight,
@@ -47,6 +67,10 @@ def weight_standardization(weight, epsilon=1.0e-12):
 
 
 def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
+    ''' Batch Normalization
+    [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift]
+    (https://arxiv.org/pdf/1502.03167.pdf)
+    '''
     shape = inputs.shape.as_list()
     mean, variance = tf.nn.moments(
         x=inputs,
@@ -81,6 +105,11 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         initializer=tf.initializers.ones()
     )
     inputs = inputs * gamma + beta
+    # update moving average of mean and variance
+    # don't have to execute tf.GraphKeys.UPDATE_OPS as below
+    # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    # train_op = optimizer.minimize(loss)
+    # train_op = tf.group([train_op, update_ops])
     moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean, momentum), lambda: moving_mean)
     moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance, momentum), lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
@@ -89,6 +118,10 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
 
 
 def group_normalization(inputs, groups, epsilon=1.0e-12):
+    ''' Group Normalization
+    [Group Normalization]
+    (https://arxiv.org/pdf/1803.08494.pdf)
+    '''
     shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [-1, groups, shape[1] // groups, *shape[2:]])
     mean, variance = tf.nn.moments(
@@ -259,7 +292,6 @@ def upscale2d(inputs, factors=[2, 2]):
 
 
 def downscale2d(inputs, factors=[2, 2]):
-    # NOTE: requires tf_config["graph_options.place_pruned_graph"] = True
     factors = np.asanyarray(factors)
     if (factors == 1).all():
         return inputs
@@ -302,6 +334,9 @@ def pixel_normalization(inputs, epsilon=1.0e-12):
 
 
 def batch_stddev(inputs, groups=4, epsilon=1.0e-12):
+    # NOTE: when using tf.moments to calculate variance
+    # NOTE: the loss explodes in the middle of training
+    # NOTE: sinse it uses tf.stop_gradient in tf.moments (?)
     shape = inputs.shape
     inputs = tf.reshape(inputs, [groups, -1, *shape[1:]])
     inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
