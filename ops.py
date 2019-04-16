@@ -305,13 +305,13 @@ def average_pooling2d(inputs, kernel_size, strides):
     return inputs
 
 
-def pixel_normalization(inputs, epsilon=1.0e-12):
+def pixel_normalization(inputs, epsilon=1.0e-8):
     pixel_norm = tf.sqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     inputs = inputs / pixel_norm
     return inputs
 
 
-def batch_stddev(inputs, groups=4, epsilon=1.0e-12):
+def batch_stddev(inputs, groups=4, epsilon=1.0e-8):
     shape = inputs.shape.as_list()
     inputs = tf.reshape(inputs, [groups, -1, *shape[1:]])
     inputs = tf.nn.moments(inputs, axes=[0])[1]
