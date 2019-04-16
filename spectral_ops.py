@@ -54,9 +54,9 @@ def linear_to_mel_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate,
             lower_edge_mel[i] = center_mel[i] - dm
             upper_edge_mel[i] = center_mel[i] + dm
 
-    lower_edge_hz = mel_to_hertz(lower_edge_mel)[np.newaxis]
-    center_hz = mel_to_hertz(center_mel)[np.newaxis]
-    upper_edge_hz = mel_to_hertz(upper_edge_mel)[np.newaxis]
+    lower_edge_hz = mel_to_hertz(lower_edge_mel)[np.newaxis, ...]
+    center_hz = mel_to_hertz(center_mel)[np.newaxis, ...]
+    upper_edge_hz = mel_to_hertz(upper_edge_mel)[np.newaxis, ...]
 
     # Calculate lower and upper slopes for every spectrogram bin.
     # Line segments are linear in the mel domain, not Hertz.
@@ -228,8 +228,8 @@ def cross_correlation(x, y, padding="VALID", normalize=True):
 
     cross_correlations = tf.map_fn(
         fn=lambda inputs: tf.squeeze(tf.nn.conv2d(
-            input=inputs[0][tf.newaxis, :, tf.newaxis, tf.newaxis],
-            filter=inputs[1][:, tf.newaxis, tf.newaxis, tf.newaxis],
+            input=inputs[0][tf.newaxis, ..., tf.newaxis, tf.newaxis],
+            filter=inputs[1][..., tf.newaxis, tf.newaxis, tf.newaxis],
             strides=[1, 1, 1, 1],
             padding=padding,
             data_format="NHWC",
