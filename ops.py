@@ -47,7 +47,6 @@ def weight_standardization(weight, epsilon=1.0e-12):
 
 
 def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
-    training = tf.convert_to_tensor(training)
     shape = inputs.shape.as_list()
     mean, variance = tf.nn.moments(
         x=inputs,
@@ -66,8 +65,11 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         initializer=tf.initializers.ones(),
         trainable=False
     )
+    training = tf.convert_to_tensor(training)
     mean = tf.cond(training, lambda: mean, lambda: moving_mean)
     variance = tf.cond(training, lambda: variance, lambda: moving_variance)
+    stddev = tf.sqrt(variance + epsilon)
+    inputs = (inputs - mean) / stddev
     beta = tf.get_variable(
         name="beta",
         shape=[1, shape[1]] + [1] * len(shape[2:]),
@@ -78,14 +80,7 @@ def batch_normalization(inputs, training, momentum=0.99, epsilon=1.0e-12):
         shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.ones()
     )
-    inputs = tf.nn.batch_normalization(
-        x=inputs,
-        mean=mean,
-        variance=variance,
-        offset=beta,
-        scale=gamma,
-        variance_epsilon=epsilon
-    )
+    inputs = inputs * gamma + beta
     moving_mean = tf.cond(training, lambda: assign_moving_average(moving_mean, mean, momentum), lambda: moving_mean)
     moving_variance = tf.cond(training, lambda: assign_moving_average(moving_variance, variance, momentum), lambda: moving_variance)
     with tf.control_dependencies([moving_mean, moving_variance]):
@@ -101,25 +96,20 @@ def group_normalization(inputs, groups, epsilon=1.0e-12):
         axes=list(range(2, len(shape) + 1)),
         keep_dims=True
     )
+    stddev = tf.sqrt(variance + epsilon)
+    inputs = (inputs - mean) / stddev
+    inputs = tf.reshape(inputs, [-1, *shape[1:]])
     beta = tf.get_variable(
         name="beta",
-        shape=[1, groups, shape[1] // groups] + [1] * len(shape[2:]),
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.zeros()
     )
     gamma = tf.get_variable(
         name="gamma",
-        shape=[1, groups, shape[1] // groups] + [1] * len(shape[2:]),
+        shape=[1, shape[1]] + [1] * len(shape[2:]),
         initializer=tf.initializers.ones()
     )
-    inputs = tf.nn.batch_normalization(
-        x=inputs,
-        mean=mean,
-        variance=variance,
-        offset=beta,
-        scale=gamma,
-        variance_epsilon=epsilon
-    )
-    inputs = tf.reshape(inputs, [-1, *shape[1:]])
+    inputs = inputs * gamma + beta
     return inputs
 
 
@@ -305,13 +295,13 @@ def average_pooling2d(inputs, kernel_size, strides):
     return inputs
 
 
-def pixel_normalization(inputs, epsilon=1.0e-8):
+def pixel_normalization(inputs, epsilon=1.0e-12):
     pixel_norm = tf.sqrt(tf.reduce_mean(tf.square(inputs), axis=1, keepdims=True) + epsilon)
     inputs = inputs / pixel_norm
     return inputs
 
 
-def batch_stddev(inputs, groups=4, epsilon=1.0e-8):
+def batch_stddev(inputs, groups=4, epsilon=1.0e-12):
     shape = inputs.shape
     inputs = tf.reshape(inputs, [groups, -1, *shape[1:]])
     inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
