@@ -178,7 +178,7 @@ if __name__ == "__main__":
 
     tf.logging.set_verbosity(tf.logging.INFO)
 
-    originals, _ = nsynth_input_fn(
+    originals, labels = nsynth_input_fn(
         filenames=glob.glob("nsynth*.tfrecord"),
         batch_size=100,
         num_epochs=1,
