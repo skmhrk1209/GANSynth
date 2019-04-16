@@ -312,9 +312,11 @@ def pixel_normalization(inputs, epsilon=1.0e-8):
 
 
 def batch_stddev(inputs, groups=4, epsilon=1.0e-8):
-    shape = inputs.shape.as_list()
+    shape = inputs.shape
     inputs = tf.reshape(inputs, [groups, -1, *shape[1:]])
-    inputs = tf.nn.moments(inputs, axes=[0])[1]
+    inputs -= tf.reduce_mean(inputs, axis=0, keepdims=True)
+    inputs = tf.square(inputs)
+    inputs = tf.reduce_mean(inputs, axis=0)
     inputs = tf.sqrt(inputs + epsilon)
     inputs = tf.reduce_mean(inputs, axis=[1, 2, 3], keepdims=True)
     inputs = tf.tile(inputs, [groups, 1, *shape[2:]])
