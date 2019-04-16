@@ -308,12 +308,12 @@ class ResNet(object):
     def __call__(self, inputs, name="resnet", reuse=tf.AUTO_REUSE):
 
         def residual_block(inputs, filters, strides, projection_shortcut, groups):
-            """ A single block for ResNet v2, without a bottleneck.
+            ''' A single block for ResNet v2, without a bottleneck.
             Batch normalization then ReLu then convolution as described by:
             Identity Mappings in Deep Residual Networks
             (https://arxiv.org/pdf/1603.05027.pdf)
             by Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun, Jul 2016.
-            """
+            '''
 
             shortcut = inputs
 
