@@ -42,13 +42,6 @@ def instantaneous_frequency(phases, axis=-2):
     return diffs
 
 
-def convert_to_constant(tensor):
-    with tf.Session() as session:
-        constant = session.run(tensor)
-    constant = tf.constant(constant)
-    return constant
-
-
 def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_shape, overlap):
 
     def normalize(inputs, mean, stddev):
@@ -85,7 +78,6 @@ def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
     )
-    linear_to_mel_weight_matrix = convert_to_constant(linear_to_mel_weight_matrix)
     mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, linear_to_mel_weight_matrix, axes=1)
     mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
     mel_phase_spectrograms = tf.tensordot(phase_spectrograms, linear_to_mel_weight_matrix, axes=1)
@@ -124,7 +116,6 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
         upper_edge_hertz=sample_rate / 2.0
     )
     mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix, rcond=1.0e-15)
-    mel_to_linear_weight_matrix = convert_to_constant(mel_to_linear_weight_matrix)
     magnitudes = tf.tensordot(mel_magnitude_spectrograms, mel_to_linear_weight_matrix, axes=1)
     magnitudes.set_shape(mel_magnitude_spectrograms.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, mel_to_linear_weight_matrix, axes=1)
