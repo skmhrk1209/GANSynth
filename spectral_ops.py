@@ -111,8 +111,8 @@ def instantaneous_frequency(phases, axis=-2):
     begin = [0] * unwrapped.shape.rank
     size = unwrapped.shape.as_list()
     size[axis] = 1
-    unwrapped = tf.slice(unwrapped, begin, size)
-    diffs = tf.concat([unwrapped, diffs], axis=axis) / np.pi
+    initials = tf.slice(unwrapped, begin, size)
+    diffs = tf.concat([initials, diffs], axis=axis) / np.pi
     return diffs
 
 
