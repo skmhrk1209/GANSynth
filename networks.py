@@ -37,7 +37,7 @@ class PGGAN(object):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope(f"conv_block_{'x'.join(map(str, resolution(depth)))}", reuse=reuse):
+            with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
                     inputs = pixel_normalization(inputs)
                     with tf.variable_scope("dense"):
@@ -93,7 +93,7 @@ class PGGAN(object):
                     return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope(f"color_block_{'x'.join(map(str, resolution(depth)))}", reuse=reuse):
+            with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
                         inputs=inputs,
@@ -169,7 +169,7 @@ class PGGAN(object):
             return min(self.max_channels, self.min_channels << (self.max_depth - depth))
 
         def conv_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope(f"conv_block_{'x'.join(map(str, resolution(depth)))}", reuse=reuse):
+            with tf.variable_scope("conv_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 if depth == self.min_depth:
                     inputs = tf.concat([inputs, batch_stddev(inputs)], axis=1)
                     with tf.variable_scope("conv"):
@@ -233,7 +233,7 @@ class PGGAN(object):
                     return inputs
 
         def color_block(inputs, depth, reuse=tf.AUTO_REUSE):
-            with tf.variable_scope(f"color_block_{'x'.join(map(str, resolution(depth)))}", reuse=reuse):
+            with tf.variable_scope("color_block_{}x{}".format(*resolution(depth)), reuse=reuse):
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
                         inputs=inputs,
