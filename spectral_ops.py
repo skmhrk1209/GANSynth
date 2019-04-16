@@ -157,11 +157,11 @@ def cross_correlation(x, y, padding="VALID", normalize=True):
 
     cross_correlations = tf.map_fn(
         fn=lambda inputs: tf.squeeze(tf.nn.conv2d(
-            input=inputs[0][tf.newaxis, ..., tf.newaxis, tf.newaxis],
-            filter=inputs[1][..., tf.newaxis, tf.newaxis, tf.newaxis],
+            input=inputs[0][tf.newaxis, tf.newaxis, tf.newaxis, ...],
+            filter=inputs[1][tf.newaxis, ..., tf.newaxis, tf.newaxis],
             strides=[1, 1, 1, 1],
             padding=padding,
-            data_format="NHWC",
+            data_format="NCHW",
         )),
         elems=(x, y),
         dtype=tf.float32,
