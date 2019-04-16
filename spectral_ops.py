@@ -44,8 +44,8 @@ def instantaneous_frequency(phases, axis=-2):
 
 def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_shape, overlap):
 
-    def normalize(inputs, mean, std):
-        return (inputs - mean) / std
+    def normalize(inputs, mean, stddev):
+        return (inputs - mean) / stddev
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
@@ -94,8 +94,8 @@ def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_
 
 def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_frequencies, waveform_length, sample_rate, spectrogram_shape, overlap):
 
-    def unnormalize(inputs, mean, std):
-        return inputs * std + mean
+    def unnormalize(inputs, mean, stddev):
+        return inputs * stddev + mean
 
     time_steps, num_freq_bins = spectrogram_shape
     frame_length = num_freq_bins * 2
@@ -115,7 +115,7 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
     )
-    mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix)
+    mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix, rcond=1.0e-15)
     magnitudes = tf.tensordot(mel_magnitude_spectrograms, mel_to_linear_weight_matrix, axes=1)
     magnitudes.set_shape(mel_magnitude_spectrograms.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, mel_to_linear_weight_matrix, axes=1)
