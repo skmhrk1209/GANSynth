@@ -119,7 +119,7 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
     )
-    mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix, rcond=1.0e-15)
+    mel_to_linear_weight_matrix = tfp.math.pinv(linear_to_mel_weight_matrix)
     magnitudes = tf.tensordot(mel_magnitude_spectrograms, mel_to_linear_weight_matrix, axes=1)
     magnitudes.set_shape(mel_magnitude_spectrograms.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, mel_to_linear_weight_matrix, axes=1)
@@ -223,5 +223,5 @@ if __name__ == "__main__":
                 except tf.errors.OutOfRangeError:
                     break
 
-        plt.hist(*map(np.concatenate, zip(*generator())))
+        plt.hist(*map(np.concatenate, zip(*generator())), bins=20, range=[-1.0, 1.0])
         plt.show()
