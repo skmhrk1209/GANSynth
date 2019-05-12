@@ -179,8 +179,11 @@ class GANSynth(object):
         ) as session:
 
             while not session.should_stop():
-                session.run(self.discriminator_train_op)
-                session.run(self.generator_train_op)
+                try:
+                    session.run(self.discriminator_train_op)
+                    session.run(self.generator_train_op)
+                except tf.errors.OutOfRangeError:
+                    break
 
     def evaluate(self, model_dir, config, classifier, images, features, logits):
 
@@ -209,7 +212,7 @@ class GANSynth(object):
         ) as session:
 
             def generator():
-                while True:
+                while not session.should_stop():
                     try:
                         yield session.run([real_features, real_logits, fake_features, fake_logits])
                     except tf.errors.OutOfRangeError:
@@ -354,7 +357,10 @@ class PitchClassifier(object):
         ) as session:
 
             while not session.should_stop():
-                session.run([self.train_op, self.update_op])
+                try:
+                    session.run([self.train_op, self.update_op])
+                except tf.errors.OutOfRangeError:
+                    break
 
     def evaluate(self, model_dir, config):
 
@@ -371,11 +377,10 @@ class PitchClassifier(object):
         ) as session:
 
             while not session.should_stop():
-                print("a")
-                accuracy = session.run(self.update_op)
-                print("b")
-            
-            print("finish!!!")
+                try:
+                    accuracy = session.run(self.update_op)
+                except tf.errors.OutOfRangeError:
+                    break
 
             print("----------------------------------------------------------------")
             print(f"accuracy: {accuracy}")
