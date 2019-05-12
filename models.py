@@ -372,6 +372,7 @@ class PitchClassifier(object):
 
             while not session.should_stop():
                 accuracy = session.run(self.update_op)
+                print("a")
             
             print("finish!!!")
 
