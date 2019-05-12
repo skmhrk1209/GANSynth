@@ -23,11 +23,11 @@ class GANSynth(object):
         real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
         real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
 
-        fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
-        fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
-
         fake_latents = fake_input_fn()
         fake_images = generator(fake_latents, labels)
+
+        fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
+        fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
 
         real_logits = discriminator(real_images, labels)
         fake_logits = discriminator(fake_images, labels)
