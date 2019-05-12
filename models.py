@@ -8,19 +8,6 @@ class GANSynth(object):
 
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, spectral_params, hyper_params):
 
-        real_waveforms, labels = real_input_fn()
-        fake_latents = fake_input_fn()
-        fake_images = generator(fake_latents, labels)
-
-        real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
-        real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
-
-        fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
-        fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
-
-        real_logits = discriminator(real_images, labels)
-        fake_logits = discriminator(fake_images, labels)
-
         # -----------------------------------------------------------------------------------------
         # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
         # [Generative Adversarial Networks]
@@ -30,13 +17,21 @@ class GANSynth(object):
         # [Which Training Methods for GANs do actually Converge?]
         # (https://arxiv.org/pdf/1801.04406.pdf)
         # -----------------------------------------------------------------------------------------
-        # non-saturating loss
-        generator_losses = tf.nn.softplus(-fake_logits)
-        # gradient-based mode-seeking loss
-        if hyper_params.mode_seeking_loss_weight:
-            latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
-            mode_seeking_losses = 1.0 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1.0e-6)
-            generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
+
+        real_waveforms, labels = real_input_fn()
+
+        real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
+        real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
+
+        fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
+        fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
+
+        fake_latents = fake_input_fn()
+        fake_images = generator(fake_latents, labels)
+
+        real_logits = discriminator(real_images, labels)
+        fake_logits = discriminator(fake_images, labels)
+
         # non-saturating loss
         discriminator_losses = tf.nn.softplus(-real_logits)
         discriminator_losses += tf.nn.softplus(fake_logits)
@@ -50,6 +45,19 @@ class GANSynth(object):
             fake_gradients = tf.gradients(fake_logits, [fake_images])[0]
             fake_gradient_penalties = tf.reduce_sum(tf.square(fake_gradients), axis=[1, 2, 3])
             discriminator_losses += fake_gradient_penalties * hyper_params.fake_gradient_penalty_weight
+
+        fake_latents = fake_input_fn()
+        fake_images = generator(fake_latents, labels)
+
+        fake_logits = discriminator(fake_images, labels)
+
+        # non-saturating loss
+        generator_losses = tf.nn.softplus(-fake_logits)
+        # gradient-based mode-seeking loss
+        if hyper_params.mode_seeking_loss_weight:
+            latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
+            mode_seeking_losses = 1.0 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1.0e-6)
+            generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
 
         generator_loss = tf.reduce_mean(generator_losses)
         discriminator_loss = tf.reduce_mean(discriminator_losses)
@@ -210,7 +218,6 @@ class GANSynth(object):
             real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
 
             print("----------------------------------------------------------------")
-            print("evaluation result")
             print(f"frechet_inception_distance: {metrics.frechet_inception_distance(real_features, fake_features)}")
             print(f"inception_score: {metrics.inception_score(real_logits), metrics.inception_score(fake_logits)}")
             print(f"num_different_bins: {metrics.num_different_bins(real_features, fake_features)}")
@@ -347,8 +354,7 @@ class PitchClassifier(object):
         ) as session:
 
             while not session.should_stop():
-                session.run(self.train_op)
-                session.run(self.update_op)
+                session.run([self.train_op, self.update_op])
 
     def evaluate(self, model_dir, config):
 
@@ -366,8 +372,9 @@ class PitchClassifier(object):
 
             while not session.should_stop():
                 accuracy = session.run(self.update_op)
+            
+            print("finish!!!")
 
             print("----------------------------------------------------------------")
-            print("evaluation result")
             print(f"accuracy: {accuracy}")
             print("----------------------------------------------------------------")
