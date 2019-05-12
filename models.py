@@ -364,8 +364,7 @@ class PitchClassifier(object):
         ) as session:
 
             while not session.should_stop():
-                print("a")
-                accuracy = session.run(self.accuracy)
-                session.run(self.update_op)
+                accuracy = session.run(self.update_op)
+                print(accuracy)
 
             tf.logging.info(f"accuracy: {accuracy}")
