@@ -144,7 +144,7 @@ with tf.Graph().as_default():
             waveinfo = dict()
             for i, (latent, label, waveform) in enumerate(zip(latents, labels, waveforms)):
                 filename = f"samples/{i}.wav"
-                wavfile.write(filename)
+                wavfile.write(filename, rate=16000, data=waveform)
                 wavinfo.update(dict(filename=filename, latent=latent, label=label))
 
             with open("samples/waveinfo.json", "w") as file:
