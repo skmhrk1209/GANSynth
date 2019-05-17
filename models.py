@@ -237,7 +237,7 @@ class GANSynth(object):
         ) as session:
 
             def generator():
-                print("b")
+                print(session.should_stop())
                 while not session.should_stop():
                     print("a")
                     try:
