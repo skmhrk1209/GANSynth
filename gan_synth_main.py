@@ -128,7 +128,7 @@ with tf.Graph().as_default():
             config=config
         )
 
-        print(waveforms)
+        next(waveforms)
 
         for i, waveform in enumerate(waveforms):
             print(waveform)
