@@ -110,6 +110,8 @@ with tf.Graph().as_default():
 
     if args.evaluate:
 
+        print(args.model_dir)
+
         with open(args.classifier, "rb") as file:
             classifier = tf.GraphDef.FromString(file.read())
 
