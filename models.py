@@ -194,7 +194,6 @@ class GANSynth(object):
                     break
 
     def evaluate(self, model_dir, config, classifier, images, features, logits):
-
         '''
         real_features, real_logits = tf.import_graph_def(
             graph_def=classifier,
@@ -227,21 +226,42 @@ class GANSynth(object):
                         yield session.run([
                             self.real_features,
                             self.fake_features,
-                            self.real_magnitude_spectrograms,
-                            self.fake_magnitude_spectrograms
                         ])
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_features, fake_features, real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
+            real_features, fake_features = map(np.concatenate, zip(*generator()))
 
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            def generator():
+                while not session.should_stop():
+                    try:
+                        yield session.run([
+                            self.real_magnitude_spectrograms,
+                            self.fake_magnitude_spectrograms,
+                        ])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
             real_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [real_magnitude_spectrograms.shape[0], -1])
             fake_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [fake_magnitude_spectrograms.shape[0], -1])
 
-            return dict(
-                frechet_inception_distance=metrics.frechet_inception_distance(real_features, fake_features),
-                num_different_bins=metrics.num_different_bins(real_magnitude_spectrograms, fake_magnitude_spectrograms)
-            )
+        return dict(
+            frechet_inception_distance=metrics.frechet_inception_distance(real_features, fake_features),
+            num_different_bins=metrics.num_different_bins(real_magnitude_spectrograms, fake_magnitude_spectrograms)
+        )
 
     def generate(self, model_dir, config):
 
