@@ -118,7 +118,7 @@ with tf.Graph().as_default():
             config=config,
             classifier=classifier,
             input_name="images:0",
-            output_name="features:0"
+            output_names=["features:0", "logits:0"]
         ))
 
     if args.generate:
