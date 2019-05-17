@@ -24,8 +24,8 @@ class GANSynth(object):
         real_waveforms, real_labels = real_input_fn()
         fake_latents, fake_labels = fake_input_fn()
 
-        real_labels = real_labels or fake_labels
-        fake_labels = fake_labels or real_labels
+        real_labels = real_labels if real_labels is not None else fake_labels
+        fake_labels = fake_labels if fake_labels is not None else real_labels
 
         fake_images = generator(fake_latents, fake_labels)
 
