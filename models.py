@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_hub as hub
 import numpy as np
 import metrics
 import spectral_ops
@@ -196,6 +197,15 @@ class GANSynth(object):
             return_elements=[features, logits]
         )
 
+        inception_v3 = hub.Module("https://tfhub.dev/google/imagenet/inception_v3/feature_vector/3")
+        height, width = hub.get_expected_image_size(inception_v3)
+        real_images = tf.transpose(self.real_images, [0, 2, 3, 1])
+        real_images = tf.image.resize_images(real_images, [height, width])
+        real_features = inception_v3(real_images)
+        fake_images = tf.transpose(self.fake_images, [0, 2, 3, 1])
+        fake_images = tf.image.resize_images(fake_images, [height, width])
+        fake_features = inception_v3(fake_images)
+
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
                 init_op=tf.global_variables_initializer(),
@@ -216,24 +226,6 @@ class GANSynth(object):
                         break
 
             real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
-
-        fid = tf.contrib.gan.eval.frechet_classifier_distance_from_activations(
-            tf.convert_to_tensor(real_features), tf.convert_to_tensor(fake_features)
-        )
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=tf.train.Scaffold(
-                init_op=tf.global_variables_initializer(),
-                local_init_op=tf.group(
-                    tf.local_variables_initializer(),
-                    tf.tables_initializer()
-                )
-            ),
-            checkpoint_dir=model_dir,
-            config=config
-        ) as session:
-
-            print("fid", session.run(fid))
 
             return dict(
                 frechet_inception_distance=metrics.frechet_inception_distance(real_features, fake_features),
