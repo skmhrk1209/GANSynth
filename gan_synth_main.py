@@ -128,8 +128,5 @@ with tf.Graph().as_default():
             config=config
         )
 
-        print(next(waveforms))
-
         for i, waveform in enumerate(waveforms):
-            print(waveform)
             wavfile.write(f"samples/{i}.wav", rate=16000, data=waveform)
