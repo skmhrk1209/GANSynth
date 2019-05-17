@@ -195,6 +195,7 @@ class GANSynth(object):
 
     def evaluate(self, model_dir, config, classifier, images, features, logits):
 
+        '''
         real_features, real_logits = tf.import_graph_def(
             graph_def=classifier,
             input_map={images: self.real_images},
@@ -206,6 +207,7 @@ class GANSynth(object):
             input_map={images: self.fake_images},
             return_elements=[features, logits]
         )
+        '''
 
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
