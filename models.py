@@ -239,7 +239,7 @@ class GANSynth(object):
             def generator():
                 while not session.should_stop():
                     try:
-                        yield session.run([self.fake_waveforms])
+                        yield session.run(self.fake_waveforms)
                     except tf.errors.OutOfRangeError:
                         break
 
