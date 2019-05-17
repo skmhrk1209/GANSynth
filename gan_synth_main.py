@@ -141,11 +141,11 @@ with tf.Graph().as_default():
 
             latents, labels, waveforms = session.run([latents, labels, waveforms])
 
-            waveinfo = dict()
+            wavinfo = dict()
             for i, (latent, label, waveform) in enumerate(zip(latents, labels, waveforms)):
                 filename = f"samples/{i}.wav"
                 wavfile.write(filename, rate=16000, data=waveform)
                 wavinfo.update(dict(filename=filename, latent=latent, label=label))
 
             with open("samples/waveinfo.json", "w") as file:
-                json.dump(waveinfo, file, indent=4)
+                json.dump(wavinfo, file, indent=4)
