@@ -145,7 +145,7 @@ with tf.Graph().as_default():
             for i, (latent, label, waveform) in enumerate(zip(latents, labels, waveforms)):
                 filename = f"samples/{i}.wav"
                 wavfile.write(filename, rate=16000, data=waveform)
-                wavinfo.update(dict(filename=filename, latent=latent, label=label))
+                wavinfo.update(dict(filename=filename, latent=latent.tolist(), label=label.tolist()))
 
             with open("samples/waveinfo.json", "w") as file:
                 json.dump(wavinfo, file, indent=4)
