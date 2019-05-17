@@ -243,7 +243,7 @@ class GANSynth(object):
                     except tf.errors.OutOfRangeError:
                         break
 
-            return generator
+            return generator()
 
 
 class PitchClassifier(object):
