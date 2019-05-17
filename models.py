@@ -2,8 +2,6 @@ import tensorflow as tf
 import numpy as np
 import metrics
 import spectral_ops
-import json
-from scipy.io import wavfile
 from termcolor import cprint
 
 

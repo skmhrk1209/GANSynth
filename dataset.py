@@ -5,7 +5,7 @@ import pathlib
 import json
 import os
 import spectral_ops
-from utils import Struct
+from utils import Dict
 from tensorflow.contrib.framework.python.ops import audio_ops
 
 
@@ -16,7 +16,7 @@ def nsynth_input_fn(filenames, batch_size, num_epochs, shuffle,
 
     def parse_example(example):
 
-        features = Struct(tf.parse_single_example(
+        features = Dict(tf.parse_single_example(
             serialized=example,
             features=dict(
                 path=tf.FixedLenFeature([], dtype=tf.string),

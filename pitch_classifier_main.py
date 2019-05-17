@@ -18,7 +18,7 @@ import glob
 from dataset import nsynth_input_fn
 from models import PitchClassifier
 from networks import ResNet
-from utils import Struct
+from utils import Dict
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="pitch_classifier_model")
@@ -37,13 +37,13 @@ with tf.Graph().as_default():
     tf.set_random_seed(0)
 
     resnet = ResNet(
-        conv_param=Struct(filters=64, kernel_size=[7, 7], strides=[2, 2]),
-        pool_param=Struct(kernel_size=[3, 3], strides=[2, 2]),
+        conv_param=Dict(filters=64, kernel_size=[7, 7], strides=[2, 2]),
+        pool_param=Dict(kernel_size=[3, 3], strides=[2, 2]),
         residual_params=[
-            Struct(filters=64, strides=[1, 1], blocks=3),
-            Struct(filters=128, strides=[2, 2], blocks=4),
-            Struct(filters=256, strides=[2, 2], blocks=6),
-            Struct(filters=512, strides=[2, 2], blocks=3)
+            Dict(filters=64, strides=[1, 1], blocks=3),
+            Dict(filters=128, strides=[2, 2], blocks=4),
+            Dict(filters=256, strides=[2, 2], blocks=6),
+            Dict(filters=512, strides=[2, 2], blocks=3)
         ],
         groups=32,
         classes=len(range(24, 85))
@@ -60,7 +60,7 @@ with tf.Graph().as_default():
             pitches=range(24, 85),
             sources=[0]
         ),
-        spectral_params=Struct(
+        spectral_params=Dict(
             waveform_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],
@@ -68,7 +68,7 @@ with tf.Graph().as_default():
         ),
         # [Don't Decay the Learning Rate, Increase the Batch Size]
         # (https://arxiv.org/pdf/1711.00489.pdf)
-        hyper_params=Struct(
+        hyper_params=Dict(
             weight_decay=1e-4,
             learning_rate=lambda global_step: tf.train.exponential_decay(
                 learning_rate=0.128 * args.batch_size / 256,

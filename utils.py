@@ -1,6 +1,5 @@
-class Struct(dict):
 
-    def __init__(self, *args, **kwargs): super().__init__(*args, **kwargs)
+class Dict(dict):
 
     def __getattr__(self, name): return self[name]
 

@@ -15,10 +15,12 @@ import numpy as np
 import functools
 import argparse
 import glob
+import json
+from scipy.io import wavfile
 from dataset import nsynth_input_fn
 from models import GANSynth
 from networks import PGGAN
-from utils import Struct
+from utils import Dict
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
@@ -34,6 +36,7 @@ parser.add_argument('--generate', action="store_true")
 args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
+
 
 with tf.Graph().as_default():
 
@@ -63,7 +66,7 @@ with tf.Graph().as_default():
             sources=[0]
         ),
         fake_input_fn=lambda: tf.random.normal([args.batch_size, 256]),
-        spectral_params=Struct(
+        spectral_params=Dict(
             waveform_length=64000,
             sample_rate=16000,
             spectrogram_shape=[128, 1024],
@@ -71,7 +74,7 @@ with tf.Graph().as_default():
         ),
         # [Don't Decay the Learning Rate, Increase the Batch Size]
         # (https://arxiv.org/pdf/1711.00489.pdf)
-        hyper_params=Struct(
+        hyper_params=Dict(
             generator_learning_rate=8e-4 * args.batch_size / 8,
             generator_beta1=0.0,
             generator_beta2=0.99,
