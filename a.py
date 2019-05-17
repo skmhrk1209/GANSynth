@@ -113,9 +113,9 @@ def _linear_to_mel_weight_matrix(num_mel_bins=20,
     return mel_weights_matrix
 
 
-def _mel_to_linear_matrix(*args, **kwargs):
+def _mel_to_linear_weight_matrix(*args, **kwargs):
     """Get the inverse mel transformation matrix."""
-    m = _linear_to_mel_matrix(*args, **kwargs)
+    m = _linear_to_mel_weight_matrix(*args, **kwargs)
     m_t = np.transpose(m)
     p = np.matmul(m, m_t)
     d = [1.0 / x if np.abs(x) > 1.0e-8 else x for x in np.sum(p, axis=0)]
