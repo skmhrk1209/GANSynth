@@ -215,7 +215,7 @@ class GANSynth(object):
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_features, real_logits, fake_features, fake_logits = map(np.random.permutation, map(np.concatenate, zip(*generator())))
+            real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
 
             return dict(
                 frechet_inception_distance=metrics.frechet_inception_distance(real_features, fake_features),
