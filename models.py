@@ -222,6 +222,31 @@ class GANSynth(object):
             cprint(f"inception_score: {metrics.inception_score(real_logits), metrics.inception_score(fake_logits)}", "yellow")
             cprint(f"num_different_bins: {metrics.num_different_bins(real_features, fake_features)}", "yellow")
 
+    def generate(self, model_dir, config):
+
+        with tf.train.SingularMonitoredSession(
+            scaffold=tf.train.Scaffold(
+                init_op=tf.global_variables_initializer(),
+                local_init_op=tf.group(
+                    tf.local_variables_initializer(),
+                    tf.tables_initializer()
+                )
+            ),
+            checkpoint_dir=model_dir,
+            config=config
+        ) as session:
+
+            def generator():
+                while not session.should_stop():
+                    try:
+                        yield session.run([self.fake_waveforms])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            fake_waveforms = map(np.concatenate, zip(*generator()))
+
+            return fake_waveforms
+
 
 class PitchClassifier(object):
 

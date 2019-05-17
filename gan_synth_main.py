@@ -123,29 +123,10 @@ with tf.Graph().as_default():
 
     if args.generate:
 
-        latents = tf.tile(tf.random.normal([1, 256]), [len(range(24, 85)), 1])
-        labels = tf.one_hot(tf.range(0, len(range(24, 85))), len(range(24, 85)))
-        waveforms = pggan.generator(latents, labels)
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=tf.train.Scaffold(
-                init_op=tf.global_variables_initializer(),
-                local_init_op=tf.group(
-                    tf.local_variables_initializer(),
-                    tf.tables_initializer()
-                )
-            ),
-            checkpoint_dir=args.model_dir,
+        waveforms = gan_synth.evaluate(
+            model_dir=args.model_dir,
             config=config
-        ) as session:
+        )
 
-            latents, labels, waveforms = session.run([latents, labels, waveforms])
-
-            wavinfo = dict()
-            for i, (latent, label, waveform) in enumerate(zip(latents, labels, waveforms)):
-                filename = f"samples/{i}.wav"
-                wavfile.write(filename, rate=16000, data=waveform)
-                wavinfo.update(dict(filename=filename, latent=latent.tolist(), label=label.tolist()))
-
-            with open("samples/waveinfo.json", "w") as file:
-                json.dump(wavinfo, file, indent=4)
+        for i, waveform in enumerate(waveforms):
+            wavfile.write(f"samples/{i}.wav", rate=16000, data=waveform)
