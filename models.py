@@ -193,20 +193,19 @@ class GANSynth(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-    def evaluate(self, model_dir, config, classifier, images, features, logits):
-        '''
-        real_features, real_logits = tf.import_graph_def(
+    def evaluate(self, model_dir, config, classifier, input_name, output_name):
+
+        real_features = tf.import_graph_def(
             graph_def=classifier,
-            input_map={images: self.real_images},
-            return_elements=[features, logits]
+            input_map={input_name: self.real_images},
+            return_elements=[output_name]
         )
 
-        fake_features, fake_logits = tf.import_graph_def(
+        fake_features = tf.import_graph_def(
             graph_def=classifier,
-            input_map={images: self.fake_images},
-            return_elements=[features, logits]
+            input_map={input_name: self.fake_images},
+            return_elements=[output_name]
         )
-        '''
 
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
@@ -223,11 +222,12 @@ class GANSynth(object):
             def generator():
                 while not session.should_stop():
                     try:
-                        yield session.run([self.real_features, self.fake_features])
+                        yield session.run([real_features, fake_features])
                     except tf.errors.OutOfRangeError:
                         break
 
-            return dict(frechet_inception_distance=metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator()))))
+            frechet_inception_distance = metrics.frechet_inception_distance(*map(np.concatenate, zip(*generator())))
+            return dict(frechet_inception_distance=frechet_inception_distance)
 
     def generate(self, model_dir, config):
 

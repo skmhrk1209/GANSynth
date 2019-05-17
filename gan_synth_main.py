@@ -117,9 +117,8 @@ with tf.Graph().as_default():
             model_dir=args.model_dir,
             config=config,
             classifier=classifier,
-            images="images:0",
-            features="features:0",
-            logits="logits:0"
+            input_name="images:0",
+            output_name="features:0"
         ))
 
     if args.generate:
