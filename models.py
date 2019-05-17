@@ -21,13 +21,10 @@ class GANSynth(object):
         # (https://arxiv.org/pdf/1801.04406.pdf)
         # -----------------------------------------------------------------------------------------
 
-        real_waveforms, real_labels = real_input_fn()
-        fake_latents, fake_labels = fake_input_fn()
+        real_waveforms, labels = real_input_fn()
+        latents = fake_input_fn()
 
-        real_labels = real_labels if real_labels is not None else fake_labels
-        fake_labels = fake_labels if fake_labels is not None else real_labels
-
-        fake_images = generator(fake_latents, fake_labels)
+        fake_images = generator(latents, labels)
 
         real_magnitude_spectrograms, real_instantaneous_frequencies = spectral_ops.convert_to_spectrogram(real_waveforms, **spectral_params)
         real_images = tf.stack([real_magnitude_spectrograms, real_instantaneous_frequencies], axis=1)
@@ -35,8 +32,8 @@ class GANSynth(object):
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
         fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
 
-        real_logits = discriminator(real_images, real_labels)
-        fake_logits = discriminator(fake_images, fake_labels)
+        real_logits = discriminator(real_images, labels)
+        fake_logits = discriminator(fake_images, labels)
 
         # non-saturating loss
         discriminator_losses = tf.nn.softplus(-real_logits)
@@ -56,7 +53,7 @@ class GANSynth(object):
         generator_losses = tf.nn.softplus(-fake_logits)
         # gradient-based mode-seeking loss
         if hyper_params.mode_seeking_loss_weight:
-            latent_gradients = tf.gradients(fake_images, [fake_latents])[0]
+            latent_gradients = tf.gradients(fake_images, [latents])[0]
             mode_seeking_losses = 1.0 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1.0e-6)
             generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
 
@@ -95,8 +92,8 @@ class GANSynth(object):
         self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
         self.real_images = real_images
         self.fake_images = fake_images
-        self.real_labels = real_labels
-        self.fake_labels = fake_labels
+        self.real_labels = labels
+        self.fake_labels = labels
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
         self.generator_train_op = generator_train_op
@@ -226,30 +223,6 @@ class GANSynth(object):
             cprint(f"frechet_inception_distance: {metrics.frechet_inception_distance(real_features, fake_features)}", "yellow")
             cprint(f"inception_score: {metrics.inception_score(real_logits), metrics.inception_score(fake_logits)}", "yellow")
             cprint(f"num_different_bins: {metrics.num_different_bins(real_features, fake_features)}", "yellow")
-
-    def generate(self, model_dir, config):
-
-        with tf.train.SingularMonitoredSession(
-            scaffold=tf.train.Scaffold(
-                init_op=tf.global_variables_initializer(),
-                local_init_op=tf.group(
-                    tf.local_variables_initializer(),
-                    tf.tables_initializer()
-                )
-            ),
-            checkpoint_dir=model_dir,
-            config=config
-        ) as session:
-
-            def generator():
-                while not session.should_stop():
-                    try:
-                        yield session.run([self.fake_latents, self.fake_labels, self.fake_waveforms])
-                    except tf.errors.OutOfRangeError:
-                        break
-
-            fake_latents, fake_labels, fake_waveforms = map(np.concatenate, zip(*generator()))
-            return fake_latents, fake_labels, fake_waveforms
 
 
 class PitchClassifier(object):
