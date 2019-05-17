@@ -236,11 +236,11 @@ class GANSynth(object):
             config=config
         ) as session:
 
-            if not session.should_stop():
+            while not session.should_stop():
                 try:
                     yield session.run(self.fake_waveforms)
                 except tf.errors.OutOfRangeError:
-                    pass
+                    break
 
 
 class PitchClassifier(object):
