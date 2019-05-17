@@ -128,8 +128,10 @@ with tf.Graph().as_default():
             config=config
         )
 
-        i = 0
+        num_waveforms = 0
         for waveforms in generator:
             for waveform in waveforms:
-                wavfile.write(f"samples/{i}.wav", rate=16000, data=waveform)
-                i += 1
+                wavfile.write(f"samples/{num_waveforms}.wav", rate=16000, data=waveform)
+                num_waveforms += 1
+
+        print(f"{num_waveforms} waveforms are generated in `samples` directory")

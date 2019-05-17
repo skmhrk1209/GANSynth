@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import metrics
 import spectral_ops
-from termcolor import cprint
 
 
 class GANSynth(object):
@@ -218,9 +217,9 @@ class GANSynth(object):
 
             real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
 
-            cprint(f"frechet_inception_distance: {metrics.frechet_inception_distance(real_features, fake_features)}", "yellow")
-            cprint(f"inception_score: {metrics.inception_score(real_logits), metrics.inception_score(fake_logits)}", "yellow")
-            cprint(f"num_different_bins: {metrics.num_different_bins(real_features, fake_features)}", "yellow")
+            print(f"frechet_inception_distance: {metrics.frechet_inception_distance(real_features, fake_features)}")
+            print(f"inception_score: {metrics.inception_score(real_logits), metrics.inception_score(fake_logits)}")
+            print(f"num_different_bins: {metrics.num_different_bins(real_features, fake_features)}")
 
     def generate(self, model_dir, config):
 
@@ -398,4 +397,4 @@ class PitchClassifier(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-            cprint(f"accuracy: {accuracy}", "yellow")
+            print(f"accuracy: {accuracy}")
