@@ -39,7 +39,7 @@ def binomial_proportion_test(p, m, q, n, significance_level):
     return p_values < significance_level
 
 
-def num_different_bins(real_features, fake_features, num_bins=100, significance_level=0.05):
+def num_different_bins(real_features, fake_features, num_bins=50, significance_level=0.05):
 
     clusters = cluster.KMeans(n_clusters=num_bins).fit(real_features)
     real_labels, real_counts = np.unique(clusters.labels_, return_counts=True)

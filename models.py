@@ -197,15 +197,6 @@ class GANSynth(object):
             return_elements=[features, logits]
         )
 
-        inception_v3 = hub.Module("https://tfhub.dev/google/imagenet/inception_v3/feature_vector/3")
-        height, width = hub.get_expected_image_size(inception_v3)
-        real_images = tf.transpose(self.real_images, [0, 2, 3, 1])
-        real_images = tf.image.resize_images(real_images, [height, width])
-        real_features = inception_v3(real_images)
-        fake_images = tf.transpose(self.fake_images, [0, 2, 3, 1])
-        fake_images = tf.image.resize_images(fake_images, [height, width])
-        fake_features = inception_v3(fake_images)
-
         with tf.train.SingularMonitoredSession(
             scaffold=tf.train.Scaffold(
                 init_op=tf.global_variables_initializer(),
@@ -221,17 +212,28 @@ class GANSynth(object):
             def generator():
                 while not session.should_stop():
                     try:
-                        yield session.run([real_features, real_logits, fake_features, fake_logits])
+                        yield session.run([
+                            self.real_features,
+                            self.fake_features,
+                            self.real_logits,
+                            self.fake_logits,
+                            self.real_magnitude_spectrograms,
+                            self.fake_magnitude_spectrograms
+                        ])
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_features, real_logits, fake_features, fake_logits = map(np.concatenate, zip(*generator()))
+            real_features, fake_features, real_logits, fake_logits, \
+                real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
+
+            real_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [real_magnitude_spectrograms.shape[0], -1])
+            fake_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [fake_magnitude_spectrograms.shape[0], -1])
 
             return dict(
                 frechet_inception_distance=metrics.frechet_inception_distance(real_features, fake_features),
                 real_inception_score=metrics.inception_score(real_logits),
                 fake_inception_score=metrics.inception_score(fake_logits),
-                num_different_bins=metrics.num_different_bins(real_features, fake_features)
+                num_different_bins=metrics.num_different_bins(real_magnitude_spectrograms, fake_magnitude_spectrograms)
             )
 
     def generate(self, model_dir, config):
