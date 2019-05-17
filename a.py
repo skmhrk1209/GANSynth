@@ -190,13 +190,13 @@ def convert_to_spectrogram(waveforms, waveform_length, sample_rate, spectrogram_
 
     # this matrix can be constant by graph optimization `Constant Folding`
     # since there are no Tensor inputs
-    linear_to_mel_weight_matrix = tf.convert_to_tensor(_linear_to_mel_weight_matrix(
+    linear_to_mel_weight_matrix = tf.cast(_linear_to_mel_weight_matrix(
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
         sample_rate=sample_rate,
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
-    ))
+    ), tf.float32)
     mel_magnitude_spectrograms = tf.tensordot(magnitude_spectrograms, linear_to_mel_weight_matrix, axes=1)
     mel_magnitude_spectrograms.set_shape(magnitude_spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
     mel_phase_spectrograms = tf.tensordot(phase_spectrograms, linear_to_mel_weight_matrix, axes=1)
@@ -229,13 +229,13 @@ def convert_to_waveform(log_mel_magnitude_spectrograms, mel_instantaneous_freque
 
     # this matrix can be constant by graph optimization `Constant Folding`
     # since there are no Tensor inputs
-    mel_to_linear_weight_matrix = tf.convert_to_tensor(_mel_to_linear_weight_matrix(
+    mel_to_linear_weight_matrix = tf.cast(_mel_to_linear_weight_matrix(
         num_mel_bins=num_freq_bins,
         num_spectrogram_bins=num_freq_bins,
         sample_rate=sample_rate,
         lower_edge_hertz=0.0,
         upper_edge_hertz=sample_rate / 2.0
-    ))
+    ), tf.float32)
     magnitudes = tf.tensordot(mel_magnitude_spectrograms, mel_to_linear_weight_matrix, axes=1)
     magnitudes.set_shape(mel_magnitude_spectrograms.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
     phase_spectrograms = tf.tensordot(mel_phase_spectrograms, mel_to_linear_weight_matrix, axes=1)
