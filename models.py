@@ -30,8 +30,14 @@ class GANSynth(object):
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
         fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
 
-        real_logits = discriminator(real_images, labels)
-        fake_logits = discriminator(fake_images, labels)
+        real_features, real_logits = discriminator(real_images, labels)
+        fake_features, fake_logits = discriminator(fake_images, labels)
+
+        # label conditioning from
+        # [Which Training Methods for GANs do actually Converge?]
+        # (https://arxiv.org/pdf/1801.04406.pdf)
+        real_logits = tf.gather_nd(real_logits, indices=tf.where(labels))
+        fake_logits = tf.gather_nd(fake_logits, indices=tf.where(labels))
 
         # non-saturating loss
         discriminator_losses = tf.nn.softplus(-real_logits)
@@ -92,6 +98,10 @@ class GANSynth(object):
         self.fake_images = fake_images
         self.real_labels = labels
         self.fake_labels = labels
+        self.real_features = real_features
+        self.fake_features = fake_features
+        self.real_logits = real_logits
+        self.fake_logits = fake_logits
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
         self.generator_train_op = generator_train_op
@@ -213,26 +223,21 @@ class GANSynth(object):
                 while not session.should_stop():
                     try:
                         yield session.run([
-                            real_features,
-                            fake_features,
-                            real_logits,
-                            fake_logits,
+                            self.real_features,
+                            self.fake_features,
                             self.real_magnitude_spectrograms,
                             self.fake_magnitude_spectrograms
                         ])
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_features, fake_features, real_logits, fake_logits, \
-                real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
+            real_features, fake_features, real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
 
             real_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [real_magnitude_spectrograms.shape[0], -1])
             fake_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [fake_magnitude_spectrograms.shape[0], -1])
 
             return dict(
                 frechet_inception_distance=metrics.frechet_inception_distance(real_features, fake_features),
-                real_inception_score=metrics.inception_score(real_logits),
-                fake_inception_score=metrics.inception_score(fake_logits),
                 num_different_bins=metrics.num_different_bins(real_magnitude_spectrograms, fake_magnitude_spectrograms)
             )
 

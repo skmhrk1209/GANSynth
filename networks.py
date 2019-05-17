@@ -192,10 +192,8 @@ class PGGAN(object):
                             scale_weight=True
                         )
                         inputs = tf.nn.leaky_relu(inputs)
+                        features = inputs
                     with tf.variable_scope("logits"):
-                        # label conditioning from
-                        # [Which Training Methods for GANs do actually Converge?]
-                        # (https://arxiv.org/pdf/1801.04406.pdf)
                         inputs = dense(
                             inputs=inputs,
                             units=labels.shape[1],
@@ -203,11 +201,8 @@ class PGGAN(object):
                             variance_scale=1.0,
                             scale_weight=True
                         )
-                        inputs = tf.gather_nd(
-                            params=inputs,
-                            indices=tf.where(labels)
-                        )
-                    return inputs
+                        logits = inputs
+                    return features, logits
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(
@@ -314,17 +309,13 @@ class ResNet(object):
             (https://arxiv.org/pdf/1603.05027.pdf)
             by Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun, Jul 2016.
             '''
-
             shortcut = inputs
-
             with tf.variable_scope("group_normalization_1st"):
                 inputs = group_normalization(
                     inputs=inputs,
                     groups=groups
                 )
-
             inputs = tf.nn.relu(inputs)
-
             if projection_shortcut:
                 with tf.variable_scope("projection_shortcut"):
                     shortcut = conv2d(
@@ -336,7 +327,6 @@ class ResNet(object):
                         variance_scale=2.0,
                         apply_weight_standardization=True
                     )
-
             with tf.variable_scope("conv_1st"):
                 inputs = conv2d(
                     inputs=inputs,
@@ -347,15 +337,12 @@ class ResNet(object):
                     variance_scale=2.0,
                     apply_weight_standardization=True
                 )
-
             with tf.variable_scope("group_normalization_2nd"):
                 inputs = group_normalization(
                     inputs=inputs,
                     groups=groups
                 )
-
             inputs = tf.nn.relu(inputs)
-
             with tf.variable_scope("conv_2nd"):
                 inputs = conv2d(
                     inputs=inputs,
@@ -366,13 +353,10 @@ class ResNet(object):
                     variance_scale=2.0,
                     apply_weight_standardization=True
                 )
-
             inputs += shortcut
-
             return inputs
 
         with tf.variable_scope(name, reuse=reuse):
-
             if self.conv_param:
                 with tf.variable_scope("conv"):
                     inputs = conv2d(
@@ -384,16 +368,13 @@ class ResNet(object):
                         variance_scale=2.0,
                         apply_weight_standardization=True
                     )
-
             if self.pool_param:
                 inputs = max_pooling2d(
                     inputs=inputs,
                     kernel_size=self.pool_param.kernel_size,
                     strides=self.pool_param.strides
                 )
-
             for i, residual_param in enumerate(self.residual_params):
-
                 for j in range(residual_param.blocks)[:1]:
                     with tf.variable_scope(f"residual_block_{i}_{j}"):
                         inputs = residual_block(
@@ -403,7 +384,6 @@ class ResNet(object):
                             projection_shortcut=True,
                             groups=self.groups
                         )
-
                 for j in range(residual_param.blocks)[1:]:
                     with tf.variable_scope(f"residual_block_{i}_{j}"):
                         inputs = residual_block(
@@ -413,24 +393,21 @@ class ResNet(object):
                             projection_shortcut=False,
                             groups=self.groups
                         )
-
             with tf.variable_scope("group_normalization"):
                 inputs = group_normalization(
                     inputs=inputs,
                     groups=self.groups
                 )
-
             inputs = tf.nn.relu(inputs)
-
-            features = tf.reduce_mean(inputs, axis=[2, 3])
-
+            inputs = tf.reduce_mean(inputs, axis=[2, 3])
+            features = inputs
             with tf.variable_scope("logits"):
-                logits = dense(
+                inputs = dense(
                     inputs=features,
                     units=self.classes,
                     use_bias=True,
                     variance_scale=1.0,
                     apply_weight_standardization=False
                 )
-
+                logits = inputs
             return features, logits
