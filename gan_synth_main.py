@@ -16,6 +16,7 @@ import functools
 import argparse
 import glob
 import json
+import os
 from scipy.io import wavfile
 from dataset import nsynth_input_fn
 from models import GANSynth
@@ -122,6 +123,8 @@ with tf.Graph().as_default():
         ))
 
     if args.generate:
+
+        os.makedirs("samples", exist_ok=True)
 
         generator = gan_synth.generate(
             model_dir=args.model_dir,
