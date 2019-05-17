@@ -123,10 +123,10 @@ with tf.Graph().as_default():
 
     if args.generate:
 
-        waveforms = gan_synth.generate(
+        generator = gan_synth.generate(
             model_dir=args.model_dir,
             config=config
         )
 
-        for i, waveform in enumerate(waveforms):
+        for i, waveform in enumerate(generator()):
             wavfile.write(f"samples/{i}.wav", rate=16000, data=waveform)

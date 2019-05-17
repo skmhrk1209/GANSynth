@@ -243,9 +243,7 @@ class GANSynth(object):
                     except tf.errors.OutOfRangeError:
                         break
 
-            fake_waveforms = map(np.concatenate, zip(*generator()))
-
-            return fake_waveforms
+            return generator
 
 
 class PitchClassifier(object):
