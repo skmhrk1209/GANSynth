@@ -213,10 +213,10 @@ class GANSynth(object):
                 while not session.should_stop():
                     try:
                         yield session.run([
-                            self.real_features,
-                            self.fake_features,
-                            self.real_logits,
-                            self.fake_logits,
+                            real_features,
+                            fake_features,
+                            real_logits,
+                            fake_logits,
                             self.real_magnitude_spectrograms,
                             self.fake_magnitude_spectrograms
                         ])
