@@ -167,8 +167,9 @@ with tf.Graph().as_default():
                 sources=[0]
             ),
             fake_input_fn=lambda: (
-                tf.tile(tf.random.normal([1, 256]), [len(range(24, 85)), 1]),
-                tf.one_hot(tf.range(24, 85), len(range(24, 85)))
+                tf.tile(tf.random.normal([1, 256]), [args.batch_size, 1]),
+                tf.one_hot(tf.range(24, 85)[:args.batch_size] if args.batch_size < len(range(24, 85)) else tf.pad(
+                    tf.range(24, 85), [0, args.batch_size - len(range(24, 85))]), len(range(24, 85)))
             ),
             spectral_params=Struct(
                 waveform_length=64000,
