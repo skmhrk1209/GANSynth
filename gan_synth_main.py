@@ -136,14 +136,7 @@ with tf.Graph().as_default():
             config=config
         ) as session:
 
-            def generator():
-                while not session.should_stop():
-                    try:
-                        yield session.run([latents, labels, waveforms])
-                    except tf.errors.OutOfRangeError:
-                        break
-
-            latents, labels, waveforms = map(np.concatenate, zip(*generator()))
+            latents, labels, waveforms = session.run([latents, labels, waveforms])
 
             waveinfo = dict()
             for i, (latent, label, waveform) in enumerate(zip(latents, labels, waveforms)):
