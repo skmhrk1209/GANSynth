@@ -222,17 +222,20 @@ class GANSynth(object):
             def generator():
                 while not session.should_stop():
                     try:
-                        yield session.run([
-                            self.real_features,
-                            self.fake_features,
-                            self.real_magnitude_spectrograms,
-                            self.fake_magnitude_spectrograms
-                        ])
+                        yield session.run([self.real_features, self.fake_features])
                     except tf.errors.OutOfRangeError:
                         break
 
-            real_features, fake_features, real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
+            real_features, fake_features = map(np.concatenate, zip(*generator()))
 
+            def generator():
+                while not session.should_stop():
+                    try:
+                        yield session.run([self.real_magnitude_spectrograms, self.fake_magnitude_spectrograms])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            real_magnitude_spectrograms, fake_magnitude_spectrograms = map(np.concatenate, zip(*generator()))
             real_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [real_magnitude_spectrograms.shape[0], -1])
             fake_magnitude_spectrograms = np.reshape(real_magnitude_spectrograms, [fake_magnitude_spectrograms.shape[0], -1])
 
