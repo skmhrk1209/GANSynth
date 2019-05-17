@@ -124,7 +124,7 @@ with tf.Graph().as_default():
     if args.generate:
 
         latents = tf.tile(tf.random.normal([1, 256]), [len(range(24, 85)), 1])
-        labels = tf.one_hot(tf.range(24, 85), len(range(24, 85)))
+        labels = tf.one_hot(tf.range(0, len(range(24, 85))), len(range(24, 85)))
         waveforms = pggan.generator(latents, labels)
 
         with tf.train.SingularMonitoredSession(
