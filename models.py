@@ -193,18 +193,18 @@ class GANSynth(object):
                 except tf.errors.OutOfRangeError:
                     break
 
-    def evaluate(self, model_dir, config, classifier, input_name, output_name):
+    def evaluate(self, model_dir, config, classifier, input_name, output_names):
 
-        real_features = tf.import_graph_def(
+        real_features, real_logits = tf.import_graph_def(
             graph_def=classifier,
             input_map={input_name: self.real_images},
-            return_elements=[output_name]
+            return_elements=output_names
         )
 
-        fake_features = tf.import_graph_def(
+        fake_features, fake_logits = tf.import_graph_def(
             graph_def=classifier,
             input_map={input_name: self.fake_images},
-            return_elements=[output_name]
+            return_elements=output_names
         )
 
         with tf.train.SingularMonitoredSession(
