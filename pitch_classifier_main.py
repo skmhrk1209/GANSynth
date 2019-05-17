@@ -82,12 +82,16 @@ with tf.Graph().as_default():
     )
 
     config = tf.ConfigProto(
+        log_device_placement=False,
+        allow_soft_placement=False,
         gpu_options=tf.GPUOptions(
-            allow_growth=True
+            allow_growth=True,
+            per_process_gpu_memory_fraction=1.0
         )
     )
 
     if args.train:
+
         pitch_classifier.train(
             model_dir=args.model_dir,
             config=config,
@@ -98,6 +102,7 @@ with tf.Graph().as_default():
         )
 
     if args.evaluate:
+
         pitch_classifier.evaluate(
             model_dir=args.model_dir,
             config=config

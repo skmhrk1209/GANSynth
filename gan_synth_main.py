@@ -50,49 +50,51 @@ with tf.Graph().as_default():
         ), tf.float32)
     )
 
-    gan_synth = GANSynth(
-        generator=pggan.generator,
-        discriminator=pggan.discriminator,
-        real_input_fn=functools.partial(
-            nsynth_input_fn,
-            filenames=glob.glob(args.filenames),
-            batch_size=args.batch_size,
-            num_epochs=args.num_epochs if args.train else 1,
-            shuffle=True if args.train else False,
-            pitches=range(24, 85),
-            sources=[0]
-        ),
-        fake_input_fn=lambda: (
-            tf.random.normal([args.batch_size, 256])
-        ),
-        spectral_params=Struct(
-            waveform_length=64000,
-            sample_rate=16000,
-            spectrogram_shape=[128, 1024],
-            overlap=0.75
-        ),
-        # [Don't Decay the Learning Rate, Increase the Batch Size]
-        # (https://arxiv.org/pdf/1711.00489.pdf)
-        hyper_params=Struct(
-            generator_learning_rate=8e-4 * args.batch_size / 8,
-            generator_beta1=0.0,
-            generator_beta2=0.99,
-            discriminator_learning_rate=8e-4 * args.batch_size / 8,
-            discriminator_beta1=0.0,
-            discriminator_beta2=0.99,
-            mode_seeking_loss_weight=0.1,
-            real_gradient_penalty_weight=5.0,
-            fake_gradient_penalty_weight=0.0,
-        )
-    )
-
     config = tf.ConfigProto(
+        log_device_placement=False,
+        allow_soft_placement=False,
         gpu_options=tf.GPUOptions(
-            allow_growth=True
+            allow_growth=True,
+            per_process_gpu_memory_fraction=1.0
         )
     )
 
     if args.train:
+
+        gan_synth = GANSynth(
+            generator=pggan.generator,
+            discriminator=pggan.discriminator,
+            real_input_fn=functools.partial(
+                nsynth_input_fn,
+                filenames=glob.glob(args.filenames),
+                batch_size=args.batch_size,
+                num_epochs=args.num_epochs if args.train else 1,
+                shuffle=True if args.train else False,
+                pitches=range(24, 85),
+                sources=[0]
+            ),
+            fake_input_fn=lambda: (tf.random.normal([args.batch_size, 256]), None),
+            spectral_params=Struct(
+                waveform_length=64000,
+                sample_rate=16000,
+                spectrogram_shape=[128, 1024],
+                overlap=0.75
+            ),
+            # [Don't Decay the Learning Rate, Increase the Batch Size]
+            # (https://arxiv.org/pdf/1711.00489.pdf)
+            hyper_params=Struct(
+                generator_learning_rate=8e-4 * args.batch_size / 8,
+                generator_beta1=0.0,
+                generator_beta2=0.99,
+                discriminator_learning_rate=8e-4 * args.batch_size / 8,
+                discriminator_beta1=0.0,
+                discriminator_beta2=0.99,
+                mode_seeking_loss_weight=0.1,
+                real_gradient_penalty_weight=5.0,
+                fake_gradient_penalty_weight=0.0,
+            )
+        )
+
         gan_synth.train(
             model_dir=args.model_dir,
             config=config,
@@ -107,6 +109,40 @@ with tf.Graph().as_default():
         with open(args.classifier, "rb") as file:
             classifier = tf.GraphDef.FromString(file.read())
 
+        gan_synth = GANSynth(
+            generator=pggan.generator,
+            discriminator=pggan.discriminator,
+            real_input_fn=functools.partial(
+                nsynth_input_fn,
+                filenames=glob.glob(args.filenames),
+                batch_size=args.batch_size,
+                num_epochs=args.num_epochs if args.train else 1,
+                shuffle=True if args.train else False,
+                pitches=range(24, 85),
+                sources=[0]
+            ),
+            fake_input_fn=lambda: (tf.random.normal([args.batch_size, 256]), None),
+            spectral_params=Struct(
+                waveform_length=64000,
+                sample_rate=16000,
+                spectrogram_shape=[128, 1024],
+                overlap=0.75
+            ),
+            # [Don't Decay the Learning Rate, Increase the Batch Size]
+            # (https://arxiv.org/pdf/1711.00489.pdf)
+            hyper_params=Struct(
+                generator_learning_rate=8e-4 * args.batch_size / 8,
+                generator_beta1=0.0,
+                generator_beta2=0.99,
+                discriminator_learning_rate=8e-4 * args.batch_size / 8,
+                discriminator_beta1=0.0,
+                discriminator_beta2=0.99,
+                mode_seeking_loss_weight=0.1,
+                real_gradient_penalty_weight=5.0,
+                fake_gradient_penalty_weight=0.0,
+            )
+        )
+
         gan_synth.evaluate(
             model_dir=args.model_dir,
             config=config,
@@ -115,3 +151,56 @@ with tf.Graph().as_default():
             features="features:0",
             logits="logits:0"
         )
+
+    if args.generate:
+
+        gan_synth = GANSynth(
+            generator=pggan.generator,
+            discriminator=pggan.discriminator,
+            real_input_fn=functools.partial(
+                nsynth_input_fn,
+                filenames=glob.glob(args.filenames),
+                batch_size=args.batch_size,
+                num_epochs=args.num_epochs if args.train else 1,
+                shuffle=True if args.train else False,
+                pitches=range(24, 85),
+                sources=[0]
+            ),
+            fake_input_fn=lambda: (
+                tf.tile(tf.random.normal([1, 256]), [len(range(24, 85)), 1]),
+                tf.one_hot(tf.range(24, 85), len(range(24, 85)))
+            ),
+            spectral_params=Struct(
+                waveform_length=64000,
+                sample_rate=16000,
+                spectrogram_shape=[128, 1024],
+                overlap=0.75
+            ),
+            # [Don't Decay the Learning Rate, Increase the Batch Size]
+            # (https://arxiv.org/pdf/1711.00489.pdf)
+            hyper_params=Struct(
+                generator_learning_rate=8e-4 * args.batch_size / 8,
+                generator_beta1=0.0,
+                generator_beta2=0.99,
+                discriminator_learning_rate=8e-4 * args.batch_size / 8,
+                discriminator_beta1=0.0,
+                discriminator_beta2=0.99,
+                mode_seeking_loss_weight=0.1,
+                real_gradient_penalty_weight=5.0,
+                fake_gradient_penalty_weight=0.0,
+            )
+        )
+
+        latents, labels, waveforms = gan_synth.generate(
+            model_dir=args.model_dir,
+            config=config
+        )
+
+        waveinfo = dict()
+        for i, (latent, label, waveform) in enumerate(zip(latents, labels, waveforms)):
+            filename = f"samples/{i}.wav"
+            wavfile.write(filename)
+            wavinfo.update(dict(filename=filename, latent=latent, label=label))
+
+        with open("samples/waveinfo.json", "w") as file:
+            json.dump(waveinfo, file, indent=4)
