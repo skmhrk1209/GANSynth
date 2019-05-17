@@ -18,7 +18,7 @@ import glob
 import json
 from scipy.io import wavfile
 from dataset import nsynth_input_fn
-from models import GANSynth
+from a import GANSynth
 from networks import PGGAN
 from utils import Dict
 

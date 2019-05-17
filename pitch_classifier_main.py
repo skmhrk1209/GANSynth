@@ -103,7 +103,7 @@ with tf.Graph().as_default():
 
     if args.evaluate:
 
-        pitch_classifier.evaluate(
+        print(pitch_classifier.evaluate(
             model_dir=args.model_dir,
             config=config
-        )
+        ))
