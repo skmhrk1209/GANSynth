@@ -123,7 +123,7 @@ with tf.Graph().as_default():
 
     if args.generate:
 
-        waveforms = gan_synth.evaluate(
+        waveforms = gan_synth.generate(
             model_dir=args.model_dir,
             config=config
         )
