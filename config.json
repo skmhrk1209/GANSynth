@@ -1,0 +1,27 @@
+{
+    "batch_size": 4,
+    "num_epochs": -1,
+    "total_steps": 1000000,
+    "growing_steps": 1000000,
+    "spectral_params": {
+        "waveform_length": 64000,
+        "sample_rate": 16000,
+        "spectrogram_shape": [
+            128,
+            1024
+        ],
+        "overlap": 0.75
+    },
+    "hyper_params": {
+        "generator_learning_rate": 4e-4,
+        "generator_beta1": 0.0,
+        "generator_beta2": 0.99,
+        "discriminator_learning_rate": 4e-4,
+        "discriminator_beta1": 0.0,
+        "discriminator_beta2": 0.99,
+        "generator_classification_weight": 10.0,
+        "discriminator_classification_weight": 10.0,
+        "gradient_penalty_weight": 10.0,
+        "epsilon_penalty_weight": 0.001
+    }
+}

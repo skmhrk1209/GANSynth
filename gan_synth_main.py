@@ -12,6 +12,7 @@
 
 import tensorflow as tf
 import numpy as np
+import collections
 import functools
 import argparse
 import glob
@@ -26,10 +27,6 @@ from utils import Dict
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir", type=str, default="gan_synth_model")
 parser.add_argument('--filenames', type=str, default="nsynth*.tfrecord")
-parser.add_argument("--batch_size", type=int, default=8)
-parser.add_argument("--num_epochs", type=int, default=None)
-parser.add_argument("--total_steps", type=int, default=1000000)
-parser.add_argument("--growing_steps", type=int, default=1000000)
 parser.add_argument('--classifier', type=str, default="pitch_classifier.pb")
 parser.add_argument('--train', action="store_true")
 parser.add_argument('--evaluate', action="store_true")
@@ -38,6 +35,20 @@ args = parser.parse_args()
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+
+def apply(function, dictionary):
+    if isinstance(dictionary, dict):
+        for key, value in dictionary.items():
+            dictionary[key] = apply(function, value)
+        dictionary = function(dictionary)
+    return dictionary
+
+
+with open("config.json") as file:
+    config = json.load(file)
+    config.update(vars(args))
+    config = apply(Dict, config)
+    print(f"config: {config}")
 
 with tf.Graph().as_default():
 
@@ -50,7 +61,7 @@ with tf.Graph().as_default():
         max_channels=256,
         growing_level=tf.cast(tf.divide(
             x=tf.train.create_global_step(),
-            y=args.growing_steps
+            y=config.growing_steps
         ), tf.float32)
     )
 
@@ -59,37 +70,19 @@ with tf.Graph().as_default():
         discriminator=pggan.discriminator,
         real_input_fn=functools.partial(
             nsynth_input_fn,
-            filenames=glob.glob(args.filenames),
-            batch_size=args.batch_size,
-            num_epochs=args.num_epochs if args.train else 1,
-            shuffle=True if args.train else False,
+            filenames=glob.glob(config.filenames),
+            batch_size=config.batch_size,
+            num_epochs=config.num_epochs if config.train else 1,
+            shuffle=True if config.train else False,
             pitches=range(24, 85),
             sources=[0]
         ),
-        fake_input_fn=lambda: tf.random.normal([args.batch_size, 256]),
-        spectral_params=Dict(
-            waveform_length=64000,
-            sample_rate=16000,
-            spectrogram_shape=[128, 1024],
-            overlap=0.75
-        ),
-        # [Don't Decay the Learning Rate, Increase the Batch Size]
-        # (https://arxiv.org/pdf/1711.00489.pdf)
-        hyper_params=Dict(
-            generator_learning_rate=8e-4 * args.batch_size / 8,
-            generator_beta1=0.0,
-            generator_beta2=0.99,
-            discriminator_learning_rate=8e-4 * args.batch_size / 8,
-            discriminator_beta1=0.0,
-            discriminator_beta2=0.99,
-            generator_classification_weight=10.0,
-            discriminator_classification_weight=10.0,
-            gradient_penalty_weight=10.0,
-            epsilon_penalty_weight=0.001
-        )
+        fake_input_fn=lambda: tf.random.normal([config.batch_size, 256]),
+        spectral_params=config.spectral_params,
+        hyper_params=config.hyper_params
     )
 
-    config = tf.ConfigProto(
+    session_config = tf.ConfigProto(
         log_device_placement=False,
         allow_soft_placement=False,
         gpu_options=tf.GPUOptions(
@@ -98,37 +91,37 @@ with tf.Graph().as_default():
         )
     )
 
-    if args.train:
+    if config.train:
 
         gan_synth.train(
-            model_dir=args.model_dir,
-            config=config,
-            total_steps=args.total_steps,
+            model_dir=config.model_dir,
+            config=session_config,
+            total_steps=config.total_steps,
             save_checkpoint_steps=1000,
             save_summary_steps=100,
             log_tensor_steps=100
         )
 
-    if args.evaluate:
+    if config.evaluate:
 
-        with open(args.classifier, "rb") as file:
+        with open(config.classifier, "rb") as file:
             classifier = tf.GraphDef.FromString(file.read())
 
         print(gan_synth.evaluate(
-            model_dir=args.model_dir,
-            config=config,
+            model_dir=config.model_dir,
+            config=session_config,
             classifier=classifier,
             input_name="images:0",
             output_names=["features:0", "logits:0"]
         ))
 
-    if args.generate:
+    if config.generate:
 
         os.makedirs("samples", exist_ok=True)
 
         generator = gan_synth.generate(
-            model_dir=args.model_dir,
-            config=config
+            model_dir=config.model_dir,
+            config=session_config
         )
 
         num_waveforms = 0
