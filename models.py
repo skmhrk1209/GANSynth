@@ -94,8 +94,10 @@ class GANSynth(object):
         self.fake_images = fake_images
         self.real_features = real_features
         self.fake_features = fake_features
-        self.real_logits = real_logits
-        self.fake_logits = fake_logits
+        self.real_adversarial_logits = real_adversarial_logits
+        self.fake_adversarial_logits = fake_adversarial_logits
+        self.real_classification_logits = real_classification_logits
+        self.fake_classification_logits = fake_classification_logits
         self.generator_loss = generator_loss
         self.discriminator_loss = discriminator_loss
         self.generator_train_op = generator_train_op
