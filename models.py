@@ -88,6 +88,10 @@ class GANSynth(object):
             var_list=discriminator_variables
         )
 
+        generator_ema = tf.train.ExponentialMovingAverage(decay=0.999)
+        with tf.control_dependencies([generator_train_op]):
+            generator_train_op = generator_ema.apply(generator_variables)
+
         self.real_waveforms = real_waveforms
         self.fake_waveforms = fake_waveforms
         self.real_magnitude_spectrograms = real_magnitude_spectrograms
