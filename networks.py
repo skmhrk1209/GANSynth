@@ -190,12 +190,12 @@ class PGGAN(object):
                     with tf.variable_scope("logits"):
                         inputs = dense(
                             inputs=inputs,
-                            units=labels.shape[1] + 1,
+                            units=labels.shape[1].value + 1,
                             use_bias=True,
                             variance_scale=1.0,
                             scale_weight=True
                         )
-                        adversarial_logits, classification_logits = tf.split(inputs, [1, labels.shape[1]], axis=1)
+                        adversarial_logits, classification_logits = tf.split(inputs, [1, labels.shape[1].value], axis=1)
                     return features, adversarial_logits, classification_logits
                 else:
                     with tf.variable_scope("conv"):
