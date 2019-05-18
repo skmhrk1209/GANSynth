@@ -152,12 +152,6 @@ class PGGAN(object):
             return images
 
         with tf.variable_scope(name, reuse=reuse):
-            labels = embedding(
-                inputs=labels,
-                units=latents.shape[1],
-                variance_scale=1.0,
-                scale_weight=True
-            )
             return grow(tf.concat([latents, labels], axis=1), self.min_depth)
 
     def discriminator(self, images, labels, name="discriminator", reuse=tf.AUTO_REUSE):
@@ -196,13 +190,13 @@ class PGGAN(object):
                     with tf.variable_scope("logits"):
                         inputs = dense(
                             inputs=inputs,
-                            units=labels.shape[1],
+                            units=labels.shape[1] + 1,
                             use_bias=True,
                             variance_scale=1.0,
                             scale_weight=True
                         )
-                        logits = inputs
-                    return features, logits
+                        adversarial_logits, classification_logits = tf.split(inputs, [1, labels.shape[1]], axis=1)
+                    return features, adversarial_logits, classification_logits
                 else:
                     with tf.variable_scope("conv"):
                         inputs = conv2d(

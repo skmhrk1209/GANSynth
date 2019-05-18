@@ -5,19 +5,13 @@ import metrics
 import spectral_ops
 
 
+def lerp(a, b, t):
+    return t * a + (1.0 - t) * b
+
+
 class GANSynth(object):
 
     def __init__(self, generator, discriminator, real_input_fn, fake_input_fn, spectral_params, hyper_params):
-
-        # -----------------------------------------------------------------------------------------
-        # Non-Saturating Loss + Mode-Seeking Loss + Zero-Centered Gradient Penalty
-        # [Generative Adversarial Networks]
-        # (https://arxiv.org/abs/1406.2661)
-        # [Mode Seeking Generative Adversarial Networks for Diverse Image Synthesis]
-        # (https://arxiv.org/pdf/1903.05628.pdf)
-        # [Which Training Methods for GANs do actually Converge?]
-        # (https://arxiv.org/pdf/1801.04406.pdf)
-        # -----------------------------------------------------------------------------------------
 
         real_waveforms, labels = real_input_fn()
         latents = fake_input_fn()
@@ -30,36 +24,34 @@ class GANSynth(object):
         fake_magnitude_spectrograms, fake_instantaneous_frequencies = tf.unstack(fake_images, axis=1)
         fake_waveforms = spectral_ops.convert_to_waveform(fake_magnitude_spectrograms, fake_instantaneous_frequencies, **spectral_params)
 
-        real_features, real_logits = discriminator(real_images, labels)
-        fake_features, fake_logits = discriminator(fake_images, labels)
+        real_features, real_adversarial_logits, real_classification_logits = discriminator(real_images, labels)
+        fake_features, fake_adversarial_logits, fake_classification_logits = discriminator(fake_images, labels)
 
-        # label conditioning from
-        # [Which Training Methods for GANs do actually Converge?]
-        # (https://arxiv.org/pdf/1801.04406.pdf)
-        real_logits = tf.gather_nd(real_logits, indices=tf.where(labels))
-        fake_logits = tf.gather_nd(fake_logits, indices=tf.where(labels))
+        real_adversarial_logits = tf.squeeze(real_adversarial_logits, axis=1)
+        fake_adversarial_logits = tf.squeeze(fake_adversarial_logits, axis=1)
 
-        # non-saturating loss
-        discriminator_losses = tf.nn.softplus(-real_logits)
-        discriminator_losses += tf.nn.softplus(fake_logits)
-        # zero-centerd gradient penalty on data distribution
-        if hyper_params.real_gradient_penalty_weight:
-            real_gradients = tf.gradients(real_logits, [real_images])[0]
-            real_gradient_penalties = tf.reduce_sum(tf.square(real_gradients), axis=[1, 2, 3])
-            discriminator_losses += real_gradient_penalties * hyper_params.real_gradient_penalty_weight
-        # zero-centerd gradient penalty on generator distribution
-        if hyper_params.fake_gradient_penalty_weight:
-            fake_gradients = tf.gradients(fake_logits, [fake_images])[0]
-            fake_gradient_penalties = tf.reduce_sum(tf.square(fake_gradients), axis=[1, 2, 3])
-            discriminator_losses += fake_gradient_penalties * hyper_params.fake_gradient_penalty_weight
+        generator_adversarial_losses = -fake_adversarial_logits
+        discriminator_adversarial_losses = -real_adversarial_logits + fake_adversarial_logits
 
-        # non-saturating loss
-        generator_losses = tf.nn.softplus(-fake_logits)
-        # gradient-based mode-seeking loss
-        if hyper_params.mode_seeking_loss_weight:
-            latent_gradients = tf.gradients(fake_images, [latents])[0]
-            mode_seeking_losses = 1.0 / (tf.reduce_sum(tf.square(latent_gradients), axis=[1]) + 1.0e-6)
-            generator_losses += mode_seeking_losses * hyper_params.mode_seeking_loss_weight
+        generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=fake_labels, logits=fake_classification_logits)
+        discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=real_labels, logits=real_classification_logits)
+
+        coefficients = tf.random.uniform([real_images.shape[0], 1, 1, 1])
+        interpolated_images = lerp(real_images, fake_images, coefficients)
+        _, interpolated_adversarial_logits, _ = discriminator(interpolated_images, labels)
+        interpolated_gradients = tf.gradients(interpolated_adversarial_logits, [interpolated_images])[0]
+        interpolated_slopes = tf.sqrt(tf.reduce_sum(tf.square(interpolated_gradients), axis=[1, 2, 3]) + 1.0e-12)
+        gradient_penalties = tf.square(interpolated_slopes - 1.0)
+
+        epsilon_penalties = tf.square(real_adversarial_logits)
+
+        generator_losses = generator_adversarial_losses + \
+            generator_classification_losses * hyper_params.generator_classification_weight
+
+        discriminator_losses = discriminator_adversarial_losses + \
+            discriminator_classification_losses * hyper_params.discriminator_classification_weight + \
+            gradient_penalties * hyper_params.gradient_penalty_weight + \
+            epsilon_penalties * hyper_params.epsilon_penalty_weight
 
         generator_loss = tf.reduce_mean(generator_losses)
         discriminator_loss = tf.reduce_mean(discriminator_losses)
@@ -87,6 +79,10 @@ class GANSynth(object):
             loss=discriminator_loss,
             var_list=discriminator_variables
         )
+
+        generator_ema = tf.train.ExponentialMovingAverage(decay=0.999)
+        with tf.control_dependencies([generator_train_op]):
+            generator_train_op = generator_ema.apply(generator_variables)
 
         self.real_waveforms = real_waveforms
         self.fake_waveforms = fake_waveforms
