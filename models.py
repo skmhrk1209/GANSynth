@@ -33,8 +33,8 @@ class GANSynth(object):
         generator_adversarial_losses = -fake_adversarial_logits
         discriminator_adversarial_losses = -real_adversarial_logits + fake_adversarial_logits
 
-        generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=fake_labels, logits=fake_classification_logits)
-        discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=real_labels, logits=real_classification_logits)
+        generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=fake_classification_logits)
+        discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=real_classification_logits)
 
         coefficients = tf.random.uniform([real_images.shape[0], 1, 1, 1])
         interpolated_images = lerp(real_images, fake_images, coefficients)
@@ -92,8 +92,6 @@ class GANSynth(object):
         self.fake_instantaneous_frequencies = fake_instantaneous_frequencies
         self.real_images = real_images
         self.fake_images = fake_images
-        self.real_labels = labels
-        self.fake_labels = labels
         self.real_features = real_features
         self.fake_features = fake_features
         self.real_logits = real_logits
