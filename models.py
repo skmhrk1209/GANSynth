@@ -36,7 +36,7 @@ class GANSynth(object):
         generator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=fake_classification_logits)
         discriminator_classification_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=real_classification_logits)
 
-        coefficients = tf.random.uniform([real_images.shape[0], 1, 1, 1])
+        coefficients = tf.random.uniform([real_images.shape[0].value, 1, 1, 1])
         interpolated_images = lerp(real_images, fake_images, coefficients)
         _, interpolated_adversarial_logits, _ = discriminator(interpolated_images, labels)
         interpolated_gradients = tf.gradients(interpolated_adversarial_logits, [interpolated_images])[0]
