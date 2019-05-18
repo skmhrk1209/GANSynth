@@ -19,8 +19,8 @@
         "discriminator_learning_rate": 4e-4,
         "discriminator_beta1": 0.0,
         "discriminator_beta2": 0.99,
-        "generator_classification_weight": 10.0,
-        "discriminator_classification_weight": 10.0,
+        "generator_classification_loss_weight": 10.0,
+        "discriminator_classification_loss_weight": 10.0,
         "gradient_penalty_weight": 10.0,
         "epsilon_penalty_weight": 0.001
     }

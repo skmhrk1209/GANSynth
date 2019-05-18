@@ -46,10 +46,10 @@ class GANSynth(object):
         epsilon_penalties = tf.square(real_adversarial_logits)
 
         generator_losses = generator_adversarial_losses + \
-            generator_classification_losses * hyper_params.generator_classification_weight
+            generator_classification_losses * hyper_params.generator_classification_loss_weight
 
         discriminator_losses = discriminator_adversarial_losses + \
-            discriminator_classification_losses * hyper_params.discriminator_classification_weight + \
+            discriminator_classification_losses * hyper_params.discriminator_classification_loss_weight + \
             gradient_penalties * hyper_params.gradient_penalty_weight + \
             epsilon_penalties * hyper_params.epsilon_penalty_weight
 
